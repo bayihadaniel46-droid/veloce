@@ -4,7 +4,7 @@ const Post = require("../models/Post");
 const Like = require("../models/Like");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
-const Comment = require("../models/Comment");
+const Comment = require("../models/comment");
 
 
 // ============================================
