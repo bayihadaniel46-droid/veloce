@@ -29,7 +29,8 @@ const formatUser = (user) => {
     username: user.username,
     email: user.email,
     avatar: user.avatar || "",
-    bio: user.bio || ""
+    bio: user.bio || "",
+    createdAt: user.createdAt
   };
 };
 
@@ -375,8 +376,8 @@ const updateProfile = async (req, res) => {
       typeof avatar === "string"
     ) {
       const cleanAvatar = avatar.trim();
-      if (cleanAvatar.length > 2048) {
-        return res.status(400).json({ message: "L’adresse de la photo est trop longue." });
+      if (cleanAvatar.length > 200000) {
+        return res.status(400).json({ message: "La photo est trop volumineuse. Choisis une image plus légère." });
       }
       if (
         cleanAvatar &&

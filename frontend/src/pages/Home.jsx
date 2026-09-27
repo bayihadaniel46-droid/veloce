@@ -51,6 +51,7 @@ function Home() {
     });
 
   const [viewedUserId, setViewedUserId] = useState("");
+  const [messageRecipient, setMessageRecipient] = useState(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
 
@@ -391,7 +392,7 @@ function Home() {
 
 
       case "messages":
-        return <Messages />;
+        return <Messages initialUser={messageRecipient} onInitialUserHandled={setMessageRecipient} />;
 
 
       case "profile":
@@ -401,7 +402,7 @@ function Home() {
         return <Settings onBack={() => setCurrentPage("profile")} onOpenProfile={() => setCurrentPage("profile")} onLogout={logout} />;
 
       case "user-profile":
-        return <PublicProfile userId={viewedUserId} onBack={() => setCurrentPage("explorer")} />;
+        return <PublicProfile userId={viewedUserId} onBack={() => setCurrentPage("explorer")} onMessage={(person) => { setMessageRecipient(person); setCurrentPage("messages"); }} />;
 
       case "assistant":
         return <Assistant />;

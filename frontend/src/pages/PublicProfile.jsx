@@ -4,8 +4,8 @@ import PostCard from "../components/PostCard";
 import { API_BASE_URL } from "../config";
 
 const API = API_BASE_URL;
-function PublicProfile({ userId, onBack }) {
-  const { token } = useAuth();
+function PublicProfile({ userId, onBack, onMessage }) {
+  const { token, user: currentUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,9 +68,16 @@ function PublicProfile({ userId, onBack }) {
           <p className="profile-handle">@{person.username}</p>
           <p className="profile-bio">{person.bio || "Aucune biographie pour le moment."}</p>
         </div>
-        <button className="profile-edit-button" onClick={toggleFollow} disabled={busy}>
-          {busy ? "…" : profile.isFollowing ? "Abonné(e)" : "S’abonner"}
-        </button>
+        <div className="public-profile-actions">
+          <button className="profile-edit-button" onClick={toggleFollow} disabled={busy}>
+            {busy ? "…" : profile.isFollowing ? "Abonné(e)" : "S’abonner"}
+          </button>
+          {String(person._id) !== String(currentUser?._id || currentUser?.id) && (
+            <button type="button" className="public-profile-message-button" onClick={() => onMessage?.(person)}>
+              ✉ Écrire un message
+            </button>
+          )}
+        </div>
       </div>
       <div className="profile-stats">
         <div><strong>{posts.length}</strong><span>Publications</span></div>

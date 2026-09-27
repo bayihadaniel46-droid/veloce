@@ -1703,11 +1703,11 @@ body {
 .mobile-navigation{display:none}
 .mobile-conversation-back{display:none}
 @media(max-width:760px){
-  html,body,#root{width:100%;max-width:100%;height:100%;min-height:100%;overflow-x:clip;overflow-y:hidden}
+  html,body,#root{width:100%;max-width:100%;height:100%;min-height:100%;overflow-x:hidden;overflow-x:clip;overflow-y:hidden}
   body{overflow:hidden}
-  .layout{display:block!important;width:100%;height:100dvh;min-height:100dvh;padding:0!important;gap:0;overflow:hidden}
+  .layout{display:block!important;width:100%;height:100vh;height:100dvh;min-height:100vh;min-height:100dvh;padding:0!important;gap:0;overflow:hidden}
   .layout>.sidebar,.layout>.rightbar{display:none!important}
-  .layout>main.feed{display:block;width:100%;max-width:100%;min-width:0;height:100dvh;min-height:0;max-height:100dvh;margin:0;padding:0 0 calc(100px + env(safe-area-inset-bottom));overflow-x:hidden;overflow-y:auto;border:1px solid #30384b;overscroll-behavior-y:contain}
+  .layout>main.feed{display:block;width:100%;max-width:100%;min-width:0;height:100vh;height:100dvh;min-height:0;max-height:100vh;max-height:100dvh;margin:0;padding:0 0 calc(100px + env(safe-area-inset-bottom));overflow-x:hidden;overflow-y:auto;border:1px solid #30384b;overscroll-behavior-y:contain}
   input,textarea,select{font-size:16px!important}
   img,video{max-width:100%}
   .home-feed{width:100%;max-width:none;padding:10px 10px 22px;gap:12px}
@@ -1720,7 +1720,7 @@ body {
   .feed>.loading,.feed>.empty-feed,.feed>.error-message{min-height:70dvh;padding:24px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
   .floating-btn,.floating-button{display:none!important}
   .mobile-navigation{position:fixed;z-index:1000;right:max(14px,env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:flex-end;gap:12px;pointer-events:none}
-  .mobile-navigation-actions{display:flex;flex-direction:column;align-items:flex-end;gap:10px;max-height:calc(100dvh - 105px - env(safe-area-inset-bottom));overflow-y:auto;overscroll-behavior:contain;padding:4px;pointer-events:auto}
+  .mobile-navigation-actions{display:flex;flex-direction:column;align-items:flex-end;gap:10px;max-height:calc(100vh - 105px - env(safe-area-inset-bottom));max-height:calc(100dvh - 105px - env(safe-area-inset-bottom));overflow-y:auto;overscroll-behavior:contain;padding:4px;pointer-events:auto}
   .mobile-navigation-item{display:flex;align-items:center;justify-content:flex-end;gap:9px;min-height:48px}
   .mobile-navigation-label{max-width:190px;padding:7px 11px;border:1px solid #343b4b;border-radius:11px;background:#191e29;color:#f4f5fa;font-size:12px;font-weight:650;line-height:1.2;white-space:nowrap}
   .mobile-navigation-circle,.mobile-navigation-toggle{position:relative;display:grid;place-items:center;flex:0 0 auto;border:1px solid #333b50;border-radius:50%;background:#202638;color:#f3f4ff;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -1757,7 +1757,7 @@ body {
   .assistant-header{gap:14px}
   .assistant-draft-actions button{min-height:44px}
   .modal-overlay,.create-modal-overlay{align-items:flex-end;padding:0}
-  .create-modal{width:100%;max-height:calc(100dvh - 12px);border-radius:20px 20px 0 0;padding-bottom:env(safe-area-inset-bottom)}
+  .create-modal{width:100%;max-height:calc(100vh - 12px);max-height:calc(100dvh - 12px);border-radius:20px 20px 0 0;padding-bottom:env(safe-area-inset-bottom)}
 }
 @media(max-width:390px){
   .mobile-navigation-label{font-size:11px}
@@ -1781,6 +1781,36 @@ body {
 .profile-logout-button{border-color:#593341;background:#2a1c25;color:#ffb9c5}
 .profile-logout-button:hover{background:#40212d}
 .settings-page{width:min(100%,980px);min-height:100%;margin:0 auto;padding:28px 22px 110px;color:#f4f5fa}
+.profile-edit-page{width:min(100%,900px);min-height:100%;margin:0 auto;padding:26px 22px 110px;color:#f4f5fa}
+.profile-edit-back{margin:0 0 22px;padding:9px 13px;border:1px solid #343b4b;border-radius:10px;background:#1b2130;color:#d9dcf3;font-weight:650;cursor:pointer}
+.profile-edit-heading{margin-bottom:20px}
+.profile-edit-heading>span{color:#a9a5ff;font-size:11px;font-weight:800;letter-spacing:.12em}
+.profile-edit-heading h1{margin:7px 0;color:#fff;font-size:26px}
+.profile-edit-heading p,.profile-edit-section>p{color:#a4aaba;font-size:13px;line-height:1.5}
+.profile-edit-form{display:grid;gap:14px}
+.profile-edit-section{display:grid;gap:10px;padding:20px;border:1px solid #30384b;border-radius:16px;background:#171c27}
+.profile-edit-section h2{margin:0;color:#f5f5fb;font-size:16px}
+.profile-edit-section label{margin-top:5px;color:#dce0eb;font-size:13px;font-weight:650}
+.profile-edit-section input,.profile-edit-section textarea{width:100%;min-width:0;padding:12px 13px;border:1px solid #3a4255;border-radius:10px;background:#10151f;color:#f4f5fa;font:inherit;font-size:14px;outline:none}
+.profile-edit-section input:focus,.profile-edit-section textarea:focus{border-color:#7773f2;box-shadow:0 0 0 3px #7773f21c}
+.profile-edit-section input[readonly]{color:#9ca4b5;background:#141923}
+.profile-edit-section textarea{min-height:100px;resize:vertical}
+.profile-edit-section small{color:#929bad;font-size:11px}
+.profile-edit-photo-row{display:flex;align-items:center;gap:18px;margin-top:4px}
+.profile-edit-photo-preview{width:92px;height:92px;display:grid;place-items:center;flex:0 0 92px;overflow:hidden;border:2px solid #625de6;border-radius:50%;background:#282949;color:#fff;font-size:30px;font-weight:750}
+.profile-edit-photo-preview img{width:100%;height:100%;object-fit:cover}
+.profile-edit-photo-actions{display:grid;justify-items:start;gap:9px}
+.profile-edit-upload{display:inline-flex;min-height:40px;align-items:center;padding:0 14px;border:1px solid #625de6;border-radius:10px;background:#282744;color:#fff;font-size:13px;font-weight:700;cursor:pointer}
+.profile-edit-file{position:absolute;width:1px!important;height:1px!important;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.profile-edit-upload:focus-within,.profile-edit-upload:focus-visible{outline:3px solid #7dd9cf;outline-offset:3px}
+.profile-edit-character-count{text-align:right}
+.profile-edit-page-actions{display:flex;justify-content:flex-end;gap:10px;padding:4px 0}
+.profile-edit-page-actions button{min-height:43px;padding:0 15px;border:1px solid #3a4255;border-radius:10px;background:#202638;color:#e7e9f1;font-weight:650;cursor:pointer}
+.profile-edit-page-actions button[type="submit"]{border-color:#625de6;background:#5b56df;color:#fff}
+.profile-edit-page-actions button:disabled{opacity:.6;cursor:wait}
+.public-profile-actions{display:flex;flex-wrap:wrap;gap:9px}
+.public-profile-message-button{min-height:40px;padding:0 13px;border:1px solid #434b61;border-radius:11px;background:#1c2230;color:#f4f5fa;font-weight:650;cursor:pointer}
+.public-profile-message-button:hover{border-color:#7773f2;background:#272744}
 .settings-page-header{display:flex;align-items:flex-start;gap:16px;margin:0 0 25px}
 .settings-back-button{width:42px;height:42px;flex:0 0 42px;border:1px solid #343b4b;border-radius:50%;background:#1b2130;color:#fff;font-size:24px;cursor:pointer}
 .settings-eyebrow{color:#8e8af3;font-size:10px;font-weight:800;letter-spacing:.16em}
@@ -1838,6 +1868,14 @@ html[data-veloce-motion="reduced"] *,html[data-veloce-motion="reduced"] *::befor
   .profile-header-actions .profile-edit-button{grid-column:1/-1;width:100%}
   .profile-settings-button,.profile-logout-button{width:100%;padding:0 8px;font-size:12px}
   .settings-page{width:100%;padding:20px 14px calc(115px + env(safe-area-inset-bottom))}
+  .profile-edit-page{width:100%;padding:18px 13px calc(115px + env(safe-area-inset-bottom))}
+  .profile-edit-heading h1{font-size:22px}
+  .profile-edit-section{padding:16px 14px}
+  .profile-edit-photo-preview{width:76px;height:76px;flex-basis:76px}
+  .profile-edit-page-actions{display:grid;grid-template-columns:1fr 1.5fr}
+  .profile-edit-page-actions button{padding:0 8px;font-size:12px}
+  .public-profile-actions{width:100%;display:grid;grid-template-columns:1fr 1fr}
+  .public-profile-actions button{width:100%;padding:0 8px;font-size:12px}
   .settings-page-header{gap:11px;margin-bottom:18px}
   .settings-page-header h1{font-size:26px}
   .settings-page-header p{font-size:12px}

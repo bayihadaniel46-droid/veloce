@@ -188,6 +188,57 @@ function Profile({ onOpenSettings }) {
       );
     };
 
+  const handleAvatarUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    event.target.value = "";
+
+    if (!file.type.startsWith("image/")) {
+      setError("Choisis un fichier image valide.");
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      setError("La photo ne doit pas dépasser 12 Mo.");
+      return;
+    }
+
+    setError("");
+    const reader = new FileReader();
+    reader.onerror = () => setError("Impossible de lire cette image.");
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => setError("Impossible d’ouvrir cette image.");
+      image.onload = () => {
+        const scale = Math.min(1, 320 / image.width, 320 / image.height);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+        if (!context) {
+          setError("Impossible de préparer cette image.");
+          return;
+        }
+
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        let quality = 0.8;
+        let avatar = canvas.toDataURL("image/jpeg", quality);
+        while (avatar.length > 180000 && quality > 0.4) {
+          quality -= 0.08;
+          avatar = canvas.toDataURL("image/jpeg", quality);
+        }
+        if (avatar.length > 200000) {
+          setError("Cette photo reste trop volumineuse après compression.");
+          return;
+        }
+        setForm((current) => ({ ...current, avatar }));
+      };
+      image.src = String(reader.result || "");
+    };
+    reader.readAsDataURL(file);
+  };
+
 
   // ==========================================================
   // SAUVEGARDER LE PROFIL
@@ -335,6 +386,60 @@ function Profile({ onOpenSettings }) {
     user.username
       ?.charAt(0)
       .toUpperCase() || "?";
+
+  if (editing) {
+    return (
+      <section className="profile-edit-page">
+        <button type="button" className="profile-edit-back" onClick={cancelEditing} disabled={saving}>
+          ← Retour au profil
+        </button>
+        <header className="profile-edit-heading">
+          <span>COMPTE PERSONNEL</span>
+          <h1>Informations du compte</h1>
+          <p>Gère les informations visibles sur ton profil Veloce.</p>
+        </header>
+
+        <form className="profile-edit-form" onSubmit={handleSave}>
+          <section className="profile-edit-section">
+            <h2>Photo de profil</h2>
+            <p>Choisis une image carrée ou portrait. Elle sera automatiquement recadrée et compressée.</p>
+            <div className="profile-edit-photo-row">
+              <div className="profile-edit-photo-preview">
+                {form.avatar ? <img src={form.avatar} alt="Aperçu de la photo de profil" /> : <span>{form.username?.charAt(0).toUpperCase() || "?"}</span>}
+              </div>
+              <div className="profile-edit-photo-actions">
+                <label className="profile-edit-upload" htmlFor="profile-avatar-file">Choisir une photo</label>
+                <input id="profile-avatar-file" className="profile-edit-file" type="file" accept="image/*" onChange={handleAvatarUpload} />
+                {form.avatar && <button type="button" className="profile-clear-avatar" onClick={() => setForm((current) => ({ ...current, avatar: "" }))}>Retirer la photo</button>}
+                <small>JPG, PNG, WebP ou GIF · 12 Mo maximum</small>
+              </div>
+            </div>
+          </section>
+
+          <section className="profile-edit-section">
+            <h2>Informations du compte</h2>
+            <label htmlFor="profile-edit-username">Nom d’utilisateur</label>
+            <input id="profile-edit-username" type="text" name="username" value={form.username} onChange={handleChange} minLength={3} maxLength={30} autoComplete="nickname" required />
+            <label htmlFor="profile-edit-email">Adresse e-mail</label>
+            <input id="profile-edit-email" type="email" value={user.email || ""} readOnly />
+            <small>L’adresse e-mail ne peut pas être modifiée depuis cette page.</small>
+            <label htmlFor="profile-edit-created">Membre depuis</label>
+            <input id="profile-edit-created" type="text" value={user.createdAt ? new Date(user.createdAt).toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" }) : "Date indisponible"} readOnly />
+            <label htmlFor="profile-edit-bio">Biographie</label>
+            <textarea id="profile-edit-bio" name="bio" value={form.bio} onChange={handleChange} maxLength={160} placeholder="Parle un peu de toi…" />
+            <small className="profile-edit-character-count">{form.bio.length}/160 caractères</small>
+          </section>
+
+          {error && <p className="profile-error" role="alert">{error}</p>}
+          {saveMessage && <p className="profile-save-success" role="status">{saveMessage}</p>}
+          <div className="profile-edit-page-actions">
+            <button type="button" onClick={cancelEditing} disabled={saving}>Annuler</button>
+            <button type="submit" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer les modifications"}</button>
+          </div>
+        </form>
+      </section>
+    );
+  }
 
 
   // ==========================================================

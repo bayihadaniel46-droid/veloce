@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState
@@ -18,7 +19,7 @@ import {
 } from "../services/userService";
 
 
-function Messages() {
+function Messages({ initialUser = null, onInitialUserHandled }) {
   const { token, user } =
     useAuth();
 
@@ -87,13 +88,14 @@ function Messages() {
   }, [token]);
 
 
-  const openConversation =
+  const openConversation = useCallback(
     async (person) => {
       const personId = person._id || person.id;
       activeConversationId.current = personId;
       setSelectedUser({ ...person, _id: personId });
       setMessages([]);
       setSendError("");
+      setLoading(false);
       try {
         const data =
           await getMessages({
@@ -108,7 +110,15 @@ function Messages() {
       } catch (error) {
         console.error(error);
       }
-    };
+    },
+    [token]
+  );
+
+  useEffect(() => {
+    if (!initialUser) return;
+    void openConversation(initialUser);
+    onInitialUserHandled?.(null);
+  }, [initialUser, openConversation, onInitialUserHandled]);
 
 
   const handleSearch =

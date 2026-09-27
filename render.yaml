@@ -12,3 +12,7 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
