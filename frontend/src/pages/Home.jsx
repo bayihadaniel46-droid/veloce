@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState
 } from "react";
 
@@ -55,6 +56,7 @@ function Home() {
 
   const [posts, setPosts] =
     useState([]);
+  const likeRequests = useRef(new Set());
 
   const [loading, setLoading] =
     useState(true);
@@ -78,7 +80,7 @@ function Home() {
       setError("");
 
       const data =
-        await getPosts();
+        await getPosts({ token });
 
       setPosts(
         Array.isArray(data)
@@ -104,7 +106,7 @@ function Home() {
 
     }
 
-  }, []);
+  }, [token]);
 
 
   useEffect(() => {
@@ -216,9 +218,25 @@ function Home() {
     useCallback(
       async (postId) => {
 
-        if (!token) {
+        if (!token || likeRequests.current.has(postId)) {
           return;
         }
+
+        const originalPost = posts.find((post) => post._id === postId);
+        if (!originalPost) return;
+
+        const wasLiked = Boolean(originalPost.likedByCurrentUser);
+        const originalLikes = Number(originalPost.likes) || 0;
+        likeRequests.current.add(postId);
+        setPosts((currentPosts) => currentPosts.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                likes: Math.max(0, originalLikes + (wasLiked ? -1 : 1)),
+                likedByCurrentUser: !wasLiked
+              }
+            : post
+        ));
 
         try {
 
@@ -228,17 +246,27 @@ function Home() {
               token
             });
 
-          setPosts(
-            (previousPosts) =>
-              previousPosts.map(
-                (post) =>
-                  post._id === postId
-                    ? data.post
-                    : post
-              )
-          );
+          setPosts((currentPosts) => currentPosts.map((post) =>
+            post._id === postId
+              ? {
+                  ...post,
+                  likes: Number(data.post?.likes ?? post.likes) || 0,
+                  likedByCurrentUser: Boolean(data.liked)
+                }
+              : post
+          ));
 
         } catch (error) {
+
+          setPosts((currentPosts) => currentPosts.map((post) =>
+            post._id === postId
+              ? {
+                  ...post,
+                  likes: originalLikes,
+                  likedByCurrentUser: wasLiked
+                }
+              : post
+          ));
 
           console.error(
             "Erreur like :",
@@ -247,8 +275,10 @@ function Home() {
 
         }
 
+        likeRequests.current.delete(postId);
+
       },
-      [token]
+      [token, posts]
     );
 
 

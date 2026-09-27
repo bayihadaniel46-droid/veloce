@@ -7,10 +7,14 @@ const API_URL = `${API_BASE_URL}/posts`;
 // RÉCUPÉRER LES PUBLICATIONS
 // ==========================================
 
-export const getPosts = async () => {
+export const getPosts = async ({ token }) => {
 
   const response =
-    await fetch(API_URL);
+    await fetch(API_URL, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
 
   const data =
     await response.json();

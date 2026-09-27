@@ -5,6 +5,7 @@ const Like = require("../models/Like");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
 const Comment = require("../models/comment");
+const Follow = require("../models/Follow");
 
 
 // ============================================
@@ -30,8 +31,19 @@ const getBucket = () => {
 const getPosts = async (req, res) => {
   try {
 
+    const currentUserId = req.user.userId;
+    const follows = await Follow.find({
+      follower: currentUserId
+    }).select("following");
+    const visibleAuthors = [
+      currentUserId,
+      ...follows.map((follow) => follow.following)
+    ];
+
     const posts = await Post
-      .find()
+      .find({
+        author: { $in: visibleAuthors }
+      })
       .sort({
         createdAt: -1
       })
@@ -40,7 +52,18 @@ const getPosts = async (req, res) => {
         "username avatar"
       );
 
-    res.json(posts);
+    const likedPosts = await Like.find({
+      userId: currentUserId,
+      postId: { $in: posts.map((post) => post._id) }
+    }).select("postId");
+    const likedPostIds = new Set(
+      likedPosts.map((like) => like.postId.toString())
+    );
+
+    res.json(posts.map((post) => ({
+      ...post.toObject(),
+      likedByCurrentUser: likedPostIds.has(post._id.toString())
+    })));
 
   } catch (error) {
 

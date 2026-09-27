@@ -44,6 +44,7 @@ const upload =
 
 router.get(
   "/",
+  authMiddleware,
   getPosts
 );
 
