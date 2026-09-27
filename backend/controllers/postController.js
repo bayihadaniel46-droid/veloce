@@ -799,17 +799,17 @@ const verifyPost = async (req, res) => {
     // ----------------------------------------
 
     const tavilyApiKey =
-      process.env.TAVILY_API_KEY;
+      process.env.TAVILY_API_KEY?.trim();
 
     const geminiApiKey =
-      process.env.GEMINI_API_KEY;
+      process.env.GEMINI_API_KEY?.trim();
 
 
     if (!tavilyApiKey) {
 
       return res.status(500).json({
         message:
-          "La clé API Tavily est absente du serveur."
+          "La clé TAVILY_API_KEY n’est pas configurée dans les variables d’environnement du serveur Render."
       });
     }
 

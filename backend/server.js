@@ -70,7 +70,14 @@ app.use(
 );
 
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", service: "veloce-api" });
+  res.json({
+    status: "ok",
+    service: "veloce-api",
+    integrations: {
+      tavilyConfigured: Boolean(process.env.TAVILY_API_KEY?.trim()),
+      geminiConfigured: Boolean(process.env.GEMINI_API_KEY?.trim())
+    }
+  });
 });
 
 const frontendDist = path.resolve(__dirname, "../frontend/dist");
