@@ -8,7 +8,7 @@ import Login from "./pages/Login";
 import {
   AuthProvider,
   useAuth
-} from "./context/AuthContext";
+} from "./context/authContext";
 
 
 // ============================================================
