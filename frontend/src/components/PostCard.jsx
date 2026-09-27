@@ -841,6 +841,8 @@ function PostCard({
         <button
           type="button"
           onClick={handleLike}
+          className={post.likedByCurrentUser ? "is-liked" : ""}
+          aria-pressed={Boolean(post.likedByCurrentUser)}
         >
           ❤️ {post.likes || 0}
         </button>

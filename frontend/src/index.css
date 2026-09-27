@@ -1703,11 +1703,13 @@ body {
 .mobile-navigation{display:none}
 .mobile-conversation-back{display:none}
 @media(max-width:760px){
-  html,body,#root{width:100%;height:100%;min-height:100%;overflow:hidden}
+  html,body,#root{width:100%;max-width:100%;height:100%;min-height:100%;overflow-x:clip;overflow-y:hidden}
   body{overflow:hidden}
   .layout{display:block!important;width:100%;height:100dvh;min-height:100dvh;padding:0!important;gap:0;overflow:hidden}
   .layout>.sidebar,.layout>.rightbar{display:none!important}
-  .layout>main.feed{display:block;width:100%;max-width:none;height:100dvh;min-height:0;max-height:100dvh;margin:0;padding:0 0 calc(100px + env(safe-area-inset-bottom));overflow-x:hidden;overflow-y:auto;border:0;overscroll-behavior-y:contain}
+  .layout>main.feed{display:block;width:100%;max-width:100%;min-width:0;height:100dvh;min-height:0;max-height:100dvh;margin:0;padding:0 0 calc(100px + env(safe-area-inset-bottom));overflow-x:hidden;overflow-y:auto;border:1px solid #30384b;overscroll-behavior-y:contain}
+  input,textarea,select{font-size:16px!important}
+  img,video{max-width:100%}
   .home-feed{width:100%;max-width:none;padding:10px 10px 22px;gap:12px}
   .post-card{width:100%;margin:0;padding:15px;border-radius:14px}
   .profile-page,.public-profile-page,.assistant-page,.explorer-page,.notifications-page,.messages-page{width:100%;max-width:none;margin:0;padding-left:14px;padding-right:14px}
@@ -1768,6 +1770,9 @@ body {
   .message-input-area button{padding-left:10px;padding-right:10px}
 }
 @media(prefers-reduced-motion:reduce){.mobile-navigation-circle,.mobile-navigation-toggle{transition:none!important}}
+.post-actions button.is-liked{color:#ff7488}
+.message-pending{display:block;margin-top:4px;color:#a7adba;font-size:11px}
+.message-send-error{margin:0 10px 6px;padding:8px 10px;border-radius:9px;background:#4b252c;color:#ffc1c8;font-size:12px}
 
 /* Paramètres du compte et actions du profil */
 .profile-header-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:9px}

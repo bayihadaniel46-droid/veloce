@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState
 } from "react";
 
@@ -30,6 +31,7 @@ function Messages() {
     selectedUser,
     setSelectedUser
   ] = useState(null);
+  const activeConversationId = useRef("");
 
   const [
     messages,
@@ -58,6 +60,8 @@ function Messages() {
 
   const [deletingMessageId, setDeletingMessageId] = useState("");
   const [deleteError, setDeleteError] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [sendError, setSendError] = useState("");
 
 
   const loadConversations =
@@ -85,21 +89,21 @@ function Messages() {
 
   const openConversation =
     async (person) => {
+      const personId = person._id || person.id;
+      activeConversationId.current = personId;
+      setSelectedUser({ ...person, _id: personId });
+      setMessages([]);
+      setSendError("");
       try {
         const data =
           await getMessages({
-            userId: person._id || person.id,
+            userId: personId,
             token
           });
 
-        setSelectedUser({
-          ...person,
-          _id:
-            person._id ||
-            person.id
-        });
-
-        setMessages(data);
+        if (activeConversationId.current === personId) {
+          setMessages(data);
+        }
 
       } catch (error) {
         console.error(error);
@@ -138,36 +142,61 @@ function Messages() {
     async () => {
       if (
         !content.trim() ||
-        !selectedUser
+        !selectedUser ||
+        sendingMessage
       ) {
         return;
       }
 
+      const messageContent = content.trim();
+      const recipientId = selectedUser._id;
+      const temporaryId = `pending-${Date.now()}`;
+      const optimisticMessage = {
+        _id: temporaryId,
+        sender: { _id: user?.id || user?._id },
+        recipient: { _id: recipientId },
+        content: messageContent,
+        createdAt: new Date().toISOString(),
+        pending: true
+      };
+
+      setSendError("");
+      setSendingMessage(true);
+      setMessages((previous) => [...previous, optimisticMessage]);
+      setContent("");
+
       try {
         const message =
           await sendMessage({
-            userId:
-              selectedUser._id,
-            content:
-              content.trim(),
+            userId: recipientId,
+            content: messageContent,
             token
           });
 
-        setMessages(
-          previous => [
-            ...previous,
-            message
-          ]
-        );
+        if (activeConversationId.current === recipientId) {
+          setMessages((previous) => previous.map((item) =>
+            item._id === temporaryId ? message : item
+          ));
+        }
 
-        setContent("");
-
-        loadConversations();
+        void loadConversations();
 
       } catch (error) {
         console.error(error);
+        if (activeConversationId.current === recipientId) {
+          setMessages((previous) => previous.filter((item) => item._id !== temporaryId));
+          setContent((previous) => previous || messageContent);
+          setSendError(error.message || "Impossible d'envoyer le message.");
+        }
+      } finally {
+        setSendingMessage(false);
       }
     };
+
+  const closeConversation = () => {
+    activeConversationId.current = "";
+    setSelectedUser(null);
+  };
 
   const handleDeleteMessage = async (messageId) => {
     if (!window.confirm("Supprimer ce message de votre boîte ?")) return;
@@ -355,7 +384,7 @@ function Messages() {
 
             <>
               <div className="conversation-header">
-                <button type="button" className="mobile-conversation-back" onClick={() => setSelectedUser(null)} aria-label="Retour à la liste des messages">←</button>
+                <button type="button" className="mobile-conversation-back" onClick={closeConversation} aria-label="Retour à la liste des messages">←</button>
                 <div className="message-avatar">
 
                   {selectedUser.avatar ? (
@@ -409,6 +438,7 @@ function Messages() {
 
                         <div className="message-bubble">
                           {message.content}
+                          {message.pending && <small className="message-pending">Envoi…</small>}
                         </div>
 
                         <button
@@ -416,10 +446,10 @@ function Messages() {
                           className="message-delete-button"
                           title="Supprimer de ma boîte"
                           aria-label="Supprimer ce message de ma boîte"
-                          disabled={deletingMessageId === message._id}
+                          disabled={message.pending || deletingMessageId === message._id}
                           onClick={() => handleDeleteMessage(message._id)}
                         >
-                          {deletingMessageId === message._id ? "…" : "🗑"}
+                          {message.pending || deletingMessageId === message._id ? "…" : "🗑"}
                         </button>
 
                       </div>
@@ -430,6 +460,7 @@ function Messages() {
               </div>
 
 
+              {sendError && <p className="message-send-error" role="alert">{sendError}</p>}
               <div className="message-input-area">
 
                 <textarea
@@ -455,10 +486,10 @@ function Messages() {
                 <button
                   onClick={handleSend}
                   disabled={
-                    !content.trim()
+                    !content.trim() || sendingMessage
                   }
                 >
-                  Envoyer
+                  {sendingMessage ? "Envoi…" : "Envoyer"}
                 </button>
 
               </div>
