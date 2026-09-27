@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: veloce-test
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci --prefix backend && npm ci --prefix frontend && npm run build --prefix frontend
+    startCommand: npm start --prefix backend
+    healthCheckPath: /health
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
