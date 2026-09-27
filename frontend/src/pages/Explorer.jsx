@@ -26,6 +26,9 @@ function Explorer() {
     setUsers
   ] = useState([]);
 
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
+
   const [
     trends,
     setTrends
@@ -58,31 +61,37 @@ function Explorer() {
   }, []);
 
 
-  const handleSearch =
-    async (event) => {
-      const value =
-        event.target.value;
+  useEffect(() => {
+    const query = search.trim();
+    if (!query) {
+      setUsers([]);
+      setSearchError("");
+      setSearchLoading(false);
+      return undefined;
+    }
 
-      setSearch(value);
-
-      if (!value.trim()) {
-        setUsers([]);
-        return;
-      }
-
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(async () => {
+      setSearchLoading(true);
+      setSearchError("");
       try {
-        const data =
-          await searchUsers({
-            q: value,
-            token
-          });
-
+        const data = await searchUsers({ q: query, token, signal: controller.signal });
         setUsers(data);
-
       } catch (error) {
-        console.error(error);
+        if (error.name !== "AbortError") {
+          console.error(error);
+          setSearchError("La recherche n’a pas abouti. Vérifie ta connexion puis réessaie.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setSearchLoading(false);
       }
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
     };
+  }, [search, token]);
 
 
   const follow =
@@ -139,7 +148,7 @@ function Explorer() {
 
         <input
           value={search}
-          onChange={handleSearch}
+          onChange={(event) => setSearch(event.target.value)}
           placeholder="Rechercher un utilisateur..."
         />
 
@@ -153,7 +162,11 @@ function Explorer() {
             Utilisateurs
           </h2>
 
-          {users.length === 0 ? (
+          {searchLoading ? (
+            <p className="explorer-empty">Recherche en cours…</p>
+          ) : searchError ? (
+            <p className="explorer-empty" role="alert">{searchError}</p>
+          ) : users.length === 0 ? (
             <p className="explorer-empty">
               Aucun utilisateur trouvé.
             </p>

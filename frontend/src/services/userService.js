@@ -5,7 +5,8 @@ const API_URL = `${API_BASE_URL}/users`;
 
 export const searchUsers = async ({
   q,
-  token
+  token,
+  signal
 }) => {
   const response =
     await fetch(
@@ -14,7 +15,8 @@ export const searchUsers = async ({
         headers: {
           Authorization:
             `Bearer ${token}`
-        }
+        },
+        signal
       }
     );
 

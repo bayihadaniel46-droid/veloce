@@ -16,17 +16,20 @@ const searchUsers = async (req, res) => {
       return res.json([]);
     }
 
+    // Treat user input literally: regex metacharacters must not break search.
+    const escapedQuery = q.slice(0, 80).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
     const users = await User.find({
       $or: [
         {
           username: {
-            $regex: q,
+            $regex: escapedQuery,
             $options: "i"
           }
         },
         {
           email: {
-            $regex: q,
+            $regex: escapedQuery,
             $options: "i"
           }
         }
