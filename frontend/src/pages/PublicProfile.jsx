@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/authContext";
 import PostCard from "../components/PostCard";
 import { API_BASE_URL } from "../config";
 

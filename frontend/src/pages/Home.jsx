@@ -27,7 +27,7 @@ import {
 import { getUnreadMessageCount } from "../services/messageService";
 import { getUnreadNotificationCount } from "../services/notificationService";
 
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/authContext";
 
 
 function Home() {

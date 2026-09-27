@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/authContext";
 
 const getStorageKey = (user) => `veloce_settings_${user?._id || user?.id || "account"}`;
 const defaults = { density: "comfortable", reduceMotion: false, startPage: "home", showBadges: true };

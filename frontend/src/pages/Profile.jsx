@@ -5,7 +5,7 @@ import {
 
 import {
   useAuth
-} from "../context/AuthContext";
+} from "../context/authContext";
 import { API_BASE_URL, API_ORIGIN } from "../config";
 
 
