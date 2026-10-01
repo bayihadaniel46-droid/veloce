@@ -858,13 +858,6 @@ function PostCard({
 
         <button
           type="button"
-        >
-          🔄 {post.reposts || 0}
-        </button>
-
-
-        <button
-          type="button"
           onClick={downloadPost}
           disabled={postActionBusy}
           aria-label={attachments.length ? "Télécharger les fichiers de la publication" : "Télécharger le texte de la publication"}

@@ -511,6 +511,9 @@ function Profile({ onOpenSettings }) {
 
 
         <div className="profile-header-actions">
+          <button type="button" className="profile-market-button" onClick={() => window.dispatchEvent(new Event("veloce:navigate-market"))}>
+            ↗ Tendances du marché
+          </button>
           <button type="button" className="profile-edit-button" onClick={() => setEditing(true)}>
             Modifier le profil
           </button>
@@ -841,10 +844,6 @@ function Profile({ onOpenSettings }) {
 
                     <span>
                       💬 {post.comments || 0}
-                    </span>
-
-                    <span>
-                      🔄 {post.reposts || 0}
                     </span>
 
                   </div>

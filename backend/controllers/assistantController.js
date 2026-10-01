@@ -28,25 +28,28 @@ const parse=(s)=>{
 };
 const generate=async(req,res)=>{
  try{
-  const key=process.env.PERPLEXITY_API_KEY;
-  if(!key)return res.status(503).json({message:"Ajoutez PERPLEXITY_API_KEY au fichier .env du serveur pour activer la recherche IA."});
+  const key=process.env.GEMINI_API_KEY?.trim();
+  if(!key)return res.status(503).json({message:"Ajoutez GEMINI_API_KEY aux variables d’environnement du serveur pour activer la recherche IA."});
   const p=await getOrCreate(req.user.userId);
   if(!p.topics.length)return res.status(400).json({message:"Ajoutez au moins un centre d’intérêt avant de lancer la recherche."});
   const sources=p.preferredSources.length?`Privilégie ces domaines : ${p.preferredSources.join(", ")}.`:"Utilise des sources d’information fiables et variées.";
   const prompt=[`Crée 3 propositions de publications originales, en ${p.language}.`,`Centres d’intérêt : ${p.topics.join(", ")}.`,`Ton : ${p.tone}. ${sources}`,
    "Utilise des informations récentes recherchées sur le web. N’invente rien et reformule sans copier. Chaque texte doit être concis, autonome et naturel.",
    'Réponds uniquement par un tableau JSON valide [{"title":"Titre court","content":"Texte de publication"}]. Les sources seront affichées séparément.'].join("\n");
-  const r=await fetch("https://api.perplexity.ai/v1/sonar",{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},
-   body:JSON.stringify({model:process.env.PERPLEXITY_MODEL||"sonar-pro",messages:[
-    {role:"system",content:"Crée des brouillons originaux fondés sur une recherche web. Respecte strictement le format JSON."},{role:"user",content:prompt}]}),
+  const model=process.env.GEMINI_MODEL||"gemini-2.5-flash";
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:"POST",headers:{"x-goog-api-key":key,"Content-Type":"application/json"},
+   body:JSON.stringify({contents:[{role:"user",parts:[{text:`${prompt}\n\nRéponds strictement avec un tableau JSON valide, sans bloc Markdown.`}]}],
+    systemInstruction:{parts:[{text:"Crée des brouillons originaux basés sur des informations récentes. N'invente aucune source. Respecte strictement le format JSON demandé."}]},
+    tools:[{google_search:{}}],generationConfig:{temperature:0.5}}),
    signal:AbortSignal.timeout(60000)});
-  if(!r.ok){console.error("Perplexity API error",r.status,(await r.text()).slice(0,400));return res.status(502).json({message:"La recherche Perplexity a échoué. Vérifiez la clé API et réessayez."});}
-  const data=await r.json();const answer=data.choices?.[0]?.message?.content;
-  if(typeof answer!=="string")throw Error("Réponse Perplexity vide");
+  if(!r.ok){console.error("Gemini assistant API error",r.status,(await r.text()).slice(0,400));return res.status(502).json({message:"La recherche Google avec Gemini a échoué. Vérifiez la clé Gemini et son quota, puis réessayez."});}
+  const data=await r.json();
+  const candidate=data.candidates?.[0];
+  const answer=candidate?.content?.parts?.map((part)=>part.text||"").join("\n");
+  if(typeof answer!=="string")throw Error("Réponse Gemini vide");
   const generated=parse(answer);if(!generated.length)throw Error("Aucun brouillon reçu");
-  const results=Array.isArray(data.search_results)?data.search_results:[];const byUrl=new Map(results.map(x=>[x.url,x]));
-  const urls=[...new Set([...results.map(x=>x.url),...(Array.isArray(data.citations)?data.citations:[])])].filter(x=>typeof x==="string").slice(0,12);
-  const refs=urls.map(url=>{const x=byUrl.get(url)||{};return{url,title:typeof x.title==="string"?x.title.slice(0,300):url,snippet:typeof x.snippet==="string"?x.snippet.slice(0,800):"",date:typeof x.date==="string"?x.date:""};});
+  const chunks=candidate?.groundingMetadata?.groundingChunks||[];
+  const refs=[...new Map(chunks.map(({web})=>web&&web.uri? [web.uri,{url:web.uri,title:(web.title||web.uri).slice(0,300),snippet:"",date:""}] : null).filter(Boolean)).values()].slice(0,12);
   const drafts=await AssistantDraft.insertMany(generated.map(x=>({owner:req.user.userId,...x,sources:refs})));
   return res.status(201).json({message:"Nouveaux brouillons prêts à consulter.",drafts});
  }catch(e){console.error("Génération assistant",e);return res.status(502).json({message:e.name==="TimeoutError"?"La recherche a pris trop de temps. Réessayez.":"Impossible de générer des brouillons. Réessayez."});}

@@ -24,6 +24,9 @@ const messageRoutes =
 const assistantRoutes =
   require("./routes/assistantRoutes");
 
+const clanRoutes = require("./routes/clanRoutes");
+const marketRoutes = require("./routes/marketRoutes");
+
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 connectDB();
@@ -69,13 +72,17 @@ app.use(
   assistantRoutes
 );
 
+app.use("/api/clans", clanRoutes);
+app.use("/api/market", marketRoutes);
+
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
     service: "veloce-api",
     integrations: {
       tavilyConfigured: Boolean(process.env.TAVILY_API_KEY?.trim()),
-      geminiConfigured: Boolean(process.env.GEMINI_API_KEY?.trim())
+      geminiConfigured: Boolean(process.env.GEMINI_API_KEY?.trim()),
+      marketDataConfigured: Boolean(process.env.TWELVE_DATA_API_KEY?.trim())
     }
   });
 });

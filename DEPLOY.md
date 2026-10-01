@@ -14,15 +14,17 @@ Veloce peut être déployé comme un seul service Node sur Render : Express sert
 1. Envoyer ce dossier dans un dépôt Git privé sur GitHub ou GitLab. Vérifier que les fichiers `.env` et les dossiers `node_modules` ne sont pas ajoutés. Le fichier `.gitignore` les exclut.
 2. Dans Render, choisir **New → Blueprint**, connecter le dépôt et sélectionner `render.yaml`.
 3. Lors de la création, fournir `MONGO_URI`. Render génère `JWT_SECRET` automatiquement.
-4. Une fois le déploiement terminé, ouvrir l’adresse `onrender.com` indiquée par Render. `/health` doit répondre avec `{"status":"ok","service":"veloce-api"}`.
+4. Une fois le déploiement terminé, ouvrir l’adresse `onrender.com` indiquée par Render. `/health` confirme l’état du serveur et indique si les intégrations sont configurées, sans révéler leurs clés.
 
 ## 3. Configurer la vérification des publications
 
-Dans **Environment** du service Render, définir `TAVILY_API_KEY` et `GEMINI_API_KEY`. La vérification utilise [Tavily](https://app.tavily.com/home) pour chercher des sources et [Google AI Studio](https://aistudio.google.com/app/apikey) pour créer une clé Gemini et analyser les résultats. Ces deux clés ne doivent pas être mises dans le code ni dans un fichier versionné. Après les avoir ajoutées ou modifiées, enregistrer les variables et redéployer le service.
+Dans **Environment** du service Render, définir `TAVILY_API_KEY` et `GEMINI_API_KEY`. La vérification utilise [Tavily](https://app.tavily.com/home) pour chercher des sources et [Google AI Studio](https://aistudio.google.com/app/apikey) pour créer une clé Gemini et analyser les résultats. Ces clés ne doivent pas être mises dans le code ni dans un fichier versionné.
+
+La page **Tendances du marché** utilise Twelve Data. Ajouter `TWELVE_DATA_API_KEY` aux variables Render pour activer les cours. L’offre gratuite a des limites de requêtes et de couverture ; vérifier ses conditions pour tout affichage public. Après avoir ajouté ou modifié les variables, enregistrer et redéployer le service.
 
 ## 4. Activer l’assistant IA (facultatif)
 
-Dans **Environment** du service Render, ajouter `PERPLEXITY_API_KEY` avec la clé secrète Perplexity. Ne pas la mettre dans le code, dans `frontend`, ni dans un fichier versionné. `PERPLEXITY_MODEL` peut rester sur la valeur par défaut du backend.
+L’assistant personnel utilise aussi `GEMINI_API_KEY` pour générer des brouillons à partir des préférences privées et rechercher des sources avec Google Search. La clé Gemini est créée dans [Google AI Studio](https://aistudio.google.com/app/apikey). Le quota gratuit et les outils disponibles dépendent du modèle et du projet ; consulter la page officielle [des tarifs Gemini](https://ai.google.dev/gemini-api/docs/pricing). Aucun compte Perplexity ni `PERPLEXITY_API_KEY` n’est requis.
 
 ## À savoir pour les essais gratuits
 

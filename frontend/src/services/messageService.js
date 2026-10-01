@@ -1,6 +1,31 @@
 import { API_BASE_URL } from "../config";
 
 const API_URL = `${API_BASE_URL}/messages`;
+const CLAN_URL = `${API_BASE_URL}/clans`;
+
+const clanRequest = async (path, token, options = {}) => {
+  const response = await fetch(`${CLAN_URL}${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...options.headers
+    }
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Erreur clan.");
+  return data;
+};
+
+export const getClans = (token) => clanRequest("/", token);
+export const createClan = ({ name, description, memberIds, token }) => clanRequest("/", token, {
+  method: "POST", body: JSON.stringify({ name, description, memberIds })
+});
+export const getClanMessages = ({ clanId, token }) => clanRequest(`/${clanId}/messages`, token);
+export const openClanEnvelope = ({ clanId, messageId, token }) => clanRequest(`/${clanId}/messages/${messageId}/open`, token, { method: "POST" });
+export const sendClanEnvelope = ({ clanId, content, recipientIds, signed, replyTo, token }) => clanRequest(`/${clanId}/messages`, token, {
+  method: "POST", body: JSON.stringify({ content, recipientIds, signed, replyTo })
+});
 
 
 export const getConversations =

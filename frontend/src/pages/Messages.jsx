@@ -11,7 +11,12 @@ import {
   getConversations,
   getMessages,
   sendMessage,
-  deleteMessage as deleteMessageRequest
+  deleteMessage as deleteMessageRequest,
+  getClans,
+  createClan,
+  getClanMessages,
+  openClanEnvelope,
+  sendClanEnvelope
 } from "../services/messageService";
 
 import {
@@ -32,6 +37,10 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
     selectedUser,
     setSelectedUser
   ] = useState(null);
+  const [clans, setClans] = useState([]);
+  const [selectedClan, setSelectedClan] = useState(null);
+  const [showNewMenu, setShowNewMenu] = useState(false);
+  const [showCreateClan, setShowCreateClan] = useState(false);
   const activeConversationId = useRef("");
 
   const [
@@ -53,6 +62,8 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
     searchResults,
     setSearchResults
   ] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
 
   const [
     loading,
@@ -87,11 +98,16 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
     loadConversations();
   }, [token]);
 
+  useEffect(() => {
+    getClans(token).then(setClans).catch((error) => console.error("Chargement clans :", error));
+  }, [token]);
+
 
   const openConversation = useCallback(
     async (person) => {
       const personId = person._id || person.id;
       activeConversationId.current = personId;
+      setSelectedClan(null);
       setSelectedUser({ ...person, _id: personId });
       setMessages([]);
       setSendError("");
@@ -121,31 +137,29 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
   }, [initialUser, openConversation, onInitialUserHandled]);
 
 
-  const handleSearch =
-    async (event) => {
-      const value =
-        event.target.value;
-
-      setSearch(value);
-
-      if (!value.trim()) {
-        setSearchResults([]);
-        return;
-      }
-
+  useEffect(() => {
+    const query = search.trim();
+    if (!query) {
+      setSearchResults([]);
+      setSearchError("");
+      setSearchLoading(false);
+      return undefined;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      setSearchError("");
       try {
-        const data =
-          await searchUsers({
-            q: value,
-            token
-          });
-
+        const data = await searchUsers({ q: query, token, signal: controller.signal });
         setSearchResults(data);
-
       } catch (error) {
-        console.error(error);
+        if (error.name !== "AbortError") setSearchError(error.message || "La recherche a échoué.");
+      } finally {
+        if (!controller.signal.aborted) setSearchLoading(false);
       }
-    };
+    }, 300);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [search, token]);
 
 
   const handleSend =
@@ -206,6 +220,22 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
   const closeConversation = () => {
     activeConversationId.current = "";
     setSelectedUser(null);
+    setSelectedClan(null);
+  };
+
+  const openClan = (clan) => {
+    activeConversationId.current = clan._id;
+    setSelectedUser(null);
+    setSelectedClan(clan);
+    setSendError("");
+  };
+
+  const handleClanCreated = (clan) => {
+    const readyClan = { ...clan, memberCount: clan.members?.length || 1 };
+    setClans((current) => [readyClan, ...current.filter((item) => item._id !== readyClan._id)]);
+    setShowCreateClan(false);
+    setShowNewMenu(false);
+    openClan(readyClan);
   };
 
   const handleDeleteMessage = async (messageId) => {
@@ -236,7 +266,7 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
   return (
     <section className="messages-page">
 
-      <div className={`messages-layout ${selectedUser ? "conversation-open" : ""}`}>
+      <div className={`messages-layout ${selectedUser || selectedClan ? "conversation-open" : ""}`}>
 
         {/* ==================================================
             LISTE DES CONVERSATIONS
@@ -245,21 +275,27 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
         <div className="messages-sidebar">
 
           <div className="messages-title">
-            Messages
+            <div><span className="messages-eyebrow">VÉLOCE</span><h1>Messages</h1></div>
+            <div className="messages-new-wrap">
+              <button type="button" className="messages-new-button" aria-label="Créer un message ou un clan" aria-expanded={showNewMenu} onClick={() => setShowNewMenu((value) => !value)}>+</button>
+              {showNewMenu && <div className="messages-new-menu"><button type="button" onClick={() => { setSearch(""); setShowNewMenu(false); document.querySelector(".messages-search")?.focus(); }}>Nouveau message privé</button><button type="button" onClick={() => { setShowCreateClan(true); setShowNewMenu(false); }}>Créer un clan</button></div>}
+            </div>
           </div>
 
 
           <input
             className="messages-search"
             value={search}
-            onChange={handleSearch}
+            onChange={(event) => setSearch(event.target.value)}
             placeholder="Rechercher une personne..."
           />
 
 
-          {searchResults.length > 0 && (
+          {(search.trim() || searchError) && (
             <div className="message-search-results">
-
+              {searchLoading && <p>Recherche en cours…</p>}
+              {searchError && <p role="alert">{searchError}</p>}
+              {!searchLoading && !searchError && search.trim() && searchResults.length === 0 && <p>Aucun compte trouvé.</p>}
               {searchResults.map(
                 person => (
                   <button
@@ -296,6 +332,12 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
 
 
           <div className="conversation-list">
+
+            {clans.length > 0 && <div className="conversation-group-label">TES CLANS</div>}
+            {clans.map((clan) => <button key={clan._id} type="button" className={`conversation-card clan-conversation-card ${selectedClan?._id === clan._id ? "conversation-active" : ""}`} onClick={() => openClan(clan)}>
+              <div className="clan-avatar">✉</div><div className="conversation-info"><strong>{clan.name}</strong><span>{clan.memberCount} membres · Enveloppes privées</span></div>
+            </button>)}
+            <div className="conversation-group-label">CONVERSATIONS</div>
 
             {conversations.length === 0 ? (
               <p className="messages-empty">
@@ -377,7 +419,7 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
 
         <div className="messages-conversation">
 
-          {!selectedUser ? (
+          {selectedClan ? <ClanRoom clan={selectedClan} token={token} user={user} onBack={closeConversation} /> : !selectedUser ? (
             <div className="messages-placeholder">
 
               <h2>
@@ -512,9 +554,124 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
 
       </div>
 
+      {showCreateClan && <ClanCreateDialog token={token} onClose={() => setShowCreateClan(false)} onCreated={handleClanCreated} />}
+
     </section>
   );
 }
 
+
+function ClanCreateDialog({ token, onClose, onCreated }) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [selected, setSelected] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const value = query.trim();
+    if (!value) { setResults([]); return undefined; }
+    let active = true;
+    const timer = setTimeout(() => searchUsers({ q: value, token }).then((items) => { if (active) setResults(items); }).catch((requestError) => { if (active) setError(requestError.message); }), 300);
+    return () => { active = false; clearTimeout(timer); };
+  }, [query, token]);
+
+  const submit = async (event) => {
+    event.preventDefault();
+    try {
+      setSaving(true); setError("");
+      const clan = await createClan({ name, description, memberIds: selected, token });
+      onCreated(clan);
+    } catch (requestError) { setError(requestError.message || "Impossible de créer le clan."); }
+    finally { setSaving(false); }
+  };
+
+  return <div className="clan-modal-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <form className="clan-modal" onSubmit={submit}>
+      <header><div><span>NOUVEL ESPACE PRIVÉ</span><h2>Créer un clan</h2></div><button type="button" onClick={onClose} aria-label="Fermer">×</button></header>
+      <label>Nom du clan<input value={name} onChange={(event) => setName(event.target.value)} maxLength={60} placeholder="Ex. Cercle de lecture" required /></label>
+      <label>Description <small>(facultative)</small><textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={240} placeholder="De quoi parle ce clan ?" /></label>
+      <label>Inviter des membres<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher un nom d’utilisateur" /></label>
+      {selected.length > 0 && <p className="clan-selection-count">{selected.length} membre{selected.length > 1 ? "s" : ""} sélectionné{selected.length > 1 ? "s" : ""}</p>}
+      <div className="clan-user-results">{results.map((person) => <label key={person.id} className="clan-user-option"><input type="checkbox" checked={selected.includes(person.id)} onChange={() => setSelected((current) => current.includes(person.id) ? current.filter((id) => id !== person.id) : [...current, person.id])} /><span className="message-avatar">{person.avatar ? <img src={person.avatar} alt="" /> : person.username?.charAt(0).toUpperCase()}</span><span><strong>{person.username}</strong><small>{person.bio || "Membre de Veloce"}</small></span></label>)}</div>
+      {error && <p className="clan-form-error" role="alert">{error}</p>}
+      <p className="clan-modal-note">Les messages du clan sont des enveloppes : seuls les destinataires choisis pourront les ouvrir.</p>
+      <footer><button type="button" onClick={onClose}>Annuler</button><button type="submit" disabled={saving || !name.trim()}>{saving ? "Création…" : "Créer le clan"}</button></footer>
+    </form>
+  </div>;
+}
+
+function ClanRoom({ clan, token, user, onBack }) {
+  const [envelopes, setEnvelopes] = useState([]);
+  const [loadingClan, setLoadingClan] = useState(true);
+  const [text, setText] = useState("");
+  const [recipientIds, setRecipientIds] = useState([]);
+  const [signed, setSigned] = useState(false);
+  const [replyTo, setReplyTo] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const myId = String(user?.id || user?._id || "");
+  const members = (clan.members || []).filter((member) => String(member._id || member.id) !== myId);
+
+  const refresh = async () => {
+    try { setEnvelopes(await getClanMessages({ clanId: clan._id, token })); }
+    catch (requestError) { setError(requestError.message || "Impossible de charger le clan."); }
+    finally { setLoadingClan(false); }
+  };
+  useEffect(() => { refresh(); }, [clan._id, token]);
+
+  const chooseReply = (envelope) => {
+    const targets = envelope.replyTargets || [];
+    setReplyTo(envelope);
+    setRecipientIds(targets.length ? [String(targets[0]._id)] : []);
+    setError("");
+  };
+
+  const openEnvelope = async (messageId) => {
+    try {
+      const opened = await openClanEnvelope({ clanId: clan._id, messageId, token });
+      setEnvelopes((current) => current.map((item) => item._id === messageId ? opened : item));
+    } catch (requestError) { setError(requestError.message || "Impossible d'ouvrir cette enveloppe."); }
+  };
+
+  const submit = async (event) => {
+    event.preventDefault();
+    if (!text.trim() || !recipientIds.length) return;
+    try {
+      setSending(true); setError("");
+      const sent = await sendClanEnvelope({ clanId: clan._id, content: text, recipientIds, signed, replyTo: replyTo?._id, token });
+      setEnvelopes((current) => [...current, sent]);
+      setText(""); setRecipientIds([]); setReplyTo(null); setSigned(false);
+    } catch (requestError) { setError(requestError.message || "Impossible d'envoyer l'enveloppe."); }
+    finally { setSending(false); }
+  };
+
+  const selectableMembers = replyTo ? (replyTo.replyTargets || []).map((target) => ({ ...target, id: target._id })) : members;
+  const toggleRecipient = (id) => setRecipientIds((current) => current.includes(String(id)) ? current.filter((value) => value !== String(id)) : [...current, String(id)]);
+
+  return <div className="clan-room">
+    <header className="conversation-header clan-room-header"><button type="button" className="mobile-conversation-back" onClick={onBack} aria-label="Retour aux conversations">←</button><div className="clan-avatar">✉</div><div><strong>{clan.name}</strong><small>{clan.memberCount || clan.members?.length} membres · enveloppes privées</small></div></header>
+    <div className="clan-envelope-list">
+      {loadingClan && <p className="messages-empty">Chargement des enveloppes…</p>}
+      {!loadingClan && envelopes.length === 0 && <div className="clan-empty-state"><span>✉</span><strong>Un message privé au milieu du clan</strong><p>Écris à certains membres. Les autres ne verront qu’une enveloppe verrouillée.</p></div>}
+      {envelopes.map((envelope) => <article className={`clan-envelope ${envelope.isOwn ? "clan-envelope-own" : ""} ${envelope.replyTo ? "clan-envelope-reply" : ""}`} key={envelope._id}>
+        {envelope.replyTo && <small className="clan-reply-context">↳ Réponse à une enveloppe</small>}
+        {envelope.signed && envelope.sender?.username && <span className="clan-signature">Signé par {envelope.sender.username}</span>}
+        {envelope.opened ? <div className="clan-open-content"><span className="clan-open-stamp">✉</span><p>{envelope.content}</p></div> : envelope.canOpen ? <button type="button" className="clan-open-button" onClick={() => openEnvelope(envelope._id)}><span>✉</span><strong>Ouvrir mon enveloppe</strong><small>Ce message t’a été adressé</small></button> : <div className="clan-locked-envelope" aria-label="Enveloppe verrouillée, non destinée à ce membre"><span>🔒</span><strong>Enveloppe verrouillée</strong><small>Le contenu est réservé à ses destinataires.</small></div>}
+        <time>{new Date(envelope.createdAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</time>
+        {envelope.canReply && <button type="button" className="clan-reply-button" onClick={() => chooseReply(envelope)}>Répondre dans une enveloppe</button>}
+      </article>)}
+    </div>
+    {error && <p className="message-send-error" role="alert">{error}</p>}
+    <form className="clan-composer" onSubmit={submit}>
+      {replyTo && <div className="clan-replying"><span>Réponse à une enveloppe</span><button type="button" onClick={() => { setReplyTo(null); setRecipientIds([]); }}>Annuler</button></div>}
+      <div className="clan-recipient-picker"><strong>Destinataires</strong><div>{selectableMembers.map((member) => { const id = String(member.id || member._id); return <label key={id}><input type="checkbox" checked={recipientIds.includes(id)} onChange={() => toggleRecipient(id)} />{member.username || "Membre"}</label>; })}{selectableMembers.length === 0 && <small>Ouvre une enveloppe pour pouvoir y répondre.</small>}</div></div>
+      <textarea value={text} onChange={(event) => setText(event.target.value)} maxLength={5000} placeholder="Écris un message à placer dans une enveloppe…" />
+      <div className="clan-composer-footer"><label><input type="checkbox" checked={signed} onChange={(event) => setSigned(event.target.checked)} />Signer avec mon nom</label><button type="submit" disabled={sending || !text.trim() || !recipientIds.length}>{sending ? "Envoi…" : "Placer dans une enveloppe"}</button></div>
+    </form>
+  </div>;
+}
 
 export default Messages;

@@ -16,6 +16,7 @@ import Profile from "./Profile";
 import Settings from "./Settings";
 import PublicProfile from "./PublicProfile";
 import Assistant from "./Assistant";
+import Market from "./Market";
 
 import FloatingButton from "../components/FloatingButton";
 import MobileNavigation from "../components/MobileNavigation";
@@ -147,6 +148,7 @@ function Home() {
   useEffect(() => {
 
     const openProfile = () => setCurrentPage("profile");
+    const openMarket = () => setCurrentPage("market");
     const openUserProfile = (event) => {
       const id = event.detail?.userId;
       if (!id) return;
@@ -154,9 +156,11 @@ function Home() {
       setCurrentPage("user-profile");
     };
     window.addEventListener("veloce:navigate-profile", openProfile);
+    window.addEventListener("veloce:navigate-market", openMarket);
     window.addEventListener("veloce:open-user-profile", openUserProfile);
     return () => {
       window.removeEventListener("veloce:navigate-profile", openProfile);
+      window.removeEventListener("veloce:navigate-market", openMarket);
       window.removeEventListener("veloce:open-user-profile", openUserProfile);
     };
 
@@ -406,6 +410,9 @@ function Home() {
 
       case "assistant":
         return <Assistant />;
+
+      case "market":
+        return <Market />;
 
 
       default:

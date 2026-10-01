@@ -91,6 +91,8 @@ function Assistant() {
         </button>
       </header>
 
+      <p className="assistant-provider-note">Les sujets enregistrés et ta demande sont transmis à Gemini pour rechercher des sources et préparer des brouillons. Les préférences et brouillons restent rattachés à ton compte Veloce. Évite les informations sensibles ; les conditions de traitement dépendent de l’offre Google utilisée.</p>
+
       {notice && <div className="assistant-notice">{notice}</div>}
       {error && <div className="assistant-error">{error}</div>}
 
