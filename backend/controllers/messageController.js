@@ -1,5 +1,9 @@
 const Message =
   require("../models/Message");
+const mongoose = require("mongoose");
+const ClanMessage = require("../models/ClanMessage");
+const Clan = require("../models/Clan");
+const { uploadMessageFiles, PRIVATE_BUCKET_NAME } = require("../utils/messageAttachments");
 
 const getUnreadCount = async (req, res) => {
   try {
@@ -65,7 +69,7 @@ const getConversations = async (
           otherId,
           {
             user: otherUser,
-            lastMessage: message.content,
+            lastMessage: message.content || (message.attachments?.length ? `📎 ${message.attachments[0].originalName}` : "Pièce jointe"),
             createdAt:
               message.createdAt,
             unread: 0
@@ -214,7 +218,7 @@ const sendMessage = async (
     const content =
       req.body.content?.trim();
 
-    if (!content) {
+    if (!content && !req.files?.length) {
       return res.status(400).json({
         message:
           "Le message est vide."
@@ -231,12 +235,8 @@ const sendMessage = async (
       });
     }
 
-    const message =
-      await Message.create({
-        sender,
-        recipient,
-        content
-      });
+    const attachments = req.files?.length ? await uploadMessageFiles(req.files, sender) : [];
+    const message = await Message.create({ sender, recipient, content: content || "", attachments });
 
     const populated =
       await Message.findById(
@@ -268,11 +268,40 @@ const sendMessage = async (
   }
 };
 
+const getMessageFile = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.fileId)) return res.sendStatus(404);
+    const userId = String(req.user.userId);
+    const [direct, envelopes] = await Promise.all([
+      Message.findOne({ "attachments.fileId": req.params.fileId, deletedFor: { $ne: userId }, $or: [{ sender: userId }, { recipient: userId }] }).select("_id"),
+      ClanMessage.find({ "attachments.fileId": req.params.fileId, $or: [{ sender: userId }, { openedBy: userId }] }).select("clan sender recipients openedBy attachments")
+    ]);
+    let allowed = Boolean(direct);
+    if (!allowed) for (const envelope of envelopes) {
+      const clan = await Clan.findById(envelope.clan).select("members");
+      const addressed = envelope.recipients.some((id) => String(id) === userId);
+      const opened = String(envelope.sender) === userId || envelope.openedBy.some((id) => String(id) === userId);
+      const ownEnvelope = String(envelope.sender) === userId;
+      if (clan?.members.some((id) => String(id) === userId) && (ownEnvelope || addressed) && opened) { allowed = true; break; }
+    }
+    if (!allowed) return res.sendStatus(404);
+    const db = mongoose.connection.db;
+    const files = await db.collection(`${PRIVATE_BUCKET_NAME}.files`).findOne({ _id: new mongoose.Types.ObjectId(req.params.fileId) });
+    if (!files) return res.sendStatus(404);
+    const safeMime = /^image\/(png|jpeg|gif|webp|avif)$/.test(files.contentType || "") ? files.contentType : "application/octet-stream";
+    res.set("Content-Type", safeMime);
+    res.set("Content-Disposition", `${safeMime.startsWith("image/") ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(files.filename || "fichier")}`);
+    res.set("X-Content-Type-Options", "nosniff");
+    mongoose.connection.db ? new mongoose.mongo.GridFSBucket(db, { bucketName: PRIVATE_BUCKET_NAME }).openDownloadStream(files._id).pipe(res) : res.sendStatus(404);
+  } catch (error) { console.error("Erreur fichier privé :", error); if (!res.headersSent) res.sendStatus(404); }
+};
+
 
 module.exports = {
   getUnreadCount,
   getConversations,
   getMessages,
   sendMessage,
-  deleteMessage
+  deleteMessage,
+  getMessageFile
 };

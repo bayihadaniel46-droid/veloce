@@ -8,7 +8,7 @@ const clanRequest = async (path, token, options = {}) => {
     ...options,
     headers: {
       Authorization: `Bearer ${token}`,
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(options.body && !(options.body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
       ...options.headers
     }
   });
@@ -23,9 +23,15 @@ export const createClan = ({ name, description, memberIds, token }) => clanReque
 });
 export const getClanMessages = ({ clanId, token }) => clanRequest(`/${clanId}/messages`, token);
 export const openClanEnvelope = ({ clanId, messageId, token }) => clanRequest(`/${clanId}/messages/${messageId}/open`, token, { method: "POST" });
-export const sendClanEnvelope = ({ clanId, content, recipientIds, signed, replyTo, token }) => clanRequest(`/${clanId}/messages`, token, {
-  method: "POST", body: JSON.stringify({ content, recipientIds, signed, replyTo })
-});
+export const addClanMembers = ({ clanId, memberIds, token }) => clanRequest(`/${clanId}/members`, token, { method: "POST", body: JSON.stringify({ memberIds }) });
+export const getClanVotes = ({ clanId, token }) => clanRequest(`/${clanId}/votes`, token);
+export const createClanVote = ({ clanId, payload, token }) => clanRequest(`/${clanId}/votes`, token, { method: "POST", body: JSON.stringify(payload) });
+export const castClanVote = ({ clanId, voteId, option, token }) => clanRequest(`/${clanId}/votes/${voteId}/cast`, token, { method: "POST", body: JSON.stringify({ option }) });
+export const sendClanEnvelope = ({ clanId, content, recipientIds, signed, replyTo, files = [], token }) => {
+  const body = new FormData(); body.append("content", content || ""); body.append("recipientIds", JSON.stringify(recipientIds)); body.append("signed", String(signed));
+  if (replyTo) body.append("replyTo", replyTo); files.forEach((file) => body.append("files", file));
+  return clanRequest(`/${clanId}/messages`, token, { method: "POST", body });
+};
 
 
 export const getConversations =
@@ -89,6 +95,7 @@ export const sendMessage =
   async ({
     userId,
     content,
+    files = [],
     token
   }) => {
     const response =
@@ -98,16 +105,10 @@ export const sendMessage =
           method: "POST",
 
           headers: {
-            "Content-Type":
-              "application/json",
-
             Authorization:
               `Bearer ${token}`
           },
-
-          body: JSON.stringify({
-            content
-          })
+          body: (() => { const data = new FormData(); data.append("content", content || ""); files.forEach((file) => data.append("files", file)); return data; })()
         }
       );
 

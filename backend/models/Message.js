@@ -1,5 +1,14 @@
 const mongoose = require("mongoose");
 
+const attachmentSchema = new mongoose.Schema({
+  fileId: { type: mongoose.Schema.Types.ObjectId, required: true },
+  originalName: { type: String, required: true, maxlength: 180 },
+  filename: { type: String, required: true, maxlength: 180 },
+  mimetype: { type: String, required: true, maxlength: 120 },
+  size: { type: Number, required: true },
+  url: { type: String, required: true }
+}, { _id: false });
+
 const messageSchema = new mongoose.Schema(
   {
     sender: {
@@ -16,10 +25,12 @@ const messageSchema = new mongoose.Schema(
 
     content: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
       maxlength: 5000
     },
+
+    attachments: { type: [attachmentSchema], default: [] },
 
     read: {
       type: Boolean,

@@ -26,6 +26,7 @@ const assistantRoutes =
 
 const clanRoutes = require("./routes/clanRoutes");
 const marketRoutes = require("./routes/marketRoutes");
+const { settleExpiredVotes } = require("./controllers/clanVoteController");
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
@@ -111,3 +112,8 @@ app.listen(
     );
   }
 );
+
+const voteSettlementTimer = setInterval(() => {
+  settleExpiredVotes().catch((error) => console.error("Erreur clôture votes expirés :", error));
+}, 60 * 1000);
+voteSettlementTimer.unref();

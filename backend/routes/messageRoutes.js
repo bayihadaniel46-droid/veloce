@@ -11,9 +11,17 @@ const {
 
 const authMiddleware =
   require("../middleware/authMiddleware");
+const { parseMessageFiles } = require("../middleware/messageUploads");
+const { getMessageFile } = require("../controllers/messageController");
 
 const router = express.Router();
 
+
+router.get(
+  "/files/:fileId",
+  authMiddleware,
+  getMessageFile
+);
 
 router.get(
   "/",
@@ -44,6 +52,7 @@ router.delete(
 router.post(
   "/:userId",
   authMiddleware,
+  parseMessageFiles,
   sendMessage
 );
 

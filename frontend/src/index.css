@@ -1779,6 +1779,58 @@ body {
 .clan-room{min-height:0;display:flex;flex:1;flex-direction:column;background:linear-gradient(180deg,#fbfbff,#f5f6fc)}.clan-room-header{background:#fff}.clan-room-header>div:last-child{display:grid;gap:3px}.clan-room-header small{color:#8b92a2;font-size:11px}.clan-envelope-list{min-height:180px;flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 16px}.clan-empty-state{max-width:320px;margin:auto;display:grid;justify-items:center;gap:9px;color:#35405a;text-align:center}.clan-empty-state>span{width:62px;height:62px;display:grid;place-items:center;border-radius:21px;background:#eeeefe;color:#666ed3;font-size:28px}.clan-empty-state p{margin:0;color:#858da0;font-size:12px;line-height:1.5}.clan-envelope{width:min(510px,100%);display:flex;flex-direction:column;align-items:center;gap:9px;padding:14px;border:1px solid #e6e8f0;border-radius:18px;background:#fff;box-shadow:0 6px 19px #202b4610;text-align:center}.clan-envelope-own{border-color:#dcdfff}.clan-envelope-reply{margin-left:26px}.clan-signature{color:#6069cc;font-size:11px;font-weight:700}.clan-open-content{width:100%;padding:10px 14px;border-radius:13px;background:#fafaff;color:#313b53;text-align:left}.clan-open-content p{margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}.clan-open-stamp{color:#737ad7}.clan-open-button,.clan-locked-envelope{width:min(290px,100%);min-height:95px;display:grid;justify-items:center;align-content:center;gap:5px;border:1px solid #dfe2f2;border-radius:15px;background:linear-gradient(145deg,#f6f6ff,#eceeff);color:#505bc2}.clan-open-button{cursor:pointer}.clan-open-button>span,.clan-locked-envelope>span{font-size:21px}.clan-open-button small,.clan-locked-envelope small{color:#858ca0;font-size:10px}.clan-locked-envelope{border-style:dashed;background:#f6f7fa;color:#9ca2b0}.clan-envelope time{align-self:flex-end;color:#9da3b0;font-size:9px}.clan-reply-button{padding:7px 10px;border:1px solid #e2e4ed;border-radius:999px;background:#fff;color:#606ad3;font-size:10px;font-weight:700;cursor:pointer}.clan-reply-context{align-self:flex-start;color:#9a82c4;font-size:10px}.clan-composer{padding:12px 15px;border-top:1px solid #e7e9f0;background:#fff}.clan-recipient-picker{display:grid;gap:7px;margin-bottom:9px}.clan-recipient-picker>strong{color:#717a8e;font-size:10px;text-transform:uppercase;letter-spacing:.08em}.clan-recipient-picker>div{display:flex;gap:6px;overflow-x:auto;padding-bottom:3px}.clan-recipient-picker label{flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid #e2e5ef;border-radius:999px;background:#fafaff;color:#5d6578;font-size:10px}.clan-recipient-picker input,.clan-composer-footer input{accent-color:#626bdc}.clan-recipient-picker small{color:#959cad;font-size:10px}.clan-composer textarea{width:100%;min-height:62px;max-height:150px;resize:vertical;padding:11px;border:1px solid #e1e4ee;border-radius:12px;outline-color:#878ded;color:#313b50;font:inherit;font-size:12px}.clan-composer-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px}.clan-composer-footer label{display:flex;align-items:center;gap:6px;color:#70798c;font-size:10px}.clan-composer-footer button{padding:10px 13px;border:0;border-radius:10px;background:#636ddb;color:#fff;font-size:11px;font-weight:700;cursor:pointer}.clan-composer-footer button:disabled{opacity:.45;cursor:not-allowed}.clan-replying{display:flex;justify-content:space-between;margin-bottom:8px;color:#6a70c6;font-size:11px}.clan-replying button{border:0;background:none;color:#9299a8;font-size:10px;cursor:pointer}
 .market-page{max-width:930px;margin:0 auto;padding:24px 26px 60px;color:#253047}.market-back{padding:8px 12px;border:1px solid #e4e7ef;border-radius:9px;background:#fff;color:#626bd6;font-weight:700;cursor:pointer}.market-heading{margin:25px 0}.market-heading h1{margin:5px 0;color:#242d42;font-size:30px}.market-heading p{color:#838b9b;font-size:13px}.market-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.market-card{display:grid;gap:13px;padding:19px;border:1px solid #e6e8ef;border-radius:16px;background:#fff;box-shadow:0 7px 24px #222d460b}.market-card>div{display:flex;justify-content:space-between;gap:8px;color:#6f788a;font-size:12px}.market-card>div b{color:#626bd2}.market-card>strong{font-size:24px;color:#2b3449}.market-card>strong small{font-size:12px;color:#8c93a2}.market-card em{font-size:13px;font-style:normal;font-weight:800}.market-up{color:#178665}.market-down{color:#c34859}.market-time,.market-source{color:#9299a8;font-size:10px}.market-state{margin:20px 0;padding:23px;border:1px solid #e7e9f1;border-radius:14px;background:#fff;color:#687185;font-size:13px}.market-error{border-color:#f0d6d8;background:#fffafa}.market-error p{margin:9px 0}.market-error small{color:#8991a0}.market-disclaimer{margin-top:20px;padding:14px;border:1px solid #eee8d8;border-radius:12px;background:#fffcf4;color:#827650;font-size:11px;line-height:1.55}.market-source{margin:12px 2px}
 @media(max-width:760px){.messages-layout{height:calc(100dvh - 108px);min-height:480px;grid-template-columns:minmax(0,1fr);border-radius:0}.messages-sidebar{max-height:none;min-height:0;overflow-y:auto;border:0}.messages-layout.conversation-open .messages-sidebar{display:none}.messages-layout.conversation-open .messages-conversation{min-height:0;height:100%;overflow:hidden}.messages-layout:not(.conversation-open) .messages-conversation{display:none}.mobile-conversation-back{display:inline-grid;place-items:center;width:34px;height:34px;border:0;border-radius:10px;background:#f0f1fa;color:#5962c9;font-size:20px}.messages-new-button{width:42px;height:42px}.market-page{padding:18px 13px 115px}.market-heading{margin:18px 0}.market-heading h1{font-size:25px}.market-cards{grid-template-columns:minmax(0,1fr);gap:10px}.market-card{padding:15px}.clan-envelope-list{padding:15px 10px}.clan-composer{padding:10px}.clan-modal{padding:16px}}
+
+/* Messagerie : panneau plein écran et saisie toujours ancrée */
+.messages-page{min-width:0;min-height:0;display:flex;flex-direction:column}
+.messages-layout{height:calc(100dvh - 150px);min-height:500px;flex:1;grid-template-rows:minmax(0,1fr)}
+.messages-conversation{height:100%;min-height:0;overflow:hidden}
+.message-list{min-height:0;display:flex;flex-direction:column;gap:4px;overscroll-behavior:contain}
+.message-bubble{overflow-wrap:anywhere}
+.message-bubble p{margin:0;white-space:pre-wrap}
+.message-input-area{flex:0 0 auto;display:flex;align-items:flex-end;gap:9px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid #e6e8ef;background:#fff}
+.message-input-stack{min-width:0;flex:1}
+.message-input-area textarea{width:100%;min-height:44px;max-height:130px;resize:vertical;padding:12px 14px;border:1px solid #e2e5ef;border-radius:18px;background:#f8f9fc;color:#272f43;font:inherit;font-size:14px}
+.message-input-area>button{min-height:42px;padding:0 16px;border:0;border-radius:14px;background:#5f67d5;color:#fff;font-weight:700}
+.message-input-area>button:disabled{opacity:.45}
+.message-attach-button{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:50%;background:#f0f1fa;color:#5f67d5;font-size:25px;cursor:pointer}
+.message-file-chips{display:flex;gap:6px;overflow-x:auto;padding:3px 0 7px}
+.message-file-chips button{max-width:220px;overflow:hidden;padding:6px 9px;border:0;border-radius:10px;background:#eef0fa;color:#4d568f;font-size:11px;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.private-message-image{display:block;width:auto;max-width:min(320px,100%);max-height:260px;margin-top:8px;border-radius:12px;object-fit:contain}
+.private-file-link{display:inline-flex;margin-top:7px;padding:8px 10px;border-radius:10px;background:#f0f1fa;color:#4c57b5;font-size:12px;text-decoration:none}
+.clan-open-content .private-file-link{display:flex}
+.clan-composer{flex:0 0 auto;position:relative;z-index:2;padding-bottom:calc(12px + env(safe-area-inset-bottom));}
+.clan-attach-button{display:inline-flex;align-items:center;gap:6px;margin:0 0 7px;padding:7px 10px;border-radius:10px;background:#f0f1fa;color:#5c64cf;font-size:11px;font-weight:700;cursor:pointer}
+.clan-governance-open{margin-left:auto;padding:8px 10px;border:1px solid #e4e6f0;border-radius:10px;background:#fff;color:#5961c7;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer}
+.clan-governance-modal{max-width:540px;max-height:min(90dvh,850px);overflow-y:auto}
+.clan-rank-list,.clan-invite-controls,.clan-vote-form,.clan-vote-list{display:grid;gap:9px;margin:14px 0;padding:13px;border:1px solid #e9ebf3;border-radius:13px;background:#fff}
+.clan-rank-list>span{display:flex;justify-content:space-between;padding:7px;border-bottom:1px solid #f0f1f5;color:#3c4354;font-size:12px}
+.clan-rank-list small,.clan-vote-list small{color:#858da0;font-size:10px}
+.clan-invite-controls input:not([type=checkbox]),.clan-vote-form input,.clan-vote-form select{width:100%;padding:10px;border:1px solid #e1e4ee;border-radius:10px;background:#fff;color:#373e51}
+.clan-invite-controls label,.clan-candidate-list label{display:flex;align-items:center;gap:7px;color:#4b5264;font-size:11px}
+.clan-invite-controls>button,.clan-vote-form>button,.clan-vote-option button{padding:9px 11px;border:0;border-radius:10px;background:#636ddb;color:#fff;font-size:11px;font-weight:700;cursor:pointer}
+.clan-invite-controls>button:disabled,.clan-vote-form>button:disabled{opacity:.45}
+.clan-candidate-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.clan-vote-list article{padding:11px;border:1px solid #eff0f5;border-radius:11px}
+.clan-vote-list h3{margin:0 0 8px;color:#373e51;font-size:13px}
+.clan-vote-option{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;color:#596174;font-size:11px}
+.clan-vote-option button{padding:6px 9px}
+@media(max-width:760px){
+ .messages-page{position:fixed;inset:0;z-index:900;height:100dvh;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);background:#121212}
+ .messages-layout{height:100%;min-height:0;max-height:none;flex:1}
+ .messages-conversation{display:flex;flex-direction:column;width:100%;min-height:0;height:100%}
+ .message-list,.clan-envelope-list{min-height:0;flex:1;overflow-y:auto;padding-bottom:12px}
+ .conversation-header{min-height:58px;padding:9px 12px}
+ .message-input-area{padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
+ .message-input-area textarea{min-height:40px;font-size:13px}
+ .message-input-area>button{padding:0 12px}
+ .clan-composer{max-height:45dvh;overflow-y:auto;padding:8px 10px calc(10px + env(safe-area-inset-bottom))}
+ .clan-recipient-picker{margin-bottom:5px}
+ .clan-recipient-picker>div{max-height:56px}
+ .clan-composer textarea{min-height:45px;max-height:75px;resize:none}
+ .clan-composer-footer button{padding:9px}
+ .clan-governance-open{font-size:10px;padding:7px}
+ .clan-governance-modal{width:calc(100% - 18px);padding:13px}
+}
 @media(prefers-reduced-motion:reduce){.mobile-navigation-circle,.mobile-navigation-toggle{transition:none!important}}
 .post-actions button.is-liked{color:#ff7488}
 .message-pending{display:block;margin-top:4px;color:#a7adba;font-size:11px}

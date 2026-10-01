@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Clan = require("../models/Clan");
 const ClanMessage = require("../models/ClanMessage");
 const User = require("../models/User");
+const { uploadMessageFiles, deleteMessageFiles } = require("../utils/messageAttachments");
 
 const idOf = (value) => String(value?._id || value);
 const isMember = (clan, userId) => clan.members.some((member) => idOf(member) === String(userId));
@@ -12,6 +13,8 @@ const listClans = async (req, res) => {
     const clans = await Clan.find({ members: userId })
       .populate("owner", "username avatar")
       .populate("members", "username avatar")
+      .populate("administrators", "username avatar")
+      .populate("moderators", "username avatar")
       .sort({ updatedAt: -1 });
     const result = await Promise.all(clans.map(async (clan) => {
       const latest = await ClanMessage.findOne({ clan: clan._id }).sort({ createdAt: -1 }).select("createdAt signed recipients");
@@ -21,6 +24,8 @@ const listClans = async (req, res) => {
         description: clan.description,
         owner: clan.owner,
         members: clan.members,
+        administrators: clan.administrators,
+        moderators: clan.moderators,
         updatedAt: clan.updatedAt,
         lastActivity: latest?.createdAt || clan.updatedAt,
         memberCount: clan.members.length
@@ -60,7 +65,9 @@ const addClanMembers = async (req, res) => {
   try {
     const clan = await Clan.findById(req.params.clanId);
     if (!clan) return res.status(404).json({ message: "Clan introuvable." });
-    if (idOf(clan.owner) !== String(req.user.userId)) return res.status(403).json({ message: "Seul le créateur du clan peut inviter des membres." });
+    const inviterId = String(req.user.userId);
+    const canInvite = idOf(clan.owner) === inviterId || clan.administrators.some((id) => idOf(id) === inviterId) || clan.moderators.some((id) => idOf(id) === inviterId);
+    if (!canInvite) return res.status(403).json({ message: "Seuls le chef, les administrateurs et les modérateurs peuvent inviter des membres." });
     const memberIds = [...new Set((Array.isArray(req.body.memberIds) ? req.body.memberIds : []).map(String))]
       .filter((id) => !isMember(clan, id));
     if (memberIds.some((id) => !mongoose.isValidObjectId(id))) return res.status(400).json({ message: "La sélection des membres est invalide." });
@@ -71,6 +78,8 @@ const addClanMembers = async (req, res) => {
     await clan.save();
     await clan.populate("owner", "username avatar");
     await clan.populate("members", "username avatar");
+    await clan.populate("administrators", "username avatar");
+    await clan.populate("moderators", "username avatar");
     return res.json(clan);
   } catch (error) {
     console.error("Erreur invitation clan :", error);
@@ -99,7 +108,8 @@ const safeEnvelope = (message, userId) => {
     opened,
     locked: !opened,
     canReply,
-    content: opened ? message.content : undefined
+    content: opened ? message.content : undefined,
+    attachments: opened ? message.attachments : undefined
   };
 };
 
@@ -145,15 +155,18 @@ const openClanMessage = async (req, res) => {
 };
 
 const sendClanMessage = async (req, res) => {
+  let attachments = [];
   try {
     const userId = req.user.userId;
     const clan = await Clan.findById(req.params.clanId);
     if (!clan) return res.status(404).json({ message: "Clan introuvable." });
     if (!isMember(clan, userId)) return res.status(403).json({ message: "Tu ne fais pas partie de ce clan." });
     const content = String(req.body.content || "").trim();
-    if (!content) return res.status(400).json({ message: "Écris un message avant de créer l'enveloppe." });
+    if (!content && !req.files?.length) return res.status(400).json({ message: "Écris un message ou ajoute un fichier." });
     if (content.length > 5000) return res.status(400).json({ message: "Le message ne peut dépasser 5 000 caractères." });
-    const recipientIds = [...new Set((Array.isArray(req.body.recipientIds) ? req.body.recipientIds : []).map(String))];
+    let selectedRecipients = req.body.recipientIds;
+    if (typeof selectedRecipients === "string") { try { selectedRecipients = JSON.parse(selectedRecipients); } catch { selectedRecipients = []; } }
+    const recipientIds = [...new Set((Array.isArray(selectedRecipients) ? selectedRecipients : []).map(String))];
     if (!recipientIds.length) return res.status(400).json({ message: "Choisis au moins un destinataire." });
     if (recipientIds.some((id) => id === String(userId) || !isMember(clan, id))) return res.status(400).json({ message: "Tous les destinataires doivent être d'autres membres du clan." });
     let replyTo = null;
@@ -166,11 +179,13 @@ const sendClanMessage = async (req, res) => {
       const allowed = new Set([...replyTo.recipients.map(idOf), idOf(replyTo.sender)]);
       if (recipientIds.some((id) => !allowed.has(id))) return res.status(400).json({ message: "Les réponses ne peuvent être envoyées qu'aux participants de l'enveloppe d'origine." });
     }
-    const message = await ClanMessage.create({ clan: clan._id, sender: userId, recipients: recipientIds, content, signed: Boolean(req.body.signed), replyTo: replyTo?._id, openedBy: [userId] });
+    attachments = req.files?.length ? await uploadMessageFiles(req.files, userId) : [];
+    const message = await ClanMessage.create({ clan: clan._id, sender: userId, recipients: recipientIds, content, attachments, signed: req.body.signed === "true" || req.body.signed === true, replyTo: replyTo?._id, openedBy: [userId] });
     await Clan.updateOne({ _id: clan._id }, { $set: { updatedAt: new Date() } });
     const populated = await ClanMessage.findById(message._id).populate("sender", "username avatar").populate("recipients", "username avatar").populate("replyTo", "_id");
     return res.status(201).json(safeEnvelope(populated, userId));
   } catch (error) {
+    if (attachments.length) await deleteMessageFiles(attachments).catch(() => {});
     console.error("Erreur envoi enveloppe clan :", error);
     return res.status(500).json({ message: "Impossible d'envoyer cette enveloppe." });
   }
