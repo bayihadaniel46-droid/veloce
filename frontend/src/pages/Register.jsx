@@ -17,6 +17,7 @@ function Register({
   const [email, setEmail] = useState("");
 
   const [password, setPassword] = useState("");
+  const [referralCode] = useState(() => new URLSearchParams(window.location.search).get("ref") || "");
 
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -67,6 +68,7 @@ function Register({
         username,
         email,
         password
+        , referralCode
       });
 
 

@@ -70,6 +70,8 @@ function Profile({ onOpenSettings }) {
     avatar: ""
   });
   const [saveMessage, setSaveMessage] = useState("");
+  const [showFinance, setShowFinance] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
   const userId = user?.id || user?._id;
 
 
@@ -377,6 +379,21 @@ function Profile({ onOpenSettings }) {
     );
   }
 
+  if (showFinance) {
+    const inviteLink = `${window.location.origin}/?ref=${encodeURIComponent(stats.referralCode || "")}`;
+    const copyInvite = async () => {
+      try { await navigator.clipboard.writeText(inviteLink); setInviteCopied(true); setTimeout(() => setInviteCopied(false), 2500); }
+      catch { setError("La copie automatique a échoué. Sélectionne le lien puis copie-le."); }
+    };
+    const hours = Math.floor((stats.activeSeconds || 0) / 3600);
+    const minutes = Math.floor(((stats.activeSeconds || 0) % 3600) / 60);
+    return <section className="piz-page"><button className="piz-back" onClick={() => setShowFinance(false)}>← Retour au profil</button><header className="piz-hero"><span className="piz-eyebrow">COMPTE FINANCES · VIRTUALISÉ</span><h1>Mon compte PIZ</h1><p>Accumule des points PIZ grâce à ta participation sur Veloce.</p><div className="piz-balance-card"><span>Solde de points estimé</span><strong>{Number(stats.pizBalance || 0).toFixed(2)} <small>PIZ</small></strong><p>Compteur de récompenses interne — PIZ n’est pas encore un actif transférable et n’a pas de valeur monétaire garantie.</p><div className="piz-progress"><i style={{ width: `${Math.round(((stats.pizBalance || 0) % 10) * 10)}%` }} /></div><small>{(10 - ((stats.pizBalance || 0) % 10)).toFixed(2)} PIZ jusqu’au prochain palier indicatif</small></div></header>
+      <div className="piz-actions"><article><span>↙</span><div><strong>Dépôt</strong><small>Fonction bientôt disponible</small></div><button disabled title="Cette fonction sera ajoutée ultérieurement">Bientôt</button></article><article><span>↗</span><div><strong>Retrait</strong><small>Fonction bientôt disponible</small></div><button disabled title="Cette fonction sera ajoutée ultérieurement">Bientôt</button></article></div>
+      <section className="piz-section"><div className="piz-section-title"><div><span>COMMENT LES POINTS ÉVOLUENT</span><h2>Ta participation</h2></div><span className="piz-live">● Mise à jour régulière</span></div><div className="piz-stats-grid"><article><span>⏱</span><strong>{hours} h {minutes} min</strong><small>Temps actif dans Veloce · 0,5 PIZ / heure</small></article><article><span>✍</span><strong>{stats.postsCount || 0}</strong><small>Publications · 2 PIZ chacune</small></article><article><span>♡</span><strong>{stats.likesCount || 0} · {stats.commentsCount || 0}</strong><small>J’aime et commentaires · 0,1 / 0,5 PIZ</small></article><article><span>✉</span><strong>{stats.messagesCount || 0}</strong><small>Messages envoyés · 0,1 PIZ chacun</small></article><article><span>♧</span><strong>{stats.clansManagedCount || 0}</strong><small>Clans dirigés · 10 PIZ chacun</small></article><article><span>＋</span><strong>{stats.referralsCount || 0}</strong><small>Comptes inscrits avec ton lien · 25 PIZ chacun</small></article></div><p className="piz-rules-note">Le compteur est calculé selon ces règles d’activité. Le temps est comptabilisé pendant une session ouverte, avec une limite entre les signaux d’activité. Ces points ne sont ni une promesse de rendement, ni des jetons retirable.</p></section>
+      <section className="piz-section piz-invite"><div><span>FAIS GRANDIR VELOCE</span><h2>Invite tes proches</h2><p>Chaque compte créé depuis ton lien est associé à ton profil.</p></div><div className="piz-link-row"><input readOnly value={inviteLink} aria-label="Lien d’invitation personnel" /><button onClick={copyInvite}>{inviteCopied ? "Lien copié ✓" : "Copier le lien"}</button></div><small>Code personnel : {stats.referralCode || "Préparation…"}</small></section>
+    </section>;
+  }
+
 
   // ==========================================================
   // INITIALE
@@ -511,6 +528,7 @@ function Profile({ onOpenSettings }) {
 
 
         <div className="profile-header-actions">
+          <button type="button" className="profile-finance-button" onClick={() => setShowFinance(true)}>◈ Compte finances · PIZ</button>
           <button type="button" className="profile-market-button" onClick={() => window.dispatchEvent(new Event("veloce:navigate-market"))}>
             ↗ Tendances du marché
           </button>

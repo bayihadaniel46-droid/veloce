@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Post = require("../models/Post");
 const AssistantProfile = require("../models/AssistantProfile");
+const crypto = require("crypto");
 
 // ============================================================
 // CRÉER UN TOKEN JWT
@@ -30,7 +31,8 @@ const formatUser = (user) => {
     email: user.email,
     avatar: user.avatar || "",
     bio: user.bio || "",
-    createdAt: user.createdAt
+    createdAt: user.createdAt,
+    referralCode: user.referralCode || ""
   };
 };
 
@@ -112,10 +114,16 @@ const register = async (req, res) => {
       12
     );
 
+    const referralCode = `PIZ-${crypto.randomBytes(6).toString("hex").toUpperCase()}`;
+    const requestedReferral = String(req.body.referralCode || "").trim().toUpperCase();
+    const referrer = requestedReferral ? await User.findOne({ referralCode: requestedReferral }).select("_id") : null;
+
     const user = await User.create({
       username: cleanUsername,
       email: cleanEmail,
-      password: hashedPassword
+      password: hashedPassword,
+      referralCode,
+      referredBy: referrer?._id || null
     });
 
     // Crée l’espace IA privé avec le nouveau compte.

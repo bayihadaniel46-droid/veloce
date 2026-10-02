@@ -5,6 +5,7 @@ const {
   getSuggestions,
   toggleFollow,
   getUserStats,
+  recordActivityHeartbeat,
   getPublicUserProfile
 } = require("../controllers/userController");
 
@@ -33,6 +34,8 @@ router.get(
   authMiddleware,
   getUserStats
 );
+
+router.post("/heartbeat", authMiddleware, recordActivityHeartbeat);
 
 
 router.get(

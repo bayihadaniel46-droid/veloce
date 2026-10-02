@@ -632,6 +632,7 @@ function ClanRoom({ clan, token, user, onBack, onClanUpdated }) {
   const [error, setError] = useState("");
   const [files, setFiles] = useState([]);
   const [governanceOpen, setGovernanceOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem(`veloce_clan_dark_${clan._id}`) === "true");
   const envelopeListRef = useRef(null);
   const myId = String(user?.id || user?._id || "");
   const members = (clan.members || []).filter((member) => String(member._id || member.id) !== myId);
@@ -642,6 +643,7 @@ function ClanRoom({ clan, token, user, onBack, onClanUpdated }) {
     finally { setLoadingClan(false); }
   };
   useEffect(() => { refresh(); }, [clan._id, token]);
+  useEffect(() => { localStorage.setItem(`veloce_clan_dark_${clan._id}`, String(darkMode)); }, [clan._id, darkMode]);
   useEffect(() => { if (envelopeListRef.current) envelopeListRef.current.scrollTop = envelopeListRef.current.scrollHeight; }, [envelopes]);
 
   const chooseReply = (envelope) => {
@@ -673,8 +675,8 @@ function ClanRoom({ clan, token, user, onBack, onClanUpdated }) {
   const selectableMembers = replyTo ? (replyTo.replyTargets || []).map((target) => ({ ...target, id: target._id })) : members;
   const toggleRecipient = (id) => setRecipientIds((current) => current.includes(String(id)) ? current.filter((value) => value !== String(id)) : [...current, String(id)]);
 
-  return <div className="clan-room">
-    <header className="conversation-header clan-room-header"><button type="button" className="mobile-conversation-back" onClick={onBack} aria-label="Retour aux conversations">←</button><div className="clan-avatar">✉</div><div><strong>{clan.name}</strong><small>{clan.memberCount || clan.members?.length} membres · enveloppes privées</small></div><button className="clan-governance-open" type="button" onClick={() => setGovernanceOpen(true)}>⚖ Gouvernance</button></header>
+  return <div className={`clan-room ${darkMode ? "clan-room-dark" : ""}`}>
+    <header className="conversation-header clan-room-header"><button type="button" className="mobile-conversation-back" onClick={onBack} aria-label="Retour aux conversations">←</button><div className="clan-avatar">✉</div><div><strong>{clan.name}</strong><small>{clan.memberCount || clan.members?.length} membres · enveloppes privées</small></div><button className="clan-theme-toggle" type="button" onClick={() => setDarkMode((current) => !current)} aria-label={darkMode ? "Activer le mode clair" : "Activer le mode sombre"}>{darkMode ? "☀️" : "🌙"}</button><button className="clan-governance-open" type="button" onClick={() => setGovernanceOpen(true)}>⚖ Gouvernance</button></header>
     <div className="clan-envelope-list" ref={envelopeListRef}>
       {loadingClan && <p className="messages-empty">Chargement des enveloppes…</p>}
       {!loadingClan && envelopes.length === 0 && <div className="clan-empty-state"><span>✉</span><strong>Un message privé au milieu du clan</strong><p>Écris à certains membres. Les autres ne verront qu’une enveloppe verrouillée.</p></div>}
@@ -695,11 +697,11 @@ function ClanRoom({ clan, token, user, onBack, onClanUpdated }) {
       <textarea value={text} onChange={(event) => setText(event.target.value)} maxLength={5000} placeholder="Écris un message à placer dans une enveloppe…" />
       <div className="clan-composer-footer"><label><input type="checkbox" checked={signed} onChange={(event) => setSigned(event.target.checked)} />Signer avec mon nom</label><button type="submit" disabled={sending || (!text.trim() && !files.length) || !recipientIds.length}>{sending ? "Envoi…" : "Placer dans une enveloppe"}</button></div>
     </form>
-    {governanceOpen && <ClanGovernance clan={clan} token={token} user={user} onClanUpdated={onClanUpdated} onClose={() => setGovernanceOpen(false)} />}
+    {governanceOpen && <ClanGovernance clan={clan} token={token} user={user} darkMode={darkMode} onClanUpdated={onClanUpdated} onClose={() => setGovernanceOpen(false)} />}
   </div>;
 }
 
-function ClanGovernance({ clan, token, user, onClose, onClanUpdated }) {
+function ClanGovernance({ clan, token, user, darkMode, onClose, onClanUpdated }) {
   const [votes, setVotes] = useState([]); const [kind, setKind] = useState("leader"); const [title, setTitle] = useState(""); const [target, setTarget] = useState(""); const [candidates, setCandidates] = useState([]); const [query, setQuery] = useState(""); const [results, setResults] = useState([]); const [error, setError] = useState("");
   const [localMembers, setLocalMembers] = useState(clan.members || []);
   const [localClan, setLocalClan] = useState(clan);
@@ -715,7 +717,7 @@ function ClanGovernance({ clan, token, user, onClose, onClanUpdated }) {
   const invite = async () => { try { const chosen = results.filter((person) => candidates.includes(String(person.id || person._id))); if (!chosen.length) return; const updated = await addClanMembers({ clanId: clan._id, memberIds: chosen.map((p) => p.id || p._id), token }); setLocalMembers(updated.members || localMembers); setLocalClan(updated); onClanUpdated?.(updated); setCandidates([]); setQuery(""); setResults([]); setError("Les membres sélectionnés ont été ajoutés au clan."); } catch (e) { setError(e.message); } };
   const startVote = async (event) => { event.preventDefault(); try { const payload = kind === "leader" ? { title, kind, options: candidates.map((id) => { const person = localMembers.find((m) => String(m._id || m.id) === id); return { key: id, label: person?.username || "Membre" }; }) } : { title, kind, target }; await createClanVote({ clanId: clan._id, payload, token }); setTitle(""); setCandidates([]); await refresh(); } catch (e) { setError(e.message); } };
   const toggle = (id) => setCandidates((list) => list.includes(String(id)) ? list.filter((item) => item !== String(id)) : [...list, String(id)]);
-  return <div className="clan-modal-overlay"><section className="clan-modal clan-governance-modal"><header><div><span>DÉCISIONS COLLECTIVES</span><h2>Gouvernance du clan</h2></div><button type="button" onClick={onClose}>×</button></header>
+  return <div className={`clan-modal-overlay ${darkMode ? "clan-dark-modal-overlay" : ""}`}><section className={`clan-modal clan-governance-modal ${darkMode ? "clan-governance-dark" : ""}`}><header><div><span>DÉCISIONS COLLECTIVES</span><h2>Gouvernance du clan</h2></div><button type="button" onClick={onClose}>×</button></header>
     <div className="clan-rank-list"><strong>Hiérarchie et privilèges</strong><small>Chef : contrôle du clan et invitations · Administrateur : invitations · Modérateur : invitations · Membre : messages et votes anonymes</small>{localMembers.map((person) => { const id = String(person._id || person.id); const role = id === String(localClan.owner?._id || localClan.owner) ? "Chef" : admins.some((a) => String(a?._id || a) === id) ? "Administrateur" : moderators.some((a) => String(a?._id || a) === id) ? "Modérateur" : "Membre"; return <span key={id}>{person.username} <small>{role}</small></span>; })}</div>
     {canInvite && <div className="clan-invite-controls"><input placeholder="Rechercher un membre à ajouter" value={query} onChange={(e) => setQuery(e.target.value)} />{results.map((p) => <label key={p.id}><input type="checkbox" checked={candidates.includes(String(p.id || p._id))} onChange={() => toggle(p.id || p._id)} />{p.username}</label>)}<button type="button" onClick={invite} disabled={!results.some((p) => candidates.includes(String(p.id || p._id)))}>Ajouter les membres sélectionnés</button></div>}
     <form className="clan-vote-form" onSubmit={startVote}><strong>Proposer un vote anonyme</strong><input required maxLength={140} placeholder="Objet du vote" value={title} onChange={(e) => setTitle(e.target.value)} /><select value={kind} onChange={(e) => { setKind(e.target.value); setCandidates([]); }}><option value="leader">Élire un nouveau chef</option><option value="rank">Modifier le rang d’un membre</option></select>{kind === "rank" ? <select required value={target} onChange={(e) => setTarget(e.target.value)}><option value="">Membre concerné</option>{members.filter((m) => String(m._id || m.id) !== String(clan.owner?._id || clan.owner)).map((m) => <option key={m._id || m.id} value={m._id || m.id}>{m.username}</option>)}</select> : <div className="clan-candidate-list">{localMembers.map((m) => <label key={m._id || m.id}><input type="checkbox" checked={candidates.includes(String(m._id || m.id))} onChange={() => toggle(m._id || m.id)} />{m.username}</label>)}</div>}<button disabled={!title.trim() || (kind === "leader" && candidates.length < 2) || (kind === "rank" && !target)}>Lancer le vote (72 h)</button></form>

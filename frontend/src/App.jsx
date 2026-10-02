@@ -80,9 +80,7 @@ function AppContent() {
 
 function AuthPages() {
 
-  const [page, setPage] = React.useState(
-    "login"
-  );
+  const [page, setPage] = React.useState(() => new URLSearchParams(window.location.search).has("ref") ? "register" : "login");
 
 
   if (page === "register") {

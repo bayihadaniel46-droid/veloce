@@ -42,7 +42,21 @@ const generate=async(req,res)=>{
     systemInstruction:{parts:[{text:"Crée des brouillons originaux basés sur des informations récentes. N'invente aucune source. Respecte strictement le format JSON demandé."}]},
     tools:[{google_search:{}}],generationConfig:{temperature:0.5}}),
    signal:AbortSignal.timeout(60000)});
-  if(!r.ok){console.error("Gemini assistant API error",r.status,(await r.text()).slice(0,400));return res.status(502).json({message:"La recherche Google avec Gemini a échoué. Vérifiez la clé Gemini et son quota, puis réessayez."});}
+  if(!r.ok){
+   const googleError=await r.json().catch(()=>({}));
+   const detail=String(googleError.error?.message||"").slice(0,240);
+   console.error("Gemini assistant API error",r.status,googleError.error?.status,detail);
+   const message=r.status===401||r.status===403
+    ? "Google refuse la clé : vérifiez dans Render GEMINI_API_KEY, les restrictions de la clé et l’activation de la Gemini API."
+    : r.status===404
+     ? "Le modèle Gemini demandé est introuvable. Vérifiez GEMINI_MODEL dans Render (valeur conseillée : gemini-2.5-flash)."
+     : r.status===429
+      ? "Le quota Gemini est atteint ou la facturation Google n’est pas activée. Vérifiez les limites du projet Google AI Studio."
+      : r.status===400
+       ? "Gemini a rejeté la requête. Le message technique a été enregistré côté serveur; vérifiez les journaux Render."
+       : "Le service Gemini est temporairement indisponible. Réessayez plus tard.";
+   return res.status(502).json({message});
+  }
   const data=await r.json();
   const candidate=data.candidates?.[0];
   const answer=candidate?.content?.parts?.map((part)=>part.text||"").join("\n");

@@ -32,7 +32,11 @@ const userSchema = new mongoose.Schema(
     bio: {
       type: String,
       default: ""
-    }
+    },
+    referralCode: { type: String, unique: true, sparse: true, index: true },
+    referredBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
+    activeSeconds: { type: Number, default: 0, min: 0 },
+    lastActivityPing: { type: Date }
   },
   {
     timestamps: true

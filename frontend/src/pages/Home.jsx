@@ -28,6 +28,7 @@ import {
 } from "../services/postService";
 import { getUnreadMessageCount } from "../services/messageService";
 import { getUnreadNotificationCount } from "../services/notificationService";
+import { API_BASE_URL } from "../config";
 
 import { useAuth } from "../context/authContext";
 
@@ -68,6 +69,14 @@ function Home() {
 
   const [showModal, setShowModal] =
     useState(false);
+
+  useEffect(() => {
+    if (!token) return undefined;
+    const heartbeat = () => fetch(`${API_BASE_URL}/users/heartbeat`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+    heartbeat();
+    const timer = window.setInterval(heartbeat, 60000);
+    return () => window.clearInterval(timer);
+  }, [token]);
 
 
   // ==========================================================

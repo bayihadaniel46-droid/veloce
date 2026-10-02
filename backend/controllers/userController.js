@@ -2,6 +2,11 @@ const User = require("../models/User");
 const Follow = require("../models/Follow");
 const Notification = require("../models/Notification");
 const Post = require("../models/Post");
+const Like = require("../models/Like");
+const Comment = require("../models/comment");
+const Message = require("../models/Message");
+const Clan = require("../models/Clan");
+const crypto = require("crypto");
 
 
 /* ============================================================
@@ -242,9 +247,7 @@ const getUserStats = async (
     const userId =
       req.user.userId;
 
-    const user =
-      await User.findById(userId)
-        .select("-password");
+    const user = await User.findById(userId).select("username referralCode activeSeconds createdAt");
 
     if (!user) {
       return res.status(404).json({
@@ -253,23 +256,33 @@ const getUserStats = async (
       });
     }
 
-    const postsCount =
-      await Post.countDocuments({
-        username: user.username
-      });
-
-    const followersCount =
-      await Follow.countDocuments({
-        following: userId
-      });
-
-    const followingCount =
-      await Follow.countDocuments({
-        follower: userId
-      });
+    if (!user.referralCode) {
+      user.referralCode = `PIZ-${crypto.randomBytes(6).toString("hex").toUpperCase()}`;
+      await user.save();
+    }
+    const [postsCount, likesCount, commentsCount, messagesCount, clansManagedCount, referralsCount, followersCount, followingCount] = await Promise.all([
+      Post.countDocuments({ author: userId }),
+      Like.countDocuments({ userId }),
+      Comment.countDocuments({ userId }),
+      Message.countDocuments({ sender: userId }),
+      Clan.countDocuments({ owner: userId }),
+      User.countDocuments({ referredBy: userId }),
+      Follow.countDocuments({ following: userId }),
+      Follow.countDocuments({ follower: userId })
+    ]);
+    const activeSeconds = Math.max(0, user.activeSeconds || 0);
+    const pizBalance = Math.round((activeSeconds / 3600 * 0.5 + postsCount * 2 + likesCount * 0.1 + commentsCount * 0.5 + messagesCount * 0.1 + clansManagedCount * 10 + referralsCount * 25) * 100) / 100;
 
     res.json({
       postsCount,
+      likesCount,
+      commentsCount,
+      messagesCount,
+      clansManagedCount,
+      referralsCount,
+      activeSeconds,
+      referralCode: user.referralCode,
+      pizBalance,
       followersCount,
       followingCount
     });
@@ -284,6 +297,25 @@ const getUserStats = async (
       message:
         "Erreur statistiques."
     });
+  }
+};
+
+const recordActivityHeartbeat = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select("lastActivityPing");
+    if (!user) return res.status(404).json({ message: "Utilisateur introuvable." });
+    const now = new Date();
+    const previous = user.lastActivityPing;
+    const elapsed = previous ? Math.floor((now.getTime() - previous.getTime()) / 1000) : 0;
+    const credited = elapsed > 0 && elapsed <= 90 ? elapsed : 0;
+    const filter = previous
+      ? { _id: user._id, lastActivityPing: previous }
+      : { _id: user._id, lastActivityPing: { $exists: false } };
+    await User.updateOne(filter, { $inc: { activeSeconds: credited }, $set: { lastActivityPing: now } });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("Erreur suivi temps actif :", error);
+    return res.status(500).json({ message: "Impossible d’enregistrer l’activité." });
   }
 };
 
@@ -317,5 +349,6 @@ module.exports = {
   getSuggestions,
   toggleFollow,
   getUserStats,
+  recordActivityHeartbeat,
   getPublicUserProfile
 };
