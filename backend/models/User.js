@@ -36,7 +36,9 @@ const userSchema = new mongoose.Schema(
     referralCode: { type: String, unique: true, sparse: true, index: true },
     referredBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
     activeSeconds: { type: Number, default: 0, min: 0 },
-    lastActivityPing: { type: Date }
+    lastActivityPing: { type: Date },
+    pizLinkCodeHash: { type: String, select: false, index: true },
+    pizLinkCodeExpiresAt: { type: Date, select: false }
   },
   {
     timestamps: true

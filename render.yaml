@@ -16,5 +16,9 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
       - key: TWELVE_DATA_API_KEY
+        sync: false
+      - key: PIZ_LINK_SECRET
         sync: false

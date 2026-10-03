@@ -1235,7 +1235,7 @@ Ne mets aucun Markdown autour du JSON.
 
     const geminiResponse =
       await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent((process.env.GEMINI_MODEL || "gemini-3.8-flash").trim().replace(/^models\//, ""))}:generateContent`,
         {
           method: "POST",
 

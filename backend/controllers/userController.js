@@ -319,6 +319,48 @@ const recordActivityHeartbeat = async (req, res) => {
   }
 };
 
+const createPizLinkCode = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ message: "Session invalide." });
+    const user = await User.findById(userId).select("_id");
+    if (!user) return res.status(404).json({ message: "Compte introuvable." });
+    const code = crypto.randomBytes(18).toString("base64url").toUpperCase();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+    await User.updateOne({ _id: user._id }, { $set: { pizLinkCodeHash: codeHash, pizLinkCodeExpiresAt: expiresAt } });
+    return res.json({ code, expiresAt, expiresInSeconds: 600 });
+  } catch (error) {
+    console.error("Erreur génération code PIZ :", error.message);
+    return res.status(500).json({ message: "Impossible de générer le code PIZ." });
+  }
+};
+
+const exchangePizLinkCode = async (req, res) => {
+  const expected = process.env.PIZ_LINK_SECRET || "";
+  const provided = req.get("x-piz-link-secret") || "";
+  const expectedBuffer = Buffer.from(expected);
+  const providedBuffer = Buffer.from(provided);
+  if (!expected || expectedBuffer.length !== providedBuffer.length || !crypto.timingSafeEqual(expectedBuffer, providedBuffer)) {
+    return res.status(expected ? 401 : 503).json({ message: "Échange PIZ non autorisé ou non configuré." });
+  }
+  try {
+    const code = String(req.body?.code || "").trim().toUpperCase();
+    if (!/^[A-Z0-9_-]{20,40}$/.test(code)) return res.status(400).json({ message: "Code de liaison invalide." });
+    const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+    const user = await User.findOneAndUpdate(
+      { pizLinkCodeHash: codeHash, pizLinkCodeExpiresAt: { $gt: new Date() } },
+      { $unset: { pizLinkCodeHash: 1, pizLinkCodeExpiresAt: 1 } },
+      { new: true }
+    ).select("_id username");
+    if (!user) return res.status(401).json({ message: "Code invalide, expiré ou déjà utilisé. Génère un nouveau code depuis Veloce." });
+    return res.json({ userId: String(user._id), username: user.username });
+  } catch (error) {
+    console.error("Erreur échange code PIZ :", error.message);
+    return res.status(500).json({ message: "Impossible de valider le code PIZ." });
+  }
+};
+
 
 const getPublicUserProfile = async (req, res) => {
   try {
@@ -350,5 +392,7 @@ module.exports = {
   toggleFollow,
   getUserStats,
   recordActivityHeartbeat,
-  getPublicUserProfile
+  getPublicUserProfile,
+  createPizLinkCode,
+  exchangePizLinkCode
 };

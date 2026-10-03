@@ -36,7 +36,7 @@ const generate=async(req,res)=>{
   const prompt=[`Crée 3 propositions de publications originales, en ${p.language}.`,`Centres d’intérêt : ${p.topics.join(", ")}.`,`Ton : ${p.tone}. ${sources}`,
    "Utilise des informations récentes recherchées sur le web. N’invente rien et reformule sans copier. Chaque texte doit être concis, autonome et naturel.",
    'Réponds uniquement par un tableau JSON valide [{"title":"Titre court","content":"Texte de publication"}]. Les sources seront affichées séparément.'].join("\n");
-  const model=process.env.GEMINI_MODEL||"gemini-2.5-flash";
+  const model=(process.env.GEMINI_MODEL||"gemini-3.8-flash").trim().replace(/^models\//,"");
   const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:"POST",headers:{"x-goog-api-key":key,"Content-Type":"application/json"},
    body:JSON.stringify({contents:[{role:"user",parts:[{text:`${prompt}\n\nRéponds strictement avec un tableau JSON valide, sans bloc Markdown.`}]}],
     systemInstruction:{parts:[{text:"Crée des brouillons originaux basés sur des informations récentes. N'invente aucune source. Respecte strictement le format JSON demandé."}]},
@@ -49,7 +49,7 @@ const generate=async(req,res)=>{
    const message=r.status===401||r.status===403
     ? "Google refuse la clé : vérifiez dans Render GEMINI_API_KEY, les restrictions de la clé et l’activation de la Gemini API."
     : r.status===404
-     ? "Le modèle Gemini demandé est introuvable. Vérifiez GEMINI_MODEL dans Render (valeur conseillée : gemini-2.5-flash)."
+     ? "Le modèle Gemini est introuvable ou indisponible pour cette clé. Dans Render, définissez GEMINI_MODEL à gemini-3.8-flash, sans préfixe models/ ni espaces."
      : r.status===429
       ? "Le quota Gemini est atteint ou la facturation Google n’est pas activée. Vérifiez les limites du projet Google AI Studio."
       : r.status===400
