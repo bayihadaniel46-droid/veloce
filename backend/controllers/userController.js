@@ -2,42 +2,8 @@ const User = require("../models/User");
 const Follow = require("../models/Follow");
 const Notification = require("../models/Notification");
 const Post = require("../models/Post");
-const Like = require("../models/Like");
-const Comment = require("../models/comment");
-const Message = require("../models/Message");
-const Clan = require("../models/Clan");
 const crypto = require("crypto");
-
-const PIZ_REWARD_RATES = Object.freeze({
-  activeHour: 0.02,
-  post: 0.05,
-  like: 0.001,
-  comment: 0.01,
-  message: 0.001,
-  clan: 0.5,
-  referral: 0.5
-});
-
-const getPizActivity = async (userId, activeSeconds) => {
-  const [postsCount, likesCount, commentsCount, messagesCount, clansManagedCount, referralsCount] = await Promise.all([
-    Post.countDocuments({ author: userId }),
-    Like.countDocuments({ userId }),
-    Comment.countDocuments({ userId }),
-    Message.countDocuments({ sender: userId }),
-    Clan.countDocuments({ owner: userId }),
-    User.countDocuments({ referredBy: userId })
-  ]);
-  const pizBalance = Math.round((
-    activeSeconds / 3600 * PIZ_REWARD_RATES.activeHour +
-    postsCount * PIZ_REWARD_RATES.post +
-    likesCount * PIZ_REWARD_RATES.like +
-    commentsCount * PIZ_REWARD_RATES.comment +
-    messagesCount * PIZ_REWARD_RATES.message +
-    clansManagedCount * PIZ_REWARD_RATES.clan +
-    referralsCount * PIZ_REWARD_RATES.referral
-  ) * 1000000) / 1000000;
-  return { postsCount, likesCount, commentsCount, messagesCount, clansManagedCount, referralsCount, pizBalance };
-};
+const { getPizActivity, PIZ_REWARD_RATES, CLAN_CREATION_COST } = require("../services/pizEconomy");
 
 
 /* ============================================================
@@ -309,6 +275,8 @@ const getUserStats = async (
       activeSeconds,
       referralCode: user.referralCode,
       pizBalance,
+      pizRates: PIZ_REWARD_RATES,
+      clanCreationCost: CLAN_CREATION_COST,
       followersCount,
       followingCount
     });
@@ -380,8 +348,15 @@ const exchangePizLinkCode = async (req, res) => {
       { new: true }
     ).select("_id username activeSeconds");
     if (!user) return res.status(401).json({ message: "Code invalide, expiré ou déjà utilisé. Génère un nouveau code depuis Veloce." });
-    const activity = await getPizActivity(user._id, Math.max(0, user.activeSeconds || 0));
-    return res.json({ userId: String(user._id), username: user.username, pizBalance: activity.pizBalance });
+    const activity = await getPizActivity(user._id, user.activeSeconds);
+    const pizBalance = Number(activity.pizBalance);
+    if (!Number.isFinite(pizBalance) || pizBalance < 0) {
+      console.error("Erreur échange code PIZ : total généré invalide pour le compte", String(user._id));
+      return res.status(500).json({ message: "Le total PIZ du compte n’a pas pu être calculé." });
+    }
+    // Keep the explicit field used by PIZ and include aliases for deployments
+    // where the two services are updated at slightly different times.
+    return res.json({ userId: String(user._id), username: user.username, pizBalance, generatedPiz: pizBalance });
   } catch (error) {
     console.error("Erreur échange code PIZ :", error.message);
     return res.status(500).json({ message: "Impossible de valider le code PIZ." });

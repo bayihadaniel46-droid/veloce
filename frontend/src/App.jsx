@@ -22,6 +22,11 @@ function AppContent() {
     loading
   } = useAuth();
 
+  // Referral links deliberately open the registration screen even in a
+  // browser that currently has another Veloce account signed in. This lets
+  // the invitee create their own credentials without inheriting that session.
+  const inviteRegistration = new URLSearchParams(window.location.search).get("join") === "1";
+
 
   // ==========================================================
   // CHARGEMENT DE LA SESSION
@@ -49,6 +54,10 @@ function AppContent() {
       </div>
     );
 
+  }
+
+  if (inviteRegistration) {
+    return <AuthPages />;
   }
 
 

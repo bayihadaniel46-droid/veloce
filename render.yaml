@@ -22,3 +22,7 @@ services:
         sync: false
       - key: PIZ_LINK_SECRET
         sync: false
+      - key: PIZ_API_URL
+        value: https://piz-ledger.onrender.com
+      - key: PIZ_SERVICE_KEY
+        sync: false

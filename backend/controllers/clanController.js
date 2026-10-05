@@ -3,6 +3,7 @@ const Clan = require("../models/Clan");
 const ClanMessage = require("../models/ClanMessage");
 const User = require("../models/User");
 const { uploadMessageFiles, deleteMessageFiles } = require("../utils/messageAttachments");
+const { getPizActivity, CLAN_CREATION_COST } = require("../services/pizEconomy");
 
 const idOf = (value) => String(value?._id || value);
 const isMember = (clan, userId) => clan.members.some((member) => idOf(member) === String(userId));
@@ -50,9 +51,61 @@ const createClan = async (req, res) => {
     if (memberIds.length > 99 || memberIds.some((id) => !mongoose.isValidObjectId(id))) {
       return res.status(400).json({ message: "La sélection des membres est invalide." });
     }
-    const foundMembers = await User.find({ _id: { $in: memberIds } }).select("_id");
+    const [foundMembers, owner] = await Promise.all([
+      User.find({ _id: { $in: memberIds } }).select("_id"),
+      User.findById(ownerId).select("username activeSeconds pizSpent")
+    ]);
     if (foundMembers.length !== memberIds.length) return res.status(400).json({ message: "Un membre sélectionné est introuvable." });
-    const clan = await Clan.create({ name, description, owner: ownerId, members: [ownerId, ...memberIds] });
+    if (!owner) return res.status(401).json({ message: "Compte introuvable. Reconnecte-toi puis réessaie." });
+    const balance = await getPizActivity(ownerId, owner.activeSeconds);
+    if (balance.pizBalance < CLAN_CREATION_COST) {
+      return res.status(400).json({ message: `Créer un clan coûte ${CLAN_CREATION_COST.toFixed(2)} PIZ. Solde disponible : ${balance.pizBalance.toFixed(4)} PIZ.` });
+    }
+    const spentBefore = Number(owner.pizSpent) || 0;
+    const debit = await User.updateOne(
+      { _id: ownerId, $or: [{ pizSpent: spentBefore }, { pizSpent: { $exists: false } }] },
+      { $inc: { pizSpent: CLAN_CREATION_COST } }
+    );
+    if (!debit.modifiedCount) return res.status(409).json({ message: "Le solde vient d’être modifié. Actualise Veloce puis réessaie." });
+    let clan;
+    try {
+      clan = await Clan.create({ name, description, owner: ownerId, members: [ownerId, ...memberIds] });
+    } catch (error) {
+      await User.updateOne({ _id: ownerId }, { $inc: { pizSpent: -CLAN_CREATION_COST } });
+      throw error;
+    }
+    const pizApiUrl = String(process.env.PIZ_API_URL || "").trim().replace(/\/+$/, "").replace(/\/api$/i, "");
+    const serviceKey = process.env.PIZ_SERVICE_KEY || "";
+    if (!pizApiUrl || !serviceKey) {
+      await Clan.deleteOne({ _id: clan._id });
+      await User.updateOne({ _id: ownerId }, { $inc: { pizSpent: -CLAN_CREATION_COST } });
+      return res.status(503).json({ message: "La liaison au registre PIZ n’est pas configurée. Le clan n’a pas été créé et aucun PIZ n’a été débité." });
+    }
+    try {
+      let charged = false;
+      let lastError;
+      for (let attempt = 0; attempt < 2 && !charged; attempt += 1) {
+        try {
+          const response = await fetch(`${pizApiUrl}/api/wallet/internal/clan-charge`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-piz-service-key": serviceKey },
+            body: JSON.stringify({ userId: String(ownerId), username: owner.username, totalPiz: balance.pizBalance, clanId: String(clan._id) }),
+            signal: AbortSignal.timeout(12000)
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw Object.assign(new Error(data.message || "PIZ a refusé les frais de création du clan."), { httpStatus: response.status === 400 ? 400 : response.status === 401 ? 503 : 502 });
+          charged = true;
+        } catch (error) {
+          lastError = error;
+          if (error.httpStatus) break;
+        }
+      }
+      if (!charged) throw lastError || new Error("Le registre PIZ n’a pas confirmé le débit.");
+    } catch (error) {
+      await Clan.deleteOne({ _id: clan._id });
+      await User.updateOne({ _id: ownerId }, { $inc: { pizSpent: -CLAN_CREATION_COST } });
+      return res.status(error.httpStatus || 502).json({ message: error.message || "Le registre PIZ n’a pas confirmé le débit. Le clan n’a pas été créé." });
+    }
     const populated = await Clan.findById(clan._id).populate("owner", "username avatar").populate("members", "username avatar");
     return res.status(201).json(populated);
   } catch (error) {
