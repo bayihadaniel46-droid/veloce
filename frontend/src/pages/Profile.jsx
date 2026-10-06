@@ -7,6 +7,7 @@ import {
   useAuth
 } from "../context/authContext";
 import { API_BASE_URL, API_ORIGIN } from "../config";
+import "../piz-link.css";
 
 
 // ============================================================
@@ -72,16 +73,13 @@ function Profile({ onOpenSettings }) {
   const [saveMessage, setSaveMessage] = useState("");
   const [showFinance, setShowFinance] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
-  const [pizLinkCode, setPizLinkCode] = useState("");
-  const [pizLinkExpiresAt, setPizLinkExpiresAt] = useState(null);
+  const [pizAccountId, setPizAccountId] = useState(user?.pizAccountId || "");
+  const [pizPassword, setPizPassword] = useState("");
   const [pizLinkLoading, setPizLinkLoading] = useState(false);
-  const [pizLinkCopied, setPizLinkCopied] = useState(false);
   const userId = user?.id || user?._id;
 
   useEffect(() => {
-    setPizLinkCode("");
-    setPizLinkExpiresAt(null);
-    setPizLinkCopied(false);
+    setPizAccountId(user?.pizAccountId || "");
   }, [userId]);
 
 
@@ -173,7 +171,7 @@ function Profile({ onOpenSettings }) {
     if (!token) return;
     fetch(`${API_URL}/users/stats`, { headers: { Authorization: `Bearer ${token}` } })
       .then((response) => response.json().then((data) => ({ response, data })))
-      .then(({ response, data }) => { if (response.ok) setStats(data); })
+      .then(({ response, data }) => { if (response.ok) { setStats(data); if (data.pizAccountId) setPizAccountId(data.pizAccountId); } })
       .catch((err) => console.error("Erreur statistiques profil :", err));
   }, [token]);
 
@@ -397,35 +395,32 @@ function Profile({ onOpenSettings }) {
     };
     const hours = Math.floor((stats.activeSeconds || 0) / 3600);
     const minutes = Math.floor(((stats.activeSeconds || 0) % 3600) / 60);
-    const generatePizLinkCode = async () => {
+    const connectPizAccount = async (event) => {
+      event.preventDefault();
       if (!token || pizLinkLoading) return;
+      const normalizedId = pizAccountId.trim();
+      if (!/^[a-f0-9]{24}$/i.test(normalizedId)) {
+        setError("L’ID PIZ doit contenir les 24 caractères affichés dans ton compte PIZ.");
+        return;
+      }
       setPizLinkLoading(true);
-      setPizLinkCode("");
       setError("");
       try {
-        const response = await fetch(`${API_URL}/users/piz-link/code`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+        const response = await fetch(`${API_URL}/users/piz-link`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ pizUserId: normalizedId, pizPassword }) });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.message || "Impossible de créer le code de liaison.");
-        setPizLinkCode(data.code);
-        setPizLinkExpiresAt(data.expiresAt);
-        setPizLinkCopied(false);
+        if (!response.ok) throw new Error(data.message || "Impossible de synchroniser le compte PIZ.");
+        setPizAccountId(data.pizUserId);
+        setPizPassword("");
+        setStats((current) => ({ ...current, pizBalance: data.balance }));
+        setSaveMessage("Compte PIZ connecté. Tes actifs Veloce ont été synchronisés.");
       } catch (err) {
-        setError(err.message || "Impossible de créer le code de liaison.");
+        setError(err.message || "Impossible de synchroniser le compte PIZ.");
       } finally {
         setPizLinkLoading(false);
       }
     };
-    const copyPizLinkCode = async () => {
-      try {
-        await navigator.clipboard.writeText(pizLinkCode);
-        setPizLinkCopied(true);
-        setTimeout(() => setPizLinkCopied(false), 2000);
-      } catch {
-        setError("La copie automatique a échoué. Tu peux sélectionner le code pour le copier.");
-      }
-    };
-    return <section className="piz-page"><div className="piz-page-topline"><button className="piz-back" onClick={() => setShowFinance(false)}>← Retour au profil</button><button className="piz-code-open" onClick={generatePizLinkCode} disabled={pizLinkLoading}>{pizLinkLoading ? "Création…" : "◈ Connecter PIZ"}</button></div><header className="piz-hero"><span className="piz-eyebrow">COMPTE FINANCES · VIRTUALISÉ</span><h1>Mon compte PIZ</h1><p>Accumule des points PIZ grâce à ta participation sur Veloce.</p><div className="piz-balance-card"><span>Solde de points estimé</span><strong>{Number(stats.pizBalance || 0).toFixed(4)} <small>PIZ</small></strong><p>Les points d’activité Veloce sont synchronisés avec le registre PIZ quand tu relies ton compte. Ce sont des points internes; les dépôts et retraits manuels suivent le taux et les frais affichés dans PIZ.</p><div className="piz-progress"><i style={{ width: `${Math.round(((stats.pizBalance || 0) % 10) * 10)}%` }} /></div><small>{(10 - ((stats.pizBalance || 0) % 10)).toFixed(4)} PIZ jusqu’au prochain palier indicatif</small></div>
-        <div className="piz-link-code-panel"><div className="piz-link-code-heading"><span className="piz-code-lock">⌘</span><div><strong>Connexion sécurisée à PIZ</strong><small>Un code temporaire relie ce compte à ton portefeuille.</small></div><button onClick={generatePizLinkCode} disabled={pizLinkLoading}>{pizLinkLoading ? "…" : pizLinkCode ? "Nouveau code" : "Générer"}</button></div>{pizLinkCode ? <div className="piz-link-code-value"><code>{pizLinkCode}</code><button onClick={copyPizLinkCode}>{pizLinkCopied ? "Copié ✓" : "Copier le code"}</button></div> : <p className="piz-link-code-hint">Génère le code, puis colle uniquement ce code dans PIZ (pas le lien d’invitation). Il expire après 10 minutes et ne fonctionne qu’une seule fois.</p>}{pizLinkCode && <small className="piz-code-expiry">Code à usage unique · expire à {new Date(pizLinkExpiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</small>}</div>
+    return <section className="piz-page"><div className="piz-page-topline"><button className="piz-back" onClick={() => setShowFinance(false)}>← Retour au profil</button></div><header className="piz-hero"><span className="piz-eyebrow">COMPTE FINANCES · PORTEFEUILLE CENTRAL</span><h1>Mon compte PIZ</h1><p>Synchronise ici les actifs Veloce avec ton compte PIZ.</p><div className="piz-balance-card"><span>Solde PIZ estimé</span><strong>{Number(stats.pizBalance || 0).toFixed(4)} <small>PIZ</small></strong><p>Le compte PIZ centralise les actifs de tes produits. Les transferts et frais restent enregistrés dans le registre PIZ.</p><div className="piz-progress"><i style={{ width: `${Math.round(((stats.pizBalance || 0) % 10) * 10)}%` }} /></div><small>{(10 - ((stats.pizBalance || 0) % 10)).toFixed(4)} PIZ jusqu’au prochain palier indicatif</small></div>
+        <form className="piz-link-code-panel" onSubmit={connectPizAccount}><div className="piz-link-code-heading"><span className="piz-code-lock">◈</span><div><strong>Connecter le portefeuille PIZ</strong><small>Saisis l’ID personnel et le mot de passe de ton compte PIZ.</small></div></div><div className="piz-link-code-value"><input aria-label="ID personnel PIZ" value={pizAccountId} onChange={(event) => setPizAccountId(event.target.value)} placeholder="ID PIZ à 24 caractères" maxLength={24} autoComplete="off" required/><input aria-label="Mot de passe PIZ" type="password" value={pizPassword} onChange={(event) => setPizPassword(event.target.value)} placeholder="Mot de passe PIZ" autoComplete="current-password" required/><button type="submit" disabled={pizLinkLoading}>{pizLinkLoading ? "Synchronisation…" : "Connecter et synchroniser"}</button></div><p className="piz-link-code-hint">Le mot de passe confirme que tu contrôles ce portefeuille. Veloce ne l’enregistre pas; PIZ vérifie la liaison côté serveur.</p></form>
       </header>
       <div className="piz-actions"><article><span>↙</span><div><strong>Dépôt</strong><small>Fonction bientôt disponible</small></div><button disabled title="Cette fonction sera ajoutée ultérieurement">Bientôt</button></article><article><span>↗</span><div><strong>Retrait</strong><small>Fonction bientôt disponible</small></div><button disabled title="Cette fonction sera ajoutée ultérieurement">Bientôt</button></article></div>
       <section className="piz-section"><div className="piz-section-title"><div><span>COMMENT LES POINTS ÉVOLUENT</span><h2>Ta participation</h2></div><span className="piz-live">● Mise à jour régulière</span></div><div className="piz-stats-grid"><article><span>⏱</span><strong>{hours} h {minutes} min</strong><small>Temps actif dans Veloce · 0,005 PIZ / heure</small></article><article><span>✍</span><strong>{stats.postsCount || 0}</strong><small>Publications · 0,01 PIZ chacune</small></article><article><span>♡</span><strong>{stats.likesCount || 0} · {stats.commentsCount || 0}</strong><small>J’aime · 0,0002 PIZ · commentaires · 0,002 PIZ</small></article><article><span>✉</span><strong>{stats.messagesCount || 0}</strong><small>Messages envoyés · 0,0002 PIZ chacun</small></article><article><span>♧</span><strong>{stats.clansManagedCount || 0}</strong><small>Clan créé · 1 PIZ gagné, après paiement de 0,80 PIZ</small></article><article><span>＋</span><strong>{stats.referralsCount || 0}</strong><small>Inscription par ton lien · 0,1 PIZ chacun</small></article></div><p className="piz-rules-note">Les points sont calculés selon l’activité et les clans coûtent 0,80 PIZ à créer. La synchronisation PIZ garde le solde déjà enregistré si tu relies à nouveau ton compte.</p></section>

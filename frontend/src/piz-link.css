@@ -1,0 +1,11 @@
+.piz-hero{padding-right:0;min-height:0}
+.piz-hero .piz-balance-card{max-width:none}
+.piz-link-code-panel{position:static;width:100%;max-width:none;margin:18px 0 0;background:#10172de8}
+.piz-link-code-heading strong{font-size:13px}
+.piz-link-code-heading small{font-size:11px}
+.piz-link-code-hint{font-size:11px}
+.piz-link-code-value{align-items:stretch}
+.piz-link-code-value input{flex:1;min-width:0;border:1px solid #ffffff30;border-radius:9px;background:#0b1020;color:#f3f5ff;padding:10px 12px;font:12px 'DM Mono',monospace}
+.piz-link-code-value input:focus{outline:2px solid #9296ff}
+.piz-link-code-value button{font-size:11px;white-space:nowrap}
+@media(max-width:700px){.piz-link-code-value{flex-direction:column}.piz-link-code-value button{width:100%;padding:11px}.piz-link-code-heading strong{font-size:12px}}

@@ -7,8 +7,7 @@ const {
   getUserStats,
   recordActivityHeartbeat,
   getPublicUserProfile,
-  createPizLinkCode,
-  exchangePizLinkCode
+  linkPizAccount
 } = require("../controllers/userController");
 
 const authMiddleware =
@@ -39,8 +38,7 @@ router.get(
 
 router.post("/heartbeat", authMiddleware, recordActivityHeartbeat);
 
-router.post("/piz-link/code", authMiddleware, createPizLinkCode);
-router.post("/piz-link/exchange", exchangePizLinkCode);
+router.post("/piz-link", authMiddleware, linkPizAccount);
 
 
 router.get(

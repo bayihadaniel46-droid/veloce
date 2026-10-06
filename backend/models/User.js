@@ -38,8 +38,7 @@ const userSchema = new mongoose.Schema(
     activeSeconds: { type: Number, default: 0, min: 0 },
     pizSpent: { type: Number, default: 0, min: 0 },
     lastActivityPing: { type: Date },
-    pizLinkCodeHash: { type: String, select: false, index: true },
-    pizLinkCodeExpiresAt: { type: Date, select: false }
+    pizAccountId: { type: mongoose.Schema.Types.ObjectId, default: null, index: true }
   },
   {
     timestamps: true
