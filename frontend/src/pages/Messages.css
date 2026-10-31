@@ -306,11 +306,13 @@
 }
 
 .floating-btn {
-  transition: transform .22s ease, bottom .22s ease;
+  transition: bottom .22s ease, transform .22s ease;
 }
 
-.floating-btn.floating-btn-raised {
-  transform: translateY(-82px);
+.floating-btn.floating-btn-raised,
+.floating-btn.floating-btn-raised:hover {
+  bottom: 112px !important;
+  transform: none !important;
 }
 
 @media (max-width: 600px) {
@@ -334,6 +336,49 @@
   }
 
   .floating-btn.floating-btn-raised {
-    transform: translateY(-74px);
+    bottom: 94px !important;
   }
+}
+
+.messages-page {
+  position: relative;
+  overscroll-behavior-y: contain;
+}
+
+.messages-sidebar,
+.message-list {
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+
+.messages-pull-indicator {
+  position: absolute;
+  left: 50%;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 15px;
+  border: 1px solid rgba(155, 170, 255, .24);
+  border-radius: 999px;
+  background: rgba(25, 29, 48, .94);
+  color: #f5f6ff;
+  font-size: 12px;
+  font-weight: 650;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .24);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.messages-pull-indicator > span {
+  color: #92a2ff;
+  font-size: 17px;
+}
+
+.messages-pull-indicator.refreshing > span {
+  animation: messages-refresh-spin .8s linear infinite;
+}
+
+@keyframes messages-refresh-spin {
+  to { transform: rotate(360deg); }
 }

@@ -48,6 +48,8 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
   const messageListRef = useRef(null);
   const composerRef = useRef(null);
   const longPressTimer = useRef(null);
+  const pullStartY = useRef(null);
+  const skipAutoScroll = useRef(false);
 
   const [
     messages,
@@ -86,6 +88,8 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
   const [forwardTarget, setForwardTarget] = useState(null);
   const [showChatProfile, setShowChatProfile] = useState(false);
   const [chatWallpaper, setChatWallpaper] = useState("night");
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => () => onComposerStateChange(false), [onComposerStateChange]);
 
@@ -104,7 +108,12 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
 
   useEffect(() => {
     const list = messageListRef.current;
-    if (list) list.scrollTop = list.scrollHeight;
+    if (!list) return;
+    if (skipAutoScroll.current) {
+      skipAutoScroll.current = false;
+      return;
+    }
+    list.scrollTop = list.scrollHeight;
   }, [messages, selectedUser]);
 
 
@@ -124,6 +133,49 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
         setLoading(false);
       }
     };
+
+  const refreshMessagesPage = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        loadConversations(),
+        getClans(token).then(setClans),
+      ]);
+      if (selectedUser?._id) {
+        const data = await getMessages({ userId: selectedUser._id, token });
+        skipAutoScroll.current = true;
+        setMessages(data);
+      } else if (selectedClan) {
+        window.location.reload();
+        return;
+      }
+    } catch (error) {
+      console.error("Actualisation des messages :", error);
+    } finally {
+      setIsRefreshing(false);
+      setPullDistance(0);
+    }
+  };
+
+  const handlePullStart = (event) => {
+    if (event.touches.length !== 1) return;
+    const scroller = event.target.closest?.(".message-list, .conversation-list, .messages-sidebar");
+    const atTop = scroller ? scroller.scrollTop <= 0 : window.scrollY <= 0;
+    pullStartY.current = atTop ? event.touches[0].clientY : null;
+  };
+
+  const handlePullMove = (event) => {
+    if (pullStartY.current === null || isRefreshing) return;
+    const distance = event.touches[0].clientY - pullStartY.current;
+    if (distance > 0) setPullDistance(Math.min(82, distance * 0.55));
+    else setPullDistance(0);
+  };
+
+  const handlePullEnd = () => {
+    pullStartY.current = null;
+    if (pullDistance >= 58) void refreshMessagesPage();
+    else setPullDistance(0);
+  };
 
 
   useEffect(() => {
@@ -355,7 +407,18 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
 
 
   return (
-    <section className="messages-page">
+    <section
+      className="messages-page"
+      onTouchStart={handlePullStart}
+      onTouchMove={handlePullMove}
+      onTouchEnd={handlePullEnd}
+      onTouchCancel={handlePullEnd}
+    >
+      {(pullDistance > 0 || isRefreshing) && (
+        <div className={`messages-pull-indicator${isRefreshing ? " refreshing" : ""}`} style={{ top: `${Math.max(8, pullDistance)}px` }} aria-live="polite">
+          <span>{isRefreshing ? "↻" : "↓"}</span>{isRefreshing ? "Actualisation…" : "Relâche pour actualiser"}
+        </div>
+      )}
 
       <div className={`messages-layout ${selectedUser || selectedClan ? "conversation-open" : ""}`}>
 
