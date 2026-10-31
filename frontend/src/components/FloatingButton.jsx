@@ -1,7 +1,7 @@
-function FloatingButton({ onClick }) {
+function FloatingButton({ onClick, isRaised = false }) {
   return (
     <button
-      className="floating-btn"
+      className={`floating-btn${isRaised ? " floating-btn-raised" : ""}`}
       onClick={onClick}
     >
       +

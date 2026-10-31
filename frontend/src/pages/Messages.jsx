@@ -20,13 +20,14 @@ import {
   addClanMembers, getClanVotes, createClanVote, castClanVote
 } from "../services/messageService";
 import { API_BASE_URL } from "../config";
+import "./Messages.css";
 
 import {
   searchUsers
 } from "../services/userService";
 
 
-function Messages({ initialUser = null, onInitialUserHandled }) {
+function Messages({ initialUser = null, onInitialUserHandled, onComposerStateChange = () => {} }) {
   const { token, user } =
     useAuth();
 
@@ -45,6 +46,8 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
   const [showCreateClan, setShowCreateClan] = useState(false);
   const activeConversationId = useRef("");
   const messageListRef = useRef(null);
+  const composerRef = useRef(null);
+  const longPressTimer = useRef(null);
 
   const [
     messages,
@@ -78,6 +81,26 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [sendError, setSendError] = useState("");
   const [messageFiles, setMessageFiles] = useState([]);
+  const [activeMessage, setActiveMessage] = useState(null);
+  const [replyTarget, setReplyTarget] = useState(null);
+  const [forwardTarget, setForwardTarget] = useState(null);
+  const [showChatProfile, setShowChatProfile] = useState(false);
+  const [chatWallpaper, setChatWallpaper] = useState("night");
+
+  useEffect(() => () => onComposerStateChange(false), [onComposerStateChange]);
+
+  useEffect(() => {
+    if (!selectedUser?._id) return;
+    const key = `veloce_chat_wallpaper_${selectedUser._id}`;
+    setChatWallpaper(localStorage.getItem(key) || "night");
+  }, [selectedUser?._id]);
+
+  const updateWallpaper = (value) => {
+    setChatWallpaper(value);
+    if (selectedUser?._id) {
+      localStorage.setItem(`veloce_chat_wallpaper_${selectedUser._id}`, value);
+    }
+  };
 
   useEffect(() => {
     const list = messageListRef.current;
@@ -118,6 +141,10 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
       activeConversationId.current = personId;
       setSelectedClan(null);
       setSelectedUser({ ...person, _id: personId });
+      setShowChatProfile(false);
+      setReplyTarget(null);
+      setActiveMessage(null);
+      onComposerStateChange(false);
       setMessages([]);
       setSendError("");
       setLoading(false);
@@ -181,7 +208,11 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
         return;
       }
 
-      const messageContent = content.trim();
+      const quotedText = replyTarget?.content?.trim();
+      const replyPrefix = replyTarget
+        ? `↪ ${replyTarget.sender?.username || selectedUser.username}: ${(quotedText || "Pièce jointe").slice(0, 240)}\n`
+        : "";
+      const messageContent = `${replyPrefix}${content.trim()}`.trim();
       const filesToSend = [...messageFiles];
       const recipientId = selectedUser._id;
       const temporaryId = `pending-${Date.now()}`;
@@ -216,6 +247,8 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
 
         void loadConversations();
         setMessageFiles([]);
+        setReplyTarget(null);
+        onComposerStateChange(false);
 
       } catch (error) {
         console.error(error);
@@ -223,6 +256,7 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
           setMessages((previous) => previous.filter((item) => item._id !== temporaryId));
           setContent((previous) => previous || messageContent);
           setMessageFiles((previous) => previous.length ? previous : filesToSend);
+          onComposerStateChange(Boolean(messageContent));
           setSendError(error.message || "Impossible d'envoyer le message.");
         }
       } finally {
@@ -263,6 +297,50 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
       setDeleteError(error.message || "Impossible de supprimer ce message.");
     } finally {
       setDeletingMessageId("");
+    }
+  };
+
+  const performMessageAction = async (action) => {
+    const target = activeMessage;
+    setActiveMessage(null);
+    if (!target) return;
+    if (action === "delete") return handleDeleteMessage(target._id);
+    if (action === "reply") {
+      setReplyTarget(target);
+      onComposerStateChange(true);
+      window.setTimeout(() => composerRef.current?.focus(), 0);
+      return;
+    }
+    if (action === "forward") {
+      setForwardTarget(target);
+      return;
+    }
+    if (action === "copy") {
+      try {
+        await navigator.clipboard.writeText(target.content || "");
+      } catch {
+        setSendError("La copie dans le presse-papiers a échoué.");
+      }
+    }
+  };
+
+  const forwardMessageTo = async (person) => {
+    if (!forwardTarget) return;
+    const summary = forwardTarget.content?.trim() || (forwardTarget.attachments || [])
+      .map((file) => `📎 ${file.originalName}`)
+      .join("\n");
+    if (!summary) return;
+    try {
+      await sendMessage({
+        userId: person._id || person.id,
+        content: `↗ Message transféré de ${selectedUser?.username || "un contact"}\n${summary}`,
+        token,
+      });
+      setForwardTarget(null);
+      await loadConversations();
+    } catch (error) {
+      setSendError(error.message || "Impossible de transférer ce message.");
+      setForwardTarget(null);
     }
   };
 
@@ -450,31 +528,23 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
             <>
               <div className="conversation-header">
                 <button type="button" className="mobile-conversation-back" onClick={closeConversation} aria-label="Retour à la liste des messages">←</button>
-                <div className="message-avatar">
-
-                  {selectedUser.avatar ? (
-                    <img
-                      src={
-                        selectedUser.avatar
-                      }
-                      alt=""
-                    />
-                  ) : (
-                    selectedUser.username
-                      ?.charAt(0)
-                      .toUpperCase()
-                  )}
-
-                </div>
-
-                <strong>
-                  {selectedUser.username}
-                </strong>
+                <button
+                  type="button"
+                  className="conversation-person-button"
+                  onClick={() => setShowChatProfile(true)}
+                  aria-label={`Options de conversation avec ${selectedUser.username}`}
+                >
+                  <span className="message-avatar">
+                    {selectedUser.avatar ? <img src={selectedUser.avatar} alt="" /> : selectedUser.username?.charAt(0).toUpperCase()}
+                  </span>
+                  <span><strong>{selectedUser.username}</strong><small>Profil et apparence</small></span>
+                  <span className="conversation-profile-chevron">⌄</span>
+                </button>
 
               </div>
 
 
-              <div className="message-list" ref={messageListRef}>
+              <div className={`message-list wallpaper-${chatWallpaper}`} ref={messageListRef}>
 
                 {deleteError && <p className="message-delete-error" role="alert">{deleteError}</p>}
 
@@ -499,6 +569,18 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
                               : "message-theirs"
                           }`
                         }
+                        onContextMenu={(event) => {
+                          event.preventDefault();
+                          if (!message.pending) setActiveMessage(message);
+                        }}
+                        onPointerDown={() => {
+                          if (message.pending) return;
+                          window.clearTimeout(longPressTimer.current);
+                          longPressTimer.current = window.setTimeout(() => setActiveMessage(message), 520);
+                        }}
+                        onPointerUp={() => window.clearTimeout(longPressTimer.current)}
+                        onPointerCancel={() => window.clearTimeout(longPressTimer.current)}
+                        onPointerLeave={() => window.clearTimeout(longPressTimer.current)}
                       >
 
                         <div className="message-bubble">
@@ -506,17 +588,6 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
                           {message.attachments?.map((file) => <PrivateAttachment key={file.fileId} attachment={file} token={token} />)}
                           {message.pending && <small className="message-pending">Envoi…</small>}
                         </div>
-
-                        <button
-                          type="button"
-                          className="message-delete-button"
-                          title="Supprimer de ma boîte"
-                          aria-label="Supprimer ce message de ma boîte"
-                          disabled={message.pending || deletingMessageId === message._id}
-                          onClick={() => handleDeleteMessage(message._id)}
-                        >
-                          {message.pending || deletingMessageId === message._id ? "…" : "🗑"}
-                        </button>
 
                       </div>
                     );
@@ -530,15 +601,18 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
               <form className="message-input-area" onSubmit={(event) => { event.preventDefault(); handleSend(); }}>
                 <label className="message-attach-button" title="Joindre des photos ou des fichiers">＋<input type="file" multiple hidden accept="image/*,.pdf,.doc,.docx,.txt,.zip" onChange={(event) => { const chosen = Array.from(event.target.files || []); if (chosen.length + messageFiles.length > 4 || chosen.some((file) => file.size > 8 * 1024 * 1024)) { setSendError("Maximum 4 fichiers, 8 Mo chacun."); return; } setMessageFiles((current) => [...current, ...chosen]); event.target.value = ""; }} /></label>
                 <div className="message-input-stack">
+                {replyTarget && <div className="message-reply-preview"><span>Réponse à {replyTarget.sender?.username || selectedUser.username}</span><small>{replyTarget.content || "Pièce jointe"}</small><button type="button" onClick={() => setReplyTarget(null)} aria-label="Annuler la réponse">×</button></div>}
                 {messageFiles.length > 0 && <div className="message-file-chips">{messageFiles.map((file, index) => <button type="button" key={`${file.name}-${index}`} onClick={() => setMessageFiles((current) => current.filter((_, i) => i !== index))}>📎 {file.name} ×</button>)}</div>}
 
                 <textarea
+                  ref={composerRef}
                   value={content}
-                  onChange={event =>
-                    setContent(
-                      event.target.value
-                    )
-                  }
+                  onFocus={() => onComposerStateChange(true)}
+                  onBlur={() => { if (!content.trim()) onComposerStateChange(false); }}
+                  onChange={(event) => {
+                    setContent(event.target.value);
+                    onComposerStateChange(Boolean(event.target.value.trim()) || Boolean(replyTarget));
+                  }}
                   onKeyDown={event => {
                     if (
                       event.key ===
@@ -564,6 +638,10 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
 
               </form>
 
+              {showChatProfile && <ChatProfileDialog person={selectedUser} wallpaper={chatWallpaper} onWallpaperChange={updateWallpaper} onClose={() => setShowChatProfile(false)} />}
+              {activeMessage && <MessageActionsSheet message={activeMessage} onSelect={performMessageAction} onClose={() => setActiveMessage(null)} />}
+              {forwardTarget && <ForwardMessageDialog conversations={conversations} onSelect={forwardMessageTo} onClose={() => setForwardTarget(null)} />}
+
             </>
 
           )}
@@ -575,6 +653,68 @@ function Messages({ initialUser = null, onInitialUserHandled }) {
       {showCreateClan && <ClanCreateDialog token={token} onClose={() => setShowCreateClan(false)} onCreated={handleClanCreated} />}
 
     </section>
+  );
+}
+
+const CHAT_WALLPAPERS = [
+  { id: "night", label: "Nuit", swatch: "#17191f" },
+  { id: "violet", label: "Violet", swatch: "#211832" },
+  { id: "ocean", label: "Océan", swatch: "#122936" },
+  { id: "rose", label: "Prune", swatch: "#351d31" },
+];
+
+function ChatProfileDialog({ person, wallpaper, onWallpaperChange, onClose }) {
+  return (
+    <div className="chat-profile-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="chat-profile-dialog" role="dialog" aria-modal="true" aria-label={`Profil de ${person.username}`}>
+        <header><div><span>CONVERSATION PRIVÉE</span><h2>Profil du contact</h2></div><button type="button" onClick={onClose} aria-label="Fermer">×</button></header>
+        <div className="chat-profile-identity">
+          <span className="message-avatar">{person.avatar ? <img src={person.avatar} alt="" /> : person.username?.charAt(0).toUpperCase()}</span>
+          <div><strong>{person.username}</strong><small>{person.bio || "Membre de Veloce"}</small></div>
+        </div>
+        <h3>Fond d’écran de cette conversation</h3>
+        <p>Ce réglage est enregistré uniquement sur cet appareil.</p>
+        <div className="chat-wallpaper-options">
+          {CHAT_WALLPAPERS.map((option) => (
+            <button key={option.id} type="button" className={wallpaper === option.id ? "selected" : ""} onClick={() => onWallpaperChange(option.id)}>
+              <span style={{ background: option.swatch }} />{option.label}
+            </button>
+          ))}
+        </div>
+        <footer><button type="button" onClick={onClose}>Terminé</button></footer>
+      </section>
+    </div>
+  );
+}
+
+function MessageActionsSheet({ message, onSelect, onClose }) {
+  return (
+    <div className="message-actions-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="message-actions-sheet" role="menu" aria-label="Actions du message">
+        <div className="message-actions-grabber" />
+        <p>{message.content || "Pièce jointe"}</p>
+        <button type="button" role="menuitem" onClick={() => onSelect("reply")}>↩ <span>Répondre</span></button>
+        <button type="button" role="menuitem" onClick={() => onSelect("copy")} disabled={!message.content}>▢ <span>Copier</span></button>
+        <button type="button" role="menuitem" onClick={() => onSelect("forward")}>➤ <span>Envoyer à une personne</span></button>
+        <button type="button" role="menuitem" className="message-action-delete" onClick={() => onSelect("delete")}>⌫ <span>Supprimer de ma boîte</span></button>
+      </section>
+    </div>
+  );
+}
+
+function ForwardMessageDialog({ conversations, onSelect, onClose }) {
+  return (
+    <div className="chat-profile-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="chat-profile-dialog forward-message-dialog" role="dialog" aria-modal="true" aria-label="Envoyer le message">
+        <header><div><span>PARTAGER</span><h2>Envoyer à…</h2></div><button type="button" onClick={onClose} aria-label="Fermer">×</button></header>
+        <div className="forward-contact-list">{conversations.map(({ user: person }) => (
+          <button key={person._id} type="button" onClick={() => onSelect(person)}>
+            <span className="message-avatar">{person.avatar ? <img src={person.avatar} alt="" /> : person.username?.charAt(0).toUpperCase()}</span>
+            <strong>{person.username}</strong><span>Envoyer</span>
+          </button>
+        ))}{conversations.length === 0 && <p>Aucune autre conversation disponible.</p>}</div>
+      </section>
+    </div>
   );
 }
 

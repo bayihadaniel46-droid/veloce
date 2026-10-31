@@ -54,6 +54,7 @@ function Home() {
 
   const [viewedUserId, setViewedUserId] = useState("");
   const [messageRecipient, setMessageRecipient] = useState(null);
+  const [messageComposerActive, setMessageComposerActive] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
 
@@ -182,6 +183,7 @@ function Home() {
   const handleNavigation =
     useCallback((page) => {
 
+      setMessageComposerActive(false);
       setCurrentPage(page);
 
     }, []);
@@ -405,7 +407,7 @@ function Home() {
 
 
       case "messages":
-        return <Messages initialUser={messageRecipient} onInitialUserHandled={setMessageRecipient} />;
+        return <Messages initialUser={messageRecipient} onInitialUserHandled={setMessageRecipient} onComposerStateChange={setMessageComposerActive} />;
 
 
       case "profile":
@@ -467,6 +469,7 @@ function Home() {
 
       <FloatingButton
         onClick={openCreatePost}
+        isRaised={messageComposerActive}
       />
 
       <MobileNavigation
