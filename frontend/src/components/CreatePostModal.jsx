@@ -11,6 +11,8 @@ function CreatePostModal({
 
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
+  const videoInputRef = useRef(null);
+  const selectedFilesRef = useRef([]);
 
   const [content, setContent] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -18,16 +20,20 @@ function CreatePostModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Nettoyage des URLs d'aperçu
+  // Keep previews alive when the selection changes; release them on unmount.
+  useEffect(() => {
+    selectedFilesRef.current = selectedFiles;
+  }, [selectedFiles]);
+
   useEffect(() => {
     return () => {
-      selectedFiles.forEach((item) => {
+      selectedFilesRef.current.forEach((item) => {
         if (item.preview) {
           URL.revokeObjectURL(item.preview);
         }
       });
     };
-  }, [selectedFiles]);
+  }, []);
 
   if (!isOpen) {
     return null;
@@ -44,20 +50,28 @@ function CreatePostModal({
       return;
     }
 
-    const preparedFiles = newFiles.map((file) => ({
+    const oversized = newFiles.filter((file) => file.size > 20 * 1024 * 1024);
+    const availableSlots = Math.max(0, 10 - selectedFiles.length);
+    const acceptedFiles = newFiles
+      .filter((file) => file.size <= 20 * 1024 * 1024)
+      .slice(0, availableSlots);
+    const preparedFiles = acceptedFiles.map((file) => ({
       id: `${file.name}-${file.size}-${file.lastModified}-${Math.random()}`,
       file,
-      preview: file.type.startsWith("image/")
+      kind: file.type.startsWith("video/") ? "video" : file.type.startsWith("image/") ? "image" : "file",
+      preview: file.type.startsWith("image/") || file.type.startsWith("video/")
         ? URL.createObjectURL(file)
         : null
     }));
 
-    setSelectedFiles((previous) => [
-      ...previous,
-      ...preparedFiles
-    ]);
-
-    setError("");
+    if (preparedFiles.length) {
+      setSelectedFiles((previous) => [...previous, ...preparedFiles]);
+    }
+    setError(oversized.length
+      ? "Chaque fichier doit faire 20 Mo maximum. Les fichiers trop volumineux ont été ignorés."
+      : acceptedFiles.length < newFiles.length
+        ? "Une publication peut contenir jusqu’à 10 fichiers."
+        : "");
   };
 
   // ========================================
@@ -67,6 +81,11 @@ function CreatePostModal({
   const handleImages = (event) => {
     addFiles(event.target.files);
 
+    event.target.value = "";
+  };
+
+  const handleVideos = (event) => {
+    addFiles(event.target.files);
     event.target.value = "";
   };
 
@@ -132,17 +151,6 @@ function CreatePostModal({
     try {
       setLoading(true);
       setError("");
-
-      /*
-       * Pour l'instant, notre backend actuel
-       * accepte seulement "content".
-       *
-       * Les fichiers sont donc sélectionnés
-       * et prévisualisés côté interface.
-       *
-       * L'étape suivante sera l'upload réel
-       * vers le serveur.
-       */
 
       const createdPost =
         await createPost({
@@ -375,10 +383,21 @@ function CreatePostModal({
           <button
             type="button"
             className="create-tool"
+            onClick={() => videoInputRef.current?.click()}
+            disabled={loading || selectedFiles.length >= 10}
+          >
+            <span className="tool-icon">▶</span>
+            <span>Vidéo</span>
+          </button>
+
+
+          <button
+            type="button"
+            className="create-tool"
             onClick={() =>
               fileInputRef.current?.click()
             }
-            disabled={loading}
+            disabled={loading || selectedFiles.length >= 10}
           >
             <span className="tool-icon">
               📎
@@ -401,6 +420,15 @@ function CreatePostModal({
           multiple
           hidden
           onChange={handleImages}
+        />
+
+        <input
+          ref={videoInputRef}
+          type="file"
+          accept="video/mp4,video/webm,video/quicktime"
+          multiple
+          hidden
+          onChange={handleVideos}
         />
 
 
@@ -445,11 +473,23 @@ function CreatePostModal({
                   key={item.id}
                 >
 
-                  {item.preview ? (
+                  {item.kind === "image" ? (
 
                     <img
                       src={item.preview}
                       alt={item.file.name}
+                    />
+
+                  ) : item.kind === "video" ? (
+
+                    <video
+                      className="selected-video-preview"
+                      src={item.preview}
+                      controls
+                      muted
+                      playsInline
+                      preload="metadata"
+                      aria-label={`Aperçu vidéo : ${item.file.name}`}
                     />
 
                   ) : (
@@ -535,6 +575,7 @@ function CreatePostModal({
             onClick={publishPost}
             disabled={
               loading ||
+              selectedFiles.length > 10 ||
               (
                 !content.trim() &&
                 selectedFiles.length === 0

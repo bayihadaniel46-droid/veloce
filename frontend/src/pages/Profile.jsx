@@ -859,29 +859,45 @@ function Profile({ onOpenSettings }) {
                   ) &&
                     post.attachments.length > 0 && (
 
-                      <div className="profile-post-files">
+                      <div className="profile-post-attachments">
+                        {post.attachments.map((file) => {
+                          const fileUrl = file.url.startsWith("http")
+                            ? file.url
+                            : `${API_ORIGIN}${file.url}`;
+                          const name = file.originalName || "Média";
 
-                        {post.attachments.map(
-                          file => (
+                          if (file.mimetype?.startsWith("video/")) {
+                            return (
+                              <figure className="profile-attachment profile-video-attachment" key={file.fileId}>
+                                <video
+                                  src={fileUrl}
+                                  controls
+                                  playsInline
+                                  preload="metadata"
+                                  aria-label={`Vidéo publiée : ${name}`}
+                                />
+                                <figcaption>▶ {name}</figcaption>
+                              </figure>
+                            );
+                          }
 
-                            <a
-                              key={
-                                file.fileId
-                              }
-                              href={
-                                file.url.startsWith("http")
-                                  ? file.url
-                                  : `${API_ORIGIN}${file.url}`
-                              }
-                              target="_blank"
-                              rel="noreferrer"
-                              className="profile-file"
-                            >
-                              📎 {file.originalName}
+                          if (file.mimetype?.startsWith("image/")) {
+                            return (
+                              <a className="profile-attachment profile-image-attachment" href={fileUrl} target="_blank" rel="noreferrer" key={file.fileId}>
+                                <img src={fileUrl} alt={name} loading="lazy" />
+                                <span>{name}</span>
+                              </a>
+                            );
+                          }
+
+                          return (
+                            <a className="profile-file" href={fileUrl} target="_blank" rel="noreferrer" key={file.fileId}>
+                              <span className="profile-file-icon">↧</span>
+                              <span><strong>{name}</strong><small>{file.mimetype || "Fichier joint"}</small></span>
+                              <span aria-hidden="true">↗</span>
                             </a>
-
-                          )
-                        )}
+                          );
+                        })}
 
                       </div>
 
