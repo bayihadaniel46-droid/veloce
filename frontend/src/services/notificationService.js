@@ -90,6 +90,16 @@ export const markAllNotificationsAsRead =
     return data;
   };
 
+export const markNotificationAsUnread = async ({ id, token }) => {
+  const response = await fetch(`${API_URL}/${id}/unread`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Erreur notification.");
+  return data;
+};
+
 export const deleteNotification = async ({ id, token }) => {
   const response = await fetch(`${API_URL}/${id}`, {
     method: "DELETE",

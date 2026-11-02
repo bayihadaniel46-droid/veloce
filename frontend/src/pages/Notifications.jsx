@@ -1,7 +1,4 @@
-import {
-  useEffect,
-  useState
-} from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "../context/authContext";
 
@@ -9,11 +6,12 @@ import {
   getNotifications,
   markAllNotificationsAsRead,
   markNotificationAsRead,
-  deleteNotification
+  deleteNotification,
+  markNotificationAsUnread
 } from "../services/notificationService";
 
 
-function Notifications() {
+function Notifications({ onUnreadCountChange }) {
   const { token } = useAuth();
 
   const [
@@ -28,6 +26,9 @@ function Notifications() {
     useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deletingId, setDeletingId] = useState("");
+  const [actionsFor, setActionsFor] = useState("");
+  const holdTimer = useRef(null);
+  const suppressClick = useRef(false);
 
 
   const loadNotifications =
@@ -42,6 +43,7 @@ function Notifications() {
           );
 
         setNotifications(data);
+        onUnreadCountChange?.(data.filter((item) => !item.read).length);
 
       } catch (error) {
         console.error(error);
@@ -58,7 +60,7 @@ function Notifications() {
 
   useEffect(() => {
     loadNotifications();
-  }, [token]);
+  }, [token, onUnreadCountChange]);
 
 
   const markAllRead =
@@ -77,6 +79,7 @@ function Notifications() {
               })
             )
         );
+        onUnreadCountChange?.(0);
 
       } catch (error) {
         console.error(error);
@@ -86,6 +89,10 @@ function Notifications() {
 
   const openNotification =
     async (notification) => {
+      if (suppressClick.current) {
+        suppressClick.current = false;
+        return;
+      }
       if (
         !notification.read
       ) {
@@ -108,6 +115,8 @@ function Notifications() {
                     : item
               )
           );
+          onUnreadCountChange?.((count) => Math.max(0, count - 1));
+          window.dispatchEvent(new Event("veloce:notifications-updated"));
 
         } catch (error) {
           console.error(error);
@@ -122,13 +131,39 @@ function Notifications() {
       setDeletingId(notificationId);
       setDeleteError("");
       await deleteNotification({ id: notificationId, token });
+      const removed = notifications.find((item) => item._id === notificationId);
       setNotifications((current) => current.filter((item) => item._id !== notificationId));
+      if (removed && !removed.read) onUnreadCountChange?.((count) => Math.max(0, count - 1));
+      setActionsFor("");
+      window.dispatchEvent(new Event("veloce:notifications-updated"));
     } catch (deleteRequestError) {
       setDeleteError(deleteRequestError.message || "Impossible de supprimer cette notification.");
     } finally {
       setDeletingId("");
     }
   };
+
+  const toggleReadState = async (notification) => {
+    try {
+      if (notification.read) await markNotificationAsUnread({ id: notification._id, token });
+      else await markNotificationAsRead({ id: notification._id, token });
+      setNotifications((items) => items.map((item) => item._id === notification._id ? { ...item, read: !notification.read } : item));
+      onUnreadCountChange?.((count) => Math.max(0, count + (notification.read ? 1 : -1)));
+      setActionsFor("");
+      window.dispatchEvent(new Event("veloce:notifications-updated"));
+    } catch (error) {
+      setDeleteError(error.message || "Impossible de modifier cette notification.");
+    }
+  };
+
+  const startHold = (notificationId) => {
+    window.clearTimeout(holdTimer.current);
+    holdTimer.current = window.setTimeout(() => {
+      suppressClick.current = true;
+      setActionsFor(notificationId);
+    }, 500);
+  };
+  const cancelHold = () => window.clearTimeout(holdTimer.current);
 
 
   if (loading) {
@@ -216,6 +251,10 @@ function Notifications() {
                     notification
                   )
                 }
+                onContextMenu={(event) => { event.preventDefault(); setActionsFor(notification._id); }}
+                onTouchStart={() => startHold(notification._id)}
+                onTouchEnd={cancelHold}
+                onTouchMove={cancelHold}
               >
 
                 <div className="notification-avatar">
@@ -252,16 +291,18 @@ function Notifications() {
 
                 </div>
 
-                <button
-                  type="button"
-                  className="notification-delete-button"
-                  aria-label="Supprimer cette notification"
-                  title="Supprimer cette notification"
-                  disabled={deletingId === notification._id}
-                  onClick={(event) => removeNotification(event, notification._id)}
-                >
-                  {deletingId === notification._id ? "…" : "🗑"}
-                </button>
+                {actionsFor === notification._id && <div className="notification-actions" onClick={(event) => event.stopPropagation()}>
+                  <button type="button" onClick={() => toggleReadState(notification)}>{notification.read ? "Marquer comme non lue" : "Marquer comme lue"}</button>
+                  <button type="button" onClick={async () => {
+                    try {
+                      await navigator.clipboard?.writeText(`${notification.sender?.username || "Veloce"} : ${notification.message || "Notification"}`);
+                      setActionsFor("");
+                    } catch {
+                      setDeleteError("Le presse-papiers n’est pas disponible dans ce navigateur.");
+                    }
+                  }}>Copier le texte</button>
+                  <button type="button" className="notification-action-danger" disabled={deletingId === notification._id} onClick={(event) => removeNotification(event, notification._id)}>{deletingId === notification._id ? "Suppression…" : "Supprimer"}</button>
+                </div>}
 
               </div>
             )

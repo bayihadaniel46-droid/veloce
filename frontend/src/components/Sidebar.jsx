@@ -34,15 +34,6 @@ function Sidebar({
             }
           >
             🔍 Explorer
-          </li>
-
-
-          <li
-            onClick={() =>
-              setCurrentPage("notifications")
-            }
-          >
-            🔔 Notifications
             {unreadNotifications > 0 && <span className="nav-badge">{unreadNotifications > 99 ? "99+" : unreadNotifications}</span>}
           </li>
 

@@ -5,6 +5,7 @@ import {
 
 import { useAuth } from "../context/authContext";
 import { API_BASE_URL } from "../config";
+import Notifications from "./Notifications";
 
 import {
   searchUsers,
@@ -13,7 +14,7 @@ import {
 } from "../services/userService";
 
 
-function Explorer() {
+function Explorer({ unreadNotifications = 0, onUnreadCountChange }) {
   const { token } =
     useAuth();
 
@@ -33,6 +34,7 @@ function Explorer() {
   const [suggestionsLoading, setSuggestionsLoading] = useState(true);
   const [suggestionsError, setSuggestionsError] = useState("");
   const [followingId, setFollowingId] = useState("");
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const [
     trends,
@@ -168,7 +170,14 @@ function Explorer() {
           </p>
         </div>
 
+        <button type="button" className="explorer-notification-button" onClick={() => setShowNotifications((visible) => !visible)} aria-label={unreadNotifications ? `Notifications, ${unreadNotifications} non lues` : "Notifications"} aria-pressed={showNotifications}>
+          <span aria-hidden="true">🔔</span>
+          {unreadNotifications > 0 && <b>{unreadNotifications > 99 ? "99+" : unreadNotifications}</b>}
+        </button>
+
       </div>
+
+      {showNotifications ? <Notifications onUnreadCountChange={onUnreadCountChange} /> : <>
 
 
       <div className="explorer-search-card">
@@ -342,6 +351,7 @@ function Explorer() {
 
       </div>
 
+      </>}
     </section>
   );
 }

@@ -92,6 +92,20 @@ const markAsRead = async (
   }
 };
 
+const markAsUnread = async (req, res) => {
+  try {
+    const result = await Notification.updateOne(
+      { _id: req.params.id, recipient: req.user.userId },
+      { $set: { read: false } }
+    );
+    if (result.matchedCount === 0) return res.status(404).json({ message: "Notification introuvable." });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("Erreur notification non lue :", error);
+    return res.status(500).json({ message: "Erreur notification." });
+  }
+};
+
 
 /* ============================================================
    TOUT MARQUER COMME LU
@@ -152,6 +166,7 @@ module.exports = {
   getUnreadCount,
   getNotifications,
   markAsRead,
+  markAsUnread,
   markAllAsRead,
   deleteNotification
 };

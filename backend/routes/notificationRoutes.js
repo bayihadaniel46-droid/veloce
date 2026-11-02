@@ -4,6 +4,7 @@ const {
   getNotifications,
   getUnreadCount,
   markAsRead,
+  markAsUnread,
   markAllAsRead,
   deleteNotification
 } =
@@ -39,6 +40,12 @@ router.patch(
   "/:id/read",
   authMiddleware,
   markAsRead
+);
+
+router.patch(
+  "/:id/unread",
+  authMiddleware,
+  markAsUnread
 );
 
 router.delete(

@@ -3,9 +3,8 @@ import { useEffect, useState } from "react";
 const pages = [
   { id: "profile", label: "Profil", icon: "👤" },
   { id: "assistant", label: "Mon assistant IA", icon: "✦" },
-  { id: "notifications", label: "Notifications", icon: "🔔", badge: "notifications" },
   { id: "messages", label: "Messages", icon: "💬", badge: "messages" },
-  { id: "explorer", label: "Explorer", icon: "🔎" },
+  { id: "explorer", label: "Explorer", icon: "🔎", badge: "notifications" },
   { id: "home", label: "Accueil", icon: "🏠" }
 ];
 

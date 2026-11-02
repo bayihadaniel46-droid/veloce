@@ -10,7 +10,6 @@ import Rightbar from "../components/Rightbar";
 import PostCard from "../components/PostCard";
 
 import Explorer from "./Explorer";
-import Notifications from "./Notifications";
 import Messages from "./Messages";
 import Profile from "./Profile";
 import Settings from "./Settings";
@@ -21,6 +20,7 @@ import Market from "./Market";
 import FloatingButton from "../components/FloatingButton";
 import MobileNavigation from "../components/MobileNavigation";
 import CreatePostModal from "../components/CreatePostModal";
+import VideoFeed from "../components/VideoFeed";
 
 import {
   getPosts,
@@ -57,6 +57,9 @@ function Home() {
   const [messageComposerActive, setMessageComposerActive] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [feedType, setFeedType] = useState("posts");
+  const [refreshingFeed, setRefreshingFeed] = useState(false);
+  const feedTouchStart = useRef(null);
 
   const [posts, setPosts] =
     useState([]);
@@ -84,11 +87,11 @@ function Home() {
   // CHARGER LES POSTS
   // ==========================================================
 
-  const loadPosts = useCallback(async () => {
+  const loadPosts = useCallback(async ({ silent = false } = {}) => {
 
     try {
 
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError("");
 
       const data =
@@ -156,6 +159,19 @@ function Home() {
   }, [token]);
 
   useEffect(() => {
+    const refreshNotificationBadge = async () => {
+      if (!token) return;
+      try {
+        setUnreadNotifications(await getUnreadNotificationCount(token));
+      } catch {
+        // Le compteur conserve sa dernière valeur si le réseau est indisponible.
+      }
+    };
+    window.addEventListener("veloce:notifications-updated", refreshNotificationBadge);
+    return () => window.removeEventListener("veloce:notifications-updated", refreshNotificationBadge);
+  }, [token]);
+
+  useEffect(() => {
 
     const openProfile = () => setCurrentPage("profile");
     const openMarket = () => setCurrentPage("market");
@@ -187,6 +203,28 @@ function Home() {
       setCurrentPage(page);
 
     }, []);
+
+  const startFeedTouch = (event) => {
+    const main = event.currentTarget;
+    if (currentPage === "home" && main.scrollTop <= 0 && event.touches.length === 1) {
+      feedTouchStart.current = event.touches[0].clientY;
+    } else {
+      feedTouchStart.current = null;
+    }
+  };
+
+  const finishFeedTouch = async (event) => {
+    if (feedTouchStart.current === null) return;
+    const distance = event.changedTouches[0].clientY - feedTouchStart.current;
+    feedTouchStart.current = null;
+    if (distance < 75 || refreshingFeed || loading) return;
+    setRefreshingFeed(true);
+    try {
+      await loadPosts({ silent: true });
+    } finally {
+      setRefreshingFeed(false);
+    }
+  };
 
 
   // ==========================================================
@@ -306,7 +344,12 @@ function Home() {
 
     switch (currentPage) {
 
-      case "home":
+      case "home": {
+
+        const visiblePosts = posts.filter((post) => {
+          const hasVideo = Array.isArray(post.attachments) && post.attachments.some((file) => file.mimetype?.startsWith("video/"));
+          return feedType === "videos" ? hasVideo : !hasVideo;
+        });
 
         if (loading) {
 
@@ -347,19 +390,17 @@ function Home() {
         }
 
 
-        if (posts.length === 0) {
+        if (visiblePosts.length === 0) {
 
           return (
             <div className="empty-feed">
 
-              <h2>
-                Aucun post pour le moment
-              </h2>
+              <h2>{feedType === "videos" ? "Aucune vidéo pour le moment" : "Aucun post pour le moment"}</h2>
 
               <p>
                 {user?.username
-                  ? `${user.username}, sois le premier à publier quelque chose sur Veloce.`
-                  : "Sois le premier à publier quelque chose sur Veloce."
+                  ? `${user.username}, ${feedType === "videos" ? "découvre bientôt les vidéos publiées sur Veloce." : "sois le premier à publier quelque chose sur Veloce."}`
+                  : feedType === "videos" ? "Les vidéos publiées apparaîtront ici." : "Sois le premier à publier quelque chose sur Veloce."
                 }
               </p>
 
@@ -376,10 +417,12 @@ function Home() {
         }
 
 
-        return (
+        return feedType === "videos" ? (
+          <VideoFeed posts={visiblePosts} onLike={handleLike} />
+        ) : (
           <section className="home-feed">
 
-            {posts.map(
+              {visiblePosts.map(
               (post, index) => (
 
                 <PostCard
@@ -396,14 +439,11 @@ function Home() {
 
           </section>
         );
+      }
 
 
       case "explorer":
-        return <Explorer />;
-
-
-      case "notifications":
-        return <Notifications />;
+        return <Explorer unreadNotifications={unreadNotifications} onUnreadCountChange={setUnreadNotifications} />;
 
 
       case "messages":
@@ -459,8 +499,12 @@ function Home() {
         unreadNotifications={unreadNotifications}
       />
 
-      <main className="feed">
-
+      <main className="feed" onTouchStart={startFeedTouch} onTouchEnd={finishFeedTouch}>
+        {currentPage === "home" && <div className="home-feed-switch" role="tablist" aria-label="Type de publications">
+          <button type="button" role="tab" aria-selected={feedType === "videos"} className={feedType === "videos" ? "is-active" : ""} onClick={() => setFeedType("videos")}>▶ Vidéos</button>
+          <button type="button" role="tab" aria-selected={feedType === "posts"} className={feedType === "posts" ? "is-active" : ""} onClick={() => setFeedType("posts")}>▤ Posts</button>
+        </div>}
+        {refreshingFeed && <div className="feed-refresh-status" role="status">Actualisation…</div>}
         {renderCurrentPage()}
 
       </main>

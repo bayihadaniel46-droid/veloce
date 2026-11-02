@@ -457,13 +457,13 @@ function PostCard({
         )
     );
 
+  const videoAttachments = attachments.filter((file) => file.mimetype?.startsWith("video/"));
+
 
   const otherAttachments =
     attachments.filter(
       (file) =>
-        !file.mimetype?.startsWith(
-          "image/"
-        )
+        !file.mimetype?.startsWith("image/") && !file.mimetype?.startsWith("video/")
     );
 
 
@@ -771,6 +771,13 @@ function PostCard({
         </div>
 
       )}
+
+      {videoAttachments.length > 0 && <div className="post-video-list">
+        {videoAttachments.map((file) => <video key={file.fileId || file.url} className="post-video" controls playsInline muted preload="metadata">
+          <source src={getFileUrl(file.url)} type={file.mimetype} />
+          Ton navigateur ne peut pas lire cette vidéo.
+        </video>)}
+      </div>}
 
 
       {/* ==================================== */}
