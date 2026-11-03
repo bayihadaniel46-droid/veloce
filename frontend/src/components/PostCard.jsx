@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   getComments,
@@ -8,6 +8,7 @@ import {
 
 import { useAuth } from "../context/authContext";
 import { API_ORIGIN } from "../config";
+import "./PostCard.css";
 
 
 function PostCard({
@@ -15,16 +16,19 @@ function PostCard({
   onLike
 }) {
 
-  const [verification, setVerification] =
-    useState(
-      post.verification || null
-    );
+  const [verification, setVerification] = useState(null);
 
   const [verifying, setVerifying] =
     useState(false);
 
   const [verificationError, setVerificationError] =
     useState("");
+  const verificationTimerRef = useRef(null);
+  const videoRefs = useRef({});
+  const [playingVideo, setPlayingVideo] = useState(null);
+  const [lightbox, setLightbox] = useState(null);
+
+  useEffect(() => () => window.clearTimeout(verificationTimerRef.current), []);
 
   const {
     token,
@@ -337,6 +341,7 @@ function PostCard({
     }
 
     try {
+      window.clearTimeout(verificationTimerRef.current);
       setVerifying(true);
       setVerificationError("");
 
@@ -353,9 +358,9 @@ function PostCard({
       setVerification(
         data.verification || null
       );
+      setVerifying(false);
 
-      // Le résultat reste affiché pendant 1 minute.
-      setTimeout(() => {
+      verificationTimerRef.current = window.setTimeout(() => {
         setVerification(null);
         setVerificationError("");
         setVerifying(false);
@@ -373,11 +378,10 @@ function PostCard({
         error.message ||
         "Impossible de vérifier cette publication."
       );
+      setVerifying(false);
 
-      // Après 1 minute, le bouton redevient normal.
-      setTimeout(() => {
+      verificationTimerRef.current = window.setTimeout(() => {
         setVerificationError("");
-        setVerifying(false);
       }, 60000);
     }
   };
@@ -489,6 +493,14 @@ function PostCard({
     return `${API_ORIGIN}${url}`;
   };
 
+  const playVideo = (videoId) => {
+    const video = videoRefs.current[videoId];
+    if (!video) return;
+    video.play().catch((error) => {
+      console.warn("La vidéo n’a pas pu démarrer :", error);
+    });
+  };
+
   const downloadPost = async () => {
     if (postActionBusy) return;
     setPostActionBusy(true);
@@ -564,7 +576,7 @@ function PostCard({
 
 
   return (
-
+    <>
     <article className="post-card">
 
       {/* ==================================== */}
@@ -751,17 +763,19 @@ function PostCard({
                 }
               >
 
-                <img
-                  src={getFileUrl(
-                    file.url
-                  )}
-                  alt={
-                    file.originalName ||
-                    "Image"
-                  }
-                  className="post-image"
-                  loading="lazy"
-                />
+                <button
+                  type="button"
+                  className="post-image-open"
+                  onClick={() => setLightbox({ src: getFileUrl(file.url), alt: file.originalName || "Image" })}
+                  aria-label={`Ouvrir l’image ${file.originalName || "en grand"}`}
+                >
+                  <img
+                    src={getFileUrl(file.url)}
+                    alt={file.originalName || "Image"}
+                    className="post-image"
+                    loading="lazy"
+                  />
+                </button>
 
               </div>
 
@@ -773,10 +787,32 @@ function PostCard({
       )}
 
       {videoAttachments.length > 0 && <div className="post-video-list">
-        {videoAttachments.map((file) => <video key={file.fileId || file.url} className="post-video" controls playsInline muted preload="metadata">
-          <source src={getFileUrl(file.url)} type={file.mimetype} />
-          Ton navigateur ne peut pas lire cette vidéo.
-        </video>)}
+        {videoAttachments.map((file) => {
+          const videoId = file.fileId || file.url;
+          return (
+            <div className={`post-video-frame ${playingVideo === videoId ? "is-playing" : ""}`} key={videoId}>
+              <video
+                ref={(element) => { videoRefs.current[videoId] = element; }}
+                className="post-video"
+                controls
+                playsInline
+                preload="metadata"
+                onPlay={() => setPlayingVideo(videoId)}
+                onPause={() => setPlayingVideo((current) => current === videoId ? null : current)}
+                onEnded={() => setPlayingVideo(null)}
+              >
+                <source src={getFileUrl(file.url)} type={file.mimetype} />
+                Ton navigateur ne peut pas lire cette vidéo.
+              </video>
+              {playingVideo !== videoId && (
+                <button type="button" className="post-video-play" onClick={() => playVideo(videoId)} aria-label="Lire la vidéo">
+                  <span aria-hidden="true">▶</span>
+                  <small>Lire la vidéo</small>
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>}
 
 
@@ -1043,6 +1079,14 @@ function PostCard({
       )}
 
     </article>
+    {lightbox && (
+      <div className="post-image-lightbox" role="dialog" aria-modal="true" aria-label="Image en plein écran" onClick={() => setLightbox(null)} onKeyDown={(event) => { if (event.key === "Escape") setLightbox(null); }}>
+        <button type="button" className="post-image-lightbox-close" onClick={() => setLightbox(null)} aria-label="Fermer l’image">×</button>
+        <img src={lightbox.src} alt={lightbox.alt} onClick={(event) => event.stopPropagation()} />
+        <span>{lightbox.alt}</span>
+      </div>
+    )}
+    </>
   );
 }
 

@@ -7,6 +7,18 @@ const Notification = require("../models/Notification");
 const Comment = require("../models/comment");
 const Follow = require("../models/Follow");
 
+const VERIFICATION_DISPLAY_MS = 60_000;
+const verificationCache = new Map();
+const rememberVerification = (key, verification) => {
+  const now = Date.now();
+  if (verificationCache.size > 2000) {
+    for (const [entryKey, entry] of verificationCache) {
+      if (entry.expiresAt <= now) verificationCache.delete(entryKey);
+    }
+  }
+  verificationCache.set(key, { verification, expiresAt: now + VERIFICATION_DISPLAY_MS });
+};
+
 
 // ============================================
 // GRIDFS
@@ -778,6 +790,14 @@ const verifyPost = async (req, res) => {
       });
     }
 
+    // A fact-check belongs to the user who requested it and expires after one minute.
+    const cacheKey = `${String(req.user.userId)}:${postId}`;
+    const cachedResult = verificationCache.get(cacheKey);
+    if (cachedResult && cachedResult.expiresAt > Date.now()) {
+      return res.json({ cached: true, verification: cachedResult.verification });
+    }
+    if (cachedResult) verificationCache.delete(cacheKey);
+
 
     // ----------------------------------------
     // VÉRIFIER LE TEXTE
@@ -1018,9 +1038,7 @@ const verifyPost = async (req, res) => {
     if (
       results.length === 0
     ) {
-
-      post.verification = {
-
+      const verification = {
         status:
           "unverified",
 
@@ -1039,16 +1057,13 @@ const verifyPost = async (req, res) => {
           new Date()
       };
 
-
-      await post.save();
-
+      rememberVerification(cacheKey, verification);
 
       return res.json({
 
         cached: false,
 
-        verification:
-          post.verification
+        verification
 
       });
     }
@@ -1534,7 +1549,7 @@ Ne mets aucun Markdown autour du JSON.
     // SAUVEGARDE
     // ========================================
 
-    post.verification = {
+    const verification = {
 
       status,
 
@@ -1552,7 +1567,7 @@ Ne mets aucun Markdown autour du JSON.
     };
 
 
-    await post.save();
+    rememberVerification(cacheKey, verification);
 
 
     // ========================================
@@ -1577,8 +1592,7 @@ Ne mets aucun Markdown autour du JSON.
 
       cached: false,
 
-      verification:
-        post.verification
+      verification
 
     });
 

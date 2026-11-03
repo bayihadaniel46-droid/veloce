@@ -1,0 +1,28 @@
+.post-image-open {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+.post-image-open:focus-visible { outline: 3px solid #8e8af3; outline-offset: -3px; }
+.post-video-list { display: grid; gap: 14px; }
+.post-video-frame { position: relative; overflow: hidden; border: 1px solid #ffffff22; border-radius: 16px; background: #080b12; }
+.post-video { display: block; width: 100%; max-height: min(72vh, 680px); aspect-ratio: 16 / 9; object-fit: contain; background: #080b12; }
+.post-video-play { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; width: 100%; border: 0; background: linear-gradient(90deg,#080b1240,#080b1210,#080b1240); color: #fff; cursor: pointer; transition: opacity .18s ease,background .18s ease; }
+.post-video-play:hover { background: #080b1240; }
+.post-video-play span { width: 64px; height: 64px; display: grid; place-items: center; padding-left: 4px; border: 1px solid #ffffff9c; border-radius: 50%; background: #171a2cbb; box-shadow: 0 8px 35px #0008,0 0 24px #8e8af360; font-size: 23px; }
+.post-video-play small { padding: 5px 10px; border-radius: 20px; background: #10131dba; font-size: 11px; font-weight: 700; }
+.post-video-frame.is-playing .post-video-play { pointer-events: none; opacity: 0; }
+.post-image-lightbox { position: fixed; inset: 0; z-index: 10050; display: flex; align-items: center; justify-content: center; padding: 56px 24px 42px; background: #05060bea; backdrop-filter: blur(12px); cursor: zoom-out; }
+.post-image-lightbox img { display: block; max-width: min(96vw,1500px); max-height: calc(100dvh - 120px); object-fit: contain; border-radius: 8px; box-shadow: 0 20px 90px #000b; cursor: default; }
+.post-image-lightbox>span { position: absolute; bottom: 14px; max-width: calc(100vw - 40px); overflow: hidden; color: #e4e6ed; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.post-image-lightbox-close { position: absolute; top: max(16px,env(safe-area-inset-top)); right: max(16px,env(safe-area-inset-right)); width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #ffffff40; border-radius: 50%; background: #171a25; color: #fff; font-size: 29px; line-height: 1; cursor: pointer; }
+@media(max-width:600px) {
+  .post-video { max-height: 60vh; }
+  .post-video-play span { width: 54px; height: 54px; font-size: 19px; }
+  .post-image-lightbox { padding: 58px 8px 38px; }
+  .post-image-lightbox img { max-width: 100%; max-height: calc(100dvh - 118px); border-radius: 4px; }
+}

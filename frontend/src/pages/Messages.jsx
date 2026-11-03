@@ -22,6 +22,47 @@ import {
 import { API_BASE_URL } from "../config";
 import "./Messages.css";
 
+const EMOJI_LIBRARY = [
+  { words: ["amour", "aimer", "je t'aime", "jtm"], emoji: "❤️", label: "Amour" },
+  { words: ["bonjour", "salut", "coucou"], emoji: "👋", label: "Salutations" },
+  { words: ["merci", "remerciement"], emoji: "🙏", label: "Merci" },
+  { words: ["rire", "drôle", "mdr", "haha"], emoji: "😂", label: "Rire" },
+  { words: ["triste", "pleurer", "chagrin"], emoji: "😢", label: "Tristesse" },
+  { words: ["joie", "heureux", "heureuse", "content"], emoji: "😊", label: "Joie" },
+  { words: ["oui", "d'accord", "ok"], emoji: "✅", label: "Oui" },
+  { words: ["non", "refus"], emoji: "🙅", label: "Non" },
+  { words: ["feu", "bravo", "incroyable"], emoji: "🔥", label: "Super" },
+  { words: ["musique", "chanter"], emoji: "🎵", label: "Musique" },
+  { words: ["maison", "chez moi"], emoji: "🏠", label: "Maison" },
+  { words: ["manger", "repas", "faim"], emoji: "🍽️", label: "Repas" },
+  { words: ["dormir", "bonne nuit", "fatigué"], emoji: "😴", label: "Sommeil" },
+  { words: ["cœur", "coeur"], emoji: "💖", label: "Cœur" },
+  { words: ["anniversaire", "fête"], emoji: "🎉", label: "Fête" },
+  { words: ["argent", "rune", "payer"], emoji: "💰", label: "Argent" },
+  { words: ["danger", "attention"], emoji: "⚠️", label: "Attention" },
+  { words: ["force", "courage"], emoji: "💪", label: "Force" },
+  { words: ["soleil", "beau temps"], emoji: "☀️", label: "Soleil" },
+  { words: ["pluie", "pleuvoir"], emoji: "🌧️", label: "Pluie" },
+];
+const MESSAGE_EMOJIS = ["😀", "😂", "🥰", "😍", "😘", "😊", "😎", "😭", "😢", "😡", "🤔", "🙏", "👏", "👍", "👎", "❤️", "💖", "💔", "🔥", "✨", "🎉", "👋", "💪", "🤝", "✅", "❌", "⚠️", "💰", "🏠", "🎵", "🍽️", "☀️"];
+const MESSAGE_LETTERS = "abcdefghijklmnopqrstuvwxyzàâçéèêëîïôùûüÿœæ'!?.,".split("");
+
+function keepLettersSeparated(value) {
+  let result = "";
+  let previousWasLetter = false;
+  for (const character of Array.from(value)) {
+    const isLetter = /^\p{L}$/u.test(character);
+    if (isLetter && previousWasLetter) continue;
+    result += character;
+    previousWasLetter = isLetter;
+  }
+  return result;
+}
+
+function CallGlyph({ video = false }) {
+  return video ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 10.5 21 7v10l-6-3.5v-3ZM3 6.5h12v11H3z" /></svg> : <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.8 9.4 7l-1.8 2.3a15.4 15.4 0 0 0 7.1 7.1l2.3-1.8 3.2 2.8-.8 3.2a2 2 0 0 1-2.1 1.4A18.9 18.9 0 0 1 2 4.7a2 2 0 0 1 1.4-2.1l3.2-.8Z" /></svg>;
+}
+
 import {
   searchUsers
 } from "../services/userService";
@@ -44,6 +85,10 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
   const [selectedClan, setSelectedClan] = useState(null);
   const [showNewMenu, setShowNewMenu] = useState(false);
   const [showCreateClan, setShowCreateClan] = useState(false);
+  const [showEmojiLibrary, setShowEmojiLibrary] = useState(false);
+  const [emojiSearch, setEmojiSearch] = useState("");
+  const [showEmojiKeyboard, setShowEmojiKeyboard] = useState(false);
+  const [emojiKeyboardMode, setEmojiKeyboardMode] = useState("emoji");
   const activeConversationId = useRef("");
   const messageListRef = useRef(null);
   const composerRef = useRef(null);
@@ -90,6 +135,22 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
   const [chatWallpaper, setChatWallpaper] = useState("night");
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const addComposerText = (text) => {
+    setContent((current) => keepLettersSeparated(`${current}${text}`));
+    onComposerStateChange(true);
+    window.setTimeout(() => composerRef.current?.focus(), 0);
+  };
+
+  const matchingEmojis = EMOJI_LIBRARY.filter((entry) => {
+    const query = emojiSearch.trim().toLocaleLowerCase("fr");
+    return !query || entry.words.some((word) => word.toLocaleLowerCase("fr").includes(query)) || entry.label.toLocaleLowerCase("fr").includes(query);
+  });
+
+  const openEmojiLibrary = () => {
+    setEmojiSearch("");
+    setShowEmojiLibrary(true);
+  };
 
   useEffect(() => () => onComposerStateChange(false), [onComposerStateChange]);
 
@@ -431,6 +492,7 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
           <div className="messages-title">
             <div><span className="messages-eyebrow">VÉLOCE</span><h1>Messages</h1></div>
             <div className="messages-new-wrap">
+              <button type="button" className="messages-emoji-library-button" aria-label="Ouvrir la bibliothèque d’emojis" title="Bibliothèque d’emojis" onClick={openEmojiLibrary}>😊</button>
               <button type="button" className="messages-new-button" aria-label="Créer un message ou un clan" aria-expanded={showNewMenu} onClick={() => setShowNewMenu((value) => !value)}>+</button>
               {showNewMenu && <div className="messages-new-menu"><button type="button" onClick={() => { setSearch(""); setShowNewMenu(false); document.querySelector(".messages-search")?.focus(); }}>Nouveau message privé</button><button type="button" onClick={() => { setShowCreateClan(true); setShowNewMenu(false); }}>Créer un clan</button></div>}
             </div>
@@ -603,7 +665,10 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
                   <span><strong>{selectedUser.username}</strong><small>Profil et apparence</small></span>
                   <span className="conversation-profile-chevron">⌄</span>
                 </button>
-
+                <div className="conversation-call-actions" aria-label="Options d’appel">
+                  <button type="button" aria-label="Appel audio" title="Appel audio"><CallGlyph /><span>Appel</span></button>
+                  <button type="button" aria-label="Appel vidéo" title="Appel vidéo"><CallGlyph video /><span>Vidéo</span></button>
+                </div>
               </div>
 
 
@@ -662,6 +727,8 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
 
               {sendError && <p className="message-send-error" role="alert">{sendError}</p>}
               <form className="message-input-area" onSubmit={(event) => { event.preventDefault(); handleSend(); }}>
+                <button type="button" className="message-emoji-keyboard-toggle" aria-label="Ouvrir le clavier Veloce" title="Clavier Veloce" onClick={() => setShowEmojiKeyboard((visible) => !visible)}>😊</button>
+                <button type="button" className="message-emoji-library-toggle" aria-label="Rechercher un emoji par mot" title="Bibliothèque d’emojis" onClick={openEmojiLibrary}>📚</button>
                 <label className="message-attach-button" title="Joindre des photos ou des fichiers">＋<input type="file" multiple hidden accept="image/*,.pdf,.doc,.docx,.txt,.zip" onChange={(event) => { const chosen = Array.from(event.target.files || []); if (chosen.length + messageFiles.length > 4 || chosen.some((file) => file.size > 8 * 1024 * 1024)) { setSendError("Maximum 4 fichiers, 8 Mo chacun."); return; } setMessageFiles((current) => [...current, ...chosen]); event.target.value = ""; }} /></label>
                 <div className="message-input-stack">
                 {replyTarget && <div className="message-reply-preview"><span>Réponse à {replyTarget.sender?.username || selectedUser.username}</span><small>{replyTarget.content || "Pièce jointe"}</small><button type="button" onClick={() => setReplyTarget(null)} aria-label="Annuler la réponse">×</button></div>}
@@ -673,8 +740,9 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
                   onFocus={() => onComposerStateChange(true)}
                   onBlur={() => { if (!content.trim()) onComposerStateChange(false); }}
                   onChange={(event) => {
-                    setContent(event.target.value);
-                    onComposerStateChange(Boolean(event.target.value.trim()) || Boolean(replyTarget));
+                    const nextValue = keepLettersSeparated(event.target.value);
+                    setContent(nextValue);
+                    onComposerStateChange(Boolean(nextValue.trim()) || Boolean(replyTarget));
                   }}
                   onKeyDown={event => {
                     if (
@@ -686,7 +754,7 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
                       handleSend();
                     }
                   }}
-                  placeholder="Écrire un message..."
+                  placeholder="Emoji, ou une lettre suivie d’un emoji…"
                 />
 
                 </div>
@@ -701,6 +769,12 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
 
               </form>
 
+              {showEmojiKeyboard && <div className="veloce-emoji-keyboard" aria-label="Clavier Veloce">
+                <div className="veloce-emoji-keyboard-head"><strong>{emojiKeyboardMode === "emoji" ? "Clavier emoji" : "Une lettre à la fois"}</strong><button type="button" onClick={() => setEmojiKeyboardMode((mode) => mode === "emoji" ? "letters" : "emoji")}>{emojiKeyboardMode === "emoji" ? "ABC" : "😊"}</button><button type="button" onClick={() => setShowEmojiKeyboard(false)} aria-label="Fermer le clavier">×</button></div>
+                <div className="veloce-emoji-keyboard-grid">{(emojiKeyboardMode === "emoji" ? MESSAGE_EMOJIS : MESSAGE_LETTERS).map((key) => <button type="button" key={key} disabled={emojiKeyboardMode === "letters" && /^(\p{L})$/u.test(key) && /\p{L}$/u.test(Array.from(content).at(-1) || "")} onClick={() => addComposerText(key)}>{key}</button>)}</div>
+                <div className="veloce-emoji-keyboard-foot"><button type="button" onClick={() => { setContent((current) => Array.from(current).slice(0, -1).join("")); composerRef.current?.focus(); }}>⌫ Effacer</button><button type="button" onClick={() => addComposerText(" ")}>Espace</button></div>
+              </div>}
+
               {showChatProfile && <ChatProfileDialog person={selectedUser} wallpaper={chatWallpaper} onWallpaperChange={updateWallpaper} onClose={() => setShowChatProfile(false)} />}
               {activeMessage && <MessageActionsSheet message={activeMessage} onSelect={performMessageAction} onClose={() => setActiveMessage(null)} />}
               {forwardTarget && <ForwardMessageDialog conversations={conversations} onSelect={forwardMessageTo} onClose={() => setForwardTarget(null)} />}
@@ -714,6 +788,7 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
       </div>
 
       {showCreateClan && <ClanCreateDialog token={token} onClose={() => setShowCreateClan(false)} onCreated={handleClanCreated} />}
+      {showEmojiLibrary && <div className="veloce-emoji-library-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowEmojiLibrary(false); }}><section className="veloce-emoji-library" role="dialog" aria-modal="true" aria-labelledby="emoji-library-title"><header><div><span>VOCE VISUELLE</span><h2 id="emoji-library-title">Bibliothèque d’emojis</h2></div><button type="button" onClick={() => setShowEmojiLibrary(false)} aria-label="Fermer">×</button></header><label className="veloce-emoji-search">Trouver une idée<input autoFocus value={emojiSearch} onChange={(event) => setEmojiSearch(event.target.value)} placeholder="Écris un mot : amour, merci, rire…" /></label><div className="veloce-emoji-library-results">{matchingEmojis.map((entry) => <button type="button" key={entry.label} onClick={() => { addComposerText(entry.emoji); setShowEmojiLibrary(false); }}><span>{entry.emoji}</span><strong>{entry.label}</strong><small>{entry.words.slice(0, 3).join(" · ")}</small></button>)}{matchingEmojis.length === 0 && <p>Aucun emoji trouvé. Essaie un autre mot.</p>}</div></section></div>}
 
     </section>
   );
