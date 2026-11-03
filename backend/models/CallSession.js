@@ -11,6 +11,7 @@ const callEventSchema = new mongoose.Schema({
 const callSessionSchema = new mongoose.Schema({
   caller: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
   recipient: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  mode: { type: String, enum: ["audio", "video"], default: "audio" },
   status: { type: String, enum: ["ringing", "active", "declined", "ended"], default: "ringing", index: true },
   events: { type: [callEventSchema], default: [] },
   expiresAt: { type: Date, required: true, expires: 0 }

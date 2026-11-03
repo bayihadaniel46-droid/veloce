@@ -20,7 +20,10 @@ const callRequest = async (path, token, options = {}) => {
 
 export const getIncomingCalls = (token) => callRequest("/incoming", token);
 export const startAudioCall = ({ recipientId, token }) => callRequest("/", token, {
-  method: "POST", body: JSON.stringify({ recipientId }),
+  method: "POST", body: JSON.stringify({ recipientId, mode: "audio" }),
+});
+export const startVideoCall = ({ recipientId, token }) => callRequest("/", token, {
+  method: "POST", body: JSON.stringify({ recipientId, mode: "video" }),
 });
 export const getAudioCall = ({ callId, after = 0, token }) => callRequest(`/${callId}?after=${after}`, token);
 export const updateAudioCall = ({ callId, action, token }) => callRequest(`/${callId}/status`, token, {

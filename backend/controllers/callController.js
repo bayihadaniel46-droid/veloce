@@ -6,6 +6,7 @@ const participantProjection = "username avatar bio";
 
 const serializeCall = (call) => ({
   id: String(call._id),
+  mode: call.mode || "audio",
   status: call.status,
   caller: call.caller && typeof call.caller === "object" ? {
     id: String(call.caller._id), username: call.caller.username, avatar: call.caller.avatar, bio: call.caller.bio
@@ -32,6 +33,8 @@ const getIncomingCalls = async (req, res) => {
 const startCall = async (req, res) => {
   try {
     const recipientId = String(req.body.recipientId || "");
+    const mode = req.body.mode === "video" ? "video" : req.body.mode === "audio" || !req.body.mode ? "audio" : null;
+    if (!mode) return res.status(400).json({ message: "Type d’appel invalide." });
     if (!mongoose.isValidObjectId(recipientId) || recipientId === String(req.user.userId)) {
       return res.status(400).json({ message: "Destinataire d’appel invalide." });
     }
@@ -48,6 +51,7 @@ const startCall = async (req, res) => {
     const call = await CallSession.create({
       caller: req.user.userId,
       recipient: recipientId,
+      mode,
       expiresAt: new Date(Date.now() + 2 * 60 * 1000)
     });
     await call.populate(["caller", "recipient"], participantProjection);

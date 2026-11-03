@@ -18,7 +18,7 @@ import {
   openClanEnvelope,
   sendClanEnvelope,
   addClanMembers, getClanVotes, createClanVote, castClanVote,
-  getIncomingCalls, startAudioCall, getAudioCall,
+  getIncomingCalls, startAudioCall, startVideoCall, getAudioCall,
   updateAudioCall, sendAudioCallEvent
 } from "../services/messageService";
 import { API_BASE_URL } from "../config";
@@ -176,10 +176,13 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
   const [audioCall, setAudioCall] = useState(null);
   const [callError, setCallError] = useState("");
   const [callTalkers, setCallTalkers] = useState({ local: false, remote: false });
+  const [callMediaControls, setCallMediaControls] = useState({ microphoneMuted: false, cameraOff: false });
+  const [remoteMediaStream, setRemoteMediaStream] = useState(null);
   const audioCallRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const localAudioStreamRef = useRef(null);
   const remoteAudioRef = useRef(null);
+  const remoteVideoRef = useRef(null);
   const callEventSequenceRef = useRef(0);
   const pendingRemoteIceRef = useRef([]);
   const audioContextRef = useRef(null);
@@ -268,15 +271,16 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
     peer.ontrack = (event) => {
       const stream = event.streams?.[0];
       if (!stream) return;
+      setRemoteMediaStream(new MediaStream(stream.getTracks()));
       if (remoteAudioRef.current) {
         remoteAudioRef.current.srcObject = stream;
         void remoteAudioRef.current.play().catch(() => setCallError("Autorise la lecture audio de Veloce dans ton navigateur."));
       }
-      watchCallVoice(stream, "remote");
+      if (event.track.kind === "audio") watchCallVoice(stream, "remote");
     };
     peer.onconnectionstatechange = () => {
       if (peer.connectionState === "connected") setAudioCall((current) => current?.id === callId ? { ...current, state: "active" } : current);
-      if (["failed", "disconnected"].includes(peer.connectionState)) setCallError("La connexion audio est interrompue. Vérifie le réseau puis réessaie.");
+      if (["failed", "disconnected"].includes(peer.connectionState)) setCallError("La connexion est interrompue. Vérifie le réseau puis réessaie.");
     };
     return peer;
   };
@@ -290,6 +294,8 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
     localAudioStreamRef.current?.getTracks?.().forEach((track) => track.stop());
     localAudioStreamRef.current = null;
     if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    setRemoteMediaStream(null);
     if (audioContextRef.current) void audioContextRef.current.close().catch(() => {});
     audioContextRef.current = null;
     callEventSequenceRef.current = 0;
@@ -298,21 +304,36 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
     setCallTalkers({ local: false, remote: false });
   };
 
-  const requestMicrophone = async () => {
-    if (!navigator.mediaDevices?.getUserMedia) throw new Error("L’appel nécessite un navigateur sécurisé (HTTPS) avec accès au micro.");
-    return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
+  const requestCallMedia = async (mode = "audio") => {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("Les appels nécessitent une connexion sécurisée (HTTPS) et un navigateur compatible.");
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        video: mode === "video" ? { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } } : false,
+      });
+    } catch (error) {
+      if (mode === "video" && ["NotFoundError", "OverconstrainedError"].includes(error.name)) {
+        throw new Error("Aucune caméra compatible n’a été trouvée sur cet appareil.");
+      }
+      if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+        throw new Error(mode === "video" ? "Autorise l’accès au micro et à la caméra pour lancer l’appel vidéo." : "Autorise l’accès au micro pour lancer l’appel.");
+      }
+      throw error;
+    }
   };
 
-  const startCall = async () => {
+  const startCall = async (mode = "audio") => {
     if (!selectedUser || audioCallRef.current) return;
     setCallError("");
+    setCallMediaControls({ microphoneMuted: false, cameraOff: false });
     let createdCall = null;
     try {
-      localAudioStreamRef.current = await requestMicrophone();
+      localAudioStreamRef.current = await requestCallMedia(mode);
       watchCallVoice(localAudioStreamRef.current, "local");
-      createdCall = await startAudioCall({ recipientId: selectedUser._id, token });
+      const createCall = mode === "video" ? startVideoCall : startAudioCall;
+      createdCall = await createCall({ recipientId: selectedUser._id, token });
       const peer = createCallPeer(createdCall.id);
-      setAudioCall({ ...createdCall, person: selectedUser, role: "caller", state: "ringing" });
+      setAudioCall({ ...createdCall, mode, person: selectedUser, role: "caller", state: "ringing" });
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
       await sendAudioCallEvent({ callId: createdCall.id, type: "offer", payload: peer.localDescription.toJSON(), token });
@@ -320,7 +341,7 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
       if (createdCall?.id) void updateAudioCall({ callId: createdCall.id, action: "end", token }).catch(() => {});
       releaseCallMedia();
       setAudioCall(null);
-      setCallError(error.message || "Impossible de démarrer l’appel audio.");
+      setCallError(error.message || `Impossible de démarrer l’appel ${mode === "video" ? "vidéo" : "audio"}.`);
     }
   };
 
@@ -329,14 +350,16 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
     const call = incomingCall;
     setCallError("");
     try {
-      localAudioStreamRef.current = await requestMicrophone();
+      const mode = call.mode === "video" ? "video" : "audio";
+      setCallMediaControls({ microphoneMuted: false, cameraOff: false });
+      localAudioStreamRef.current = await requestCallMedia(mode);
       watchCallVoice(localAudioStreamRef.current, "local");
       createCallPeer(call.id);
       await updateAudioCall({ callId: call.id, action: "accept", token });
       const callerProfile = { ...call.caller, _id: call.caller.id };
       void openConversation(callerProfile);
       setIncomingCall(null);
-      setAudioCall({ ...call, person: callerProfile, role: "callee", state: "connecting" });
+      setAudioCall({ ...call, mode, person: callerProfile, role: "callee", state: "connecting" });
     } catch (error) {
       void updateAudioCall({ callId: call.id, action: "end", token }).catch(() => {});
       releaseCallMedia();
@@ -360,6 +383,18 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
     }
     releaseCallMedia();
     setAudioCall(null);
+  };
+
+  const toggleCallMicrophone = () => {
+    const microphoneMuted = !callMediaControls.microphoneMuted;
+    for (const track of localAudioStreamRef.current?.getAudioTracks?.() || []) track.enabled = !microphoneMuted;
+    setCallMediaControls((current) => ({ ...current, microphoneMuted }));
+  };
+
+  const toggleCallCamera = () => {
+    const cameraOff = !callMediaControls.cameraOff;
+    for (const track of localAudioStreamRef.current?.getVideoTracks?.() || []) track.enabled = !cameraOff;
+    setCallMediaControls((current) => ({ ...current, cameraOff }));
   };
 
   useEffect(() => () => onComposerStateChange(false), [onComposerStateChange]);
@@ -939,8 +974,8 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
                   <span className="conversation-profile-chevron">⌄</span>
                 </button>
                 <div className="conversation-call-actions" aria-label="Options d’appel">
-                  <button type="button" aria-label="Appel audio" title="Appel audio" onClick={startCall} disabled={Boolean(audioCall || incomingCall)}><CallGlyph /><span>Appel</span></button>
-                  <button type="button" aria-label="Appel vidéo" title="Appel vidéo"><CallGlyph video /><span>Vidéo</span></button>
+                  <button type="button" aria-label="Appel audio" title="Appel audio" onClick={() => void startCall("audio")} disabled={Boolean(audioCall || incomingCall)}><CallGlyph /><span>Appel</span></button>
+                  <button type="button" aria-label="Appel vidéo" title="Appel vidéo" onClick={() => void startCall("video")} disabled={Boolean(audioCall || incomingCall)}><CallGlyph video /><span>Vidéo</span></button>
                 </div>
               </div>
 
@@ -1061,7 +1096,8 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
       </div>
 
       <audio ref={remoteAudioRef} autoPlay playsInline hidden />
-      {audioCall && <AudioCallStage call={audioCall} self={user} talkers={callTalkers} error={callError} onEnd={() => void endCall(true)} />}
+      {audioCall?.mode === "video" && <VideoCallStage call={audioCall} self={user} localStream={localAudioStreamRef.current} remoteStream={remoteMediaStream} remoteVideoRef={remoteVideoRef} controls={callMediaControls} onToggleMicrophone={toggleCallMicrophone} onToggleCamera={toggleCallCamera} onEnd={() => void endCall(true)} error={callError} />}
+      {audioCall && audioCall.mode !== "video" && <AudioCallStage call={audioCall} self={user} talkers={callTalkers} error={callError} onEnd={() => void endCall(true)} />}
       {incomingCall && !audioCall && <IncomingCallStage call={incomingCall} self={user} error={callError} onAccept={() => void acceptCall()} onDecline={() => void declineCall()} />}
       {!audioCall && !incomingCall && callError && <div className="call-error-toast" role="alert"><span>{callError}</span><button type="button" onClick={() => setCallError("")}>×</button></div>}
       {showCreateClan && <ClanCreateDialog token={token} onClose={() => setShowCreateClan(false)} onCreated={handleClanCreated} />}
@@ -1113,14 +1149,61 @@ function AudioCallStage({ call, self, talkers, error, onEnd }) {
   </section></div>;
 }
 
+function VideoCallStage({ call, self, localStream, remoteStream, remoteVideoRef, controls, onToggleMicrophone, onToggleCamera, onEnd, error }) {
+  const localVideoRef = useRef(null);
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    if (!localVideoRef.current) return;
+    localVideoRef.current.srcObject = localStream || null;
+    if (localStream) void localVideoRef.current.play().catch(() => {});
+  }, [localStream]);
+  useEffect(() => {
+    if (!remoteVideoRef.current) return;
+    remoteVideoRef.current.srcObject = remoteStream || null;
+    if (remoteStream) void remoteVideoRef.current.play().catch(() => {});
+  }, [remoteStream, remoteVideoRef]);
+  useEffect(() => {
+    if (call.state !== "active") return undefined;
+    const timer = window.setInterval(() => setSeconds((value) => value + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [call.state]);
+
+  const clock = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+  const label = call.state === "ringing" ? "Appel en cours…" : call.state === "active" ? clock : "Connexion vidéo…";
+  const remoteHasVideo = remoteStream?.getVideoTracks?.().some((track) => track.readyState === "live");
+  const remoteName = call.person?.username || "Contact";
+  return <div className="audio-call-overlay video-call-overlay">
+    <section className="video-call-stage" role="dialog" aria-modal="true" aria-label={`Appel vidéo avec ${remoteName}`}>
+      <div className="video-call-remote">
+        <video ref={remoteVideoRef} autoPlay playsInline muted aria-label={`Vidéo de ${remoteName}`} />
+        {!remoteHasVideo && <div className="video-call-waiting"><span>{emojiForPerson(call.person)}</span><strong>{remoteName}</strong><small>{call.state === "ringing" ? "Sonnerie chez ton contact" : "En attente de l’image…"}</small></div>}
+        <header className="video-call-topbar"><div><span>VELOCE · APPEL VIDÉO</span><strong>{remoteName}</strong></div><span className={`video-call-clock${call.state === "active" ? " connected" : ""}`}><i />{label}</span><button type="button" onClick={onEnd} aria-label="Terminer l’appel">×</button></header>
+        <div className="video-call-local">
+          <video ref={localVideoRef} autoPlay playsInline muted aria-label="Aperçu de ta caméra" />
+          {controls.cameraOff && <div className="video-call-camera-off"><span>{emojiForPerson(self)}</span><small>Caméra coupée</small></div>}
+          <strong>{self?.username || "Toi"}</strong>
+        </div>
+      </div>
+      {error && <p className="video-call-error" role="alert">{error}</p>}
+      <div className="video-call-controls">
+        <button type="button" className={controls.microphoneMuted ? "is-off" : ""} aria-pressed={controls.microphoneMuted} onClick={onToggleMicrophone}><span>{controls.microphoneMuted ? "🔇" : "🎙️"}</span>{controls.microphoneMuted ? "Réactiver le micro" : "Couper le micro"}</button>
+        <button type="button" className={controls.cameraOff ? "is-off" : ""} aria-pressed={controls.cameraOff} onClick={onToggleCamera}><span>{controls.cameraOff ? "🚫" : "📷"}</span>{controls.cameraOff ? "Réactiver la caméra" : "Couper la caméra"}</button>
+        <button type="button" className="video-call-hangup" onClick={onEnd}><CallGlyph />Raccrocher</button>
+      </div>
+      <p className="video-call-note">Ton navigateur doit avoir l’autorisation d’utiliser le micro et la caméra.</p>
+    </section>
+  </div>;
+}
+
 function IncomingCallStage({ call, self, error, onAccept, onDecline }) {
-  return <div className="audio-call-overlay"><section className="audio-call-stage incoming" role="dialog" aria-modal="true" aria-label={`Appel entrant de ${call.caller?.username || "un contact"}`}>
-    <header><span>APPEL AUDIO ENTRANT</span></header>
+  const isVideo = call.mode === "video";
+  return <div className="audio-call-overlay"><section className={`audio-call-stage incoming${isVideo ? " incoming-video" : ""}`} role="dialog" aria-modal="true" aria-label={`Appel ${isVideo ? "vidéo" : "audio"} entrant de ${call.caller?.username || "un contact"}`}>
+    <header><span>APPEL {isVideo ? "VIDÉO" : "AUDIO"} ENTRANT</span></header>
     <div className="audio-call-status"><i />Ça sonne dans ta messagerie</div>
     <div className="audio-call-participants"><CallParticipant person={self} self state="Tu reçois l’appel" /><span className="audio-call-link">↔</span><CallParticipant person={call.caller} state="T’appelle" /></div>
     {error && <p className="audio-call-error" role="alert">{error}</p>}
     <div className="audio-call-controls"><button className="audio-call-accept" type="button" onClick={onAccept}><CallGlyph /> Répondre</button><button className="audio-call-end" type="button" onClick={onDecline}>Refuser</button></div>
-    <p className="audio-call-note">En répondant, ton navigateur demandera l’accès au micro.</p>
+    <p className="audio-call-note">En répondant, ton navigateur demandera l’accès au {isVideo ? "micro et à la caméra" : "micro"}.</p>
   </section></div>;
 }
 
