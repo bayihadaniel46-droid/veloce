@@ -43,6 +43,7 @@ function Home() {
 
   const [currentPage, setCurrentPage] =
     useState(() => {
+      if (new URLSearchParams(window.location.search).has("profile")) return "user-profile";
       try {
         const userId = user?._id || user?.id || "account";
         const saved = JSON.parse(localStorage.getItem(`veloce_settings_${userId}`) || "{}");
@@ -52,7 +53,7 @@ function Home() {
       }
     });
 
-  const [viewedUserId, setViewedUserId] = useState("");
+  const [viewedUserId, setViewedUserId] = useState(() => new URLSearchParams(window.location.search).get("profile") || "");
   const [messageRecipient, setMessageRecipient] = useState(null);
   const [messageComposerActive, setMessageComposerActive] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -457,7 +458,7 @@ function Home() {
         return <Settings onBack={() => setCurrentPage("profile")} onOpenProfile={() => setCurrentPage("profile")} onLogout={logout} />;
 
       case "user-profile":
-        return <PublicProfile userId={viewedUserId} onBack={() => setCurrentPage("explorer")} onMessage={(person) => { setMessageRecipient(person); setCurrentPage("messages"); }} />;
+        return <PublicProfile userId={viewedUserId} onBack={() => { setCurrentPage("explorer"); const url = new URL(window.location.href); url.searchParams.delete("profile"); window.history.replaceState({}, "", url); }} onMessage={(person) => { setMessageRecipient(person); setCurrentPage("messages"); }} />;
 
       case "assistant":
         return <Assistant />;

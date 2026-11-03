@@ -17,12 +17,14 @@ import {
   getClanMessages,
   openClanEnvelope,
   sendClanEnvelope,
-  addClanMembers, getClanVotes, createClanVote, castClanVote
+  addClanMembers, getClanVotes, createClanVote, castClanVote,
+  getIncomingCalls, startAudioCall, getAudioCall,
+  updateAudioCall, sendAudioCallEvent
 } from "../services/messageService";
 import { API_BASE_URL } from "../config";
 import "./Messages.css";
 
-const EMOJI_LIBRARY = [
+const coreEmojiLibrary = [
   { words: ["amour", "aimer", "je t'aime", "jtm"], emoji: "❤️", label: "Amour" },
   { words: ["bonjour", "salut", "coucou"], emoji: "👋", label: "Salutations" },
   { words: ["merci", "remerciement"], emoji: "🙏", label: "Merci" },
@@ -44,6 +46,40 @@ const EMOJI_LIBRARY = [
   { words: ["soleil", "beau temps"], emoji: "☀️", label: "Soleil" },
   { words: ["pluie", "pleuvoir"], emoji: "🌧️", label: "Pluie" },
 ];
+const makeEmojiEntries = (category, entries) => entries.map(([emoji, label, ...words]) => ({ emoji, label, category, words }));
+const EMOJI_LIBRARY = [
+  ...coreEmojiLibrary.map((entry) => ({ ...entry, category: "Essentiels" })),
+  ...makeEmojiEntries("Émotions", [
+    ["🤣", "Fou rire", "éclater de rire", "hilarant", "mort de rire"], ["😆", "Grand sourire", "super content", "ravi"], ["🥹", "Ému", "touché", "émotion", "reconnaissant"], ["🥺", "S’il te plaît", "pitié", "suppliant"], ["😔", "Déçu", "déception", "mélancolie"], ["😤", "Frustré", "agacé", "énervé"], ["😱", "Choqué", "surpris", "effrayé"], ["🤯", "Impressionné", "incroyable", "époustouflé"], ["🤩", "Émerveillé", "fan", "admiratif"], ["😇", "Innocent", "ange", "sage"], ["🤭", "Oups", "gêné", "rire discret"], ["🫣", "Timide", "caché", "je regarde"], ["😏", "Malicieux", "taquin", "clin d’œil"], ["😴", "Somnolent", "sieste", "je dors"], ["🥱", "Bâillement", "fatigue", "épuisé"], ["🤒", "Malade", "fièvre", "pas en forme"], ["🤧", "Rhume", "éternuer", "allergie"], ["🤮", "Dégoûté", "beurk", "écœuré"], ["🤫", "Secret", "silence", "chut"], ["🤐", "Bouche cousue", "je ne dis rien", "motus"], ["😬", "Mal à l’aise", "gênant", "oops"], ["🙃", "Ironie", "à l’envers", "second degré"], ["😵‍💫", "Étourdi", "perdu", "confus"], ["🥳", "Célébrer", "félicitations", "on fête"], ["🤗", "Câlin", "tendresse", "je t’embrasse"], ["🫶", "Avec amour", "main cœur", "je t’aime fort"], ["💌", "Lettre d’amour", "message tendre", "mot doux"], ["💋", "Bisou", "baiser", "bisous"], ["💞", "Amour partagé", "couple", "cœurs"], ["🫂", "Réconfort", "câlin", "je suis là"],
+  ]),
+  ...makeEmojiEntries("Personnes", [
+    ["👋", "Salut", "au revoir", "coucou", "hello"], ["🫡", "Bien reçu", "respect", "à vos ordres"], ["🙋", "Moi", "j’ai une question", "présent"], ["🙌", "Hourra", "victoire", "youpi"], ["👏", "Applaudir", "bravo", "bien joué"], ["🤝", "Accord", "poignée de main", "marché conclu"], ["🫰", "Petit cœur", "love", "mini cœur"], ["🤞", "Bonne chance", "je croise les doigts", "espoir"], ["🤟", "Je t’aime", "rock", "amour"], ["✌️", "Paix", "victoire", "peace"], ["🤘", "Rock", "concert", "metal"], ["👌", "Parfait", "ça marche", "ok"], ["🤌", "Mais oui", "italien", "expressif"], ["🫵", "Toi", "c’est toi", "toi-même"], ["👉", "À droite", "par ici", "regarde"], ["👈", "À gauche", "de ce côté", "ici"], ["☝️", "Un instant", "important", "une chose"], ["👇", "En bas", "ci-dessous", "descends"], ["💁", "À ton service", "voilà", "je t’explique"], ["🙇", "Pardon", "excuses", "respect"], ["🧑‍🎓", "Étudiant", "études", "diplôme"], ["🧑‍🍳", "Cuisinier", "chef", "cuisine"], ["🧑‍💻", "Informatique", "ordinateur", "développeur"], ["🧑‍🚀", "Astronaute", "espace", "exploration"], ["🧑‍⚕️", "Médecin", "soin", "santé"], ["👮", "Police", "sécurité", "agent"], ["🕵️", "Enquête", "détective", "mystère"], ["🧙", "Magie", "sorcier", "fantaisie"], ["👑", "Roi", "reine", "couronne"], ["🧚", "Fée", "magique", "féerie"],
+  ]),
+  ...makeEmojiEntries("Animaux & nature", [
+    ["🐶", "Chien", "chien", "chiot", "toutou"], ["🐱", "Chat", "chat", "chaton", "minou"], ["🐭", "Souris", "petit rongeur"], ["🐰", "Lapin", "lapin", "Pâques"], ["🦊", "Renard", "rusé", "forêt"], ["🐻", "Ours", "ours", "nounours"], ["🐼", "Panda", "bambou", "mignon"], ["🐨", "Koala", "Australie", "eucalyptus"], ["🐯", "Tigre", "félin", "sauvage"], ["🦁", "Lion", "courage", "roi de la jungle"], ["🐸", "Grenouille", "mare", "kermit"], ["🐵", "Singe", "rigolo", "banane"], ["🐧", "Pingouin", "froid", "glace"], ["🦉", "Hibou", "nuit", "sagesse"], ["🦄", "Licorne", "rêve", "fantastique"], ["🐝", "Abeille", "miel", "travail"], ["🦋", "Papillon", "beauté", "changement"], ["🐢", "Tortue", "lentement", "patience"], ["🐬", "Dauphin", "océan", "intelligent"], ["🦈", "Requin", "mer", "prédateur"], ["🐙", "Poulpe", "pieuvre", "mer"], ["🦜", "Perroquet", "oiseau", "parler"], ["🌸", "Fleur", "fleur", "printemps", "beauté"], ["🌹", "Rose", "rose", "romantique", "amour"], ["🌻", "Tournesol", "soleil", "été"], ["🌴", "Palmier", "vacances", "tropiques"], ["🍀", "Chance", "trèfle", "bonne chance"], ["🌈", "Arc-en-ciel", "espoir", "couleurs"], ["🌊", "Vague", "mer", "océan"], ["🌙", "Lune", "nuit", "bonne nuit"], ["⭐", "Étoile", "étoile", "briller", "rêve"], ["⚡", "Éclair", "énergie", "rapide"], ["❄️", "Neige", "hiver", "froid"], ["🔥", "Flamme", "chaud", "passion"], ["🌍", "Terre", "monde", "planète"],
+  ]),
+  ...makeEmojiEntries("Repas & boissons", [
+    ["🍎", "Pomme", "pomme", "fruit", "santé"], ["🍓", "Fraise", "fraise", "fruit rouge"], ["🍉", "Pastèque", "été", "fruit"], ["🍌", "Banane", "banane", "fruit"], ["🥑", "Avocat", "avocat", "repas"], ["🥕", "Carotte", "légume", "lapin"], ["🌽", "Maïs", "champ", "épi"], ["🍞", "Pain", "pain", "boulangerie"], ["🥐", "Croissant", "petit déjeuner", "viennoiserie"], ["🧀", "Fromage", "fromage", "souris"], ["🍕", "Pizza", "pizza", "soirée"], ["🍔", "Burger", "hamburger", "fast food"], ["🍟", "Frites", "frites", "croustillant"], ["🍗", "Poulet", "poulet", "repas"], ["🍣", "Sushi", "japonais", "sushi"], ["🍜", "Nouilles", "ramen", "soupe"], ["🍰", "Gâteau", "gâteau", "dessert", "anniversaire"], ["🍫", "Chocolat", "chocolat", "gourmand"], ["🍦", "Glace", "glace", "frais"], ["☕", "Café", "café", "pause"], ["🫖", "Thé", "thé", "boisson chaude"], ["🥤", "Boisson", "jus", "soda"], ["🧃", "Jus", "fruit", "boire"], ["🍷", "Vin", "soirée", "toast"], ["🍻", "Santé", "bière", "trinquer"], ["🥂", "Toast", "champagne", "célébrer"], ["🍽️", "À table", "manger", "dîner"], ["🥡", "À emporter", "livraison", "repas"],
+  ]),
+  ...makeEmojiEntries("Voyages & lieux", [
+    ["🚗", "Voiture", "voiture", "route", "conduire"], ["🚕", "Taxi", "taxi", "chauffeur"], ["🚌", "Bus", "bus", "transport"], ["🚲", "Vélo", "vélo", "sport"], ["🏍️", "Moto", "moto", "rapide"], ["🚆", "Train", "train", "voyage"], ["✈️", "Avion", "avion", "décollage", "vacances"], ["🚀", "Décollage", "fusée", "vite", "espace"], ["⛵", "Voilier", "bateau", "mer"], ["🛳️", "Croisière", "navire", "voyage"], ["🏖️", "Plage", "vacances", "sable", "mer"], ["🏝️", "Île", "île", "paradis"], ["🏔️", "Montagne", "montagne", "randonnée"], ["⛺", "Camping", "camping", "nature"], ["🏕️", "Camp", "feu de camp", "bivouac"], ["🏠", "Maison", "maison", "chez moi", "foyer"], ["🏢", "Bureau", "travail", "entreprise"], ["🏫", "École", "école", "classe"], ["🏥", "Hôpital", "soins", "médecin"], ["🏰", "Château", "château", "histoire", "roi"], ["🗼", "Monument", "tour", "Paris"], ["🗽", "Liberté", "statue", "New York"], ["⛪", "Église", "religion", "prière"], ["🕌", "Mosquée", "religion", "prière"], ["🌆", "Ville le soir", "ville", "coucher de soleil"], ["🌃", "Nuit en ville", "nuit", "ville"], ["🗺️", "Carte", "carte", "itinéraire"], ["🧭", "Direction", "boussole", "orientation"],
+  ]),
+  ...makeEmojiEntries("Activités & loisirs", [
+    ["⚽", "Football", "football", "match", "but"], ["🏀", "Basket", "basket", "basketball"], ["🏈", "Rugby", "rugby", "sport"], ["🎾", "Tennis", "tennis", "raquette"], ["🏐", "Volley", "volley", "sport"], ["🏆", "Trophée", "victoire", "gagné", "champion"], ["🥇", "Médaille d’or", "premier", "gagnant"], ["🏋️", "Musculation", "salle", "entraînement"], ["🏃", "Course", "courir", "jogging"], ["🚴", "Cyclisme", "vélo", "course"], ["🧘", "Méditation", "zen", "calme"], ["🎮", "Jeu vidéo", "gaming", "jouer"], ["🎲", "Jeu de dés", "jeu", "hasard"], ["🎯", "Objectif", "cible", "précis"], ["🎨", "Art", "dessin", "peinture"], ["🎬", "Cinéma", "film", "action"], ["🎭", "Théâtre", "spectacle", "masque"], ["🎤", "Chanter", "micro", "karaoké"], ["🎧", "Écouter", "casque", "musique"], ["🎹", "Piano", "musique", "instrument"], ["🎸", "Guitare", "concert", "rock"], ["📚", "Lecture", "livre", "étudier"], ["✍️", "Écrire", "rédiger", "stylo"], ["📸", "Photo", "photographie", "souvenir"], ["🧩", "Puzzle", "casse-tête", "solution"], ["🪄", "Magie", "sort", "abracadabra"], ["🧵", "Couture", "fil", "artisanat"], ["♟️", "Échecs", "stratégie", "roi"],
+  ]),
+  ...makeEmojiEntries("Objets & symboles", [
+    ["📱", "Téléphone", "portable", "appeler", "mobile"], ["💻", "Ordinateur", "pc", "ordinateur", "travail"], ["⌚", "Montre", "heure", "temps"], ["🔋", "Batterie", "charge", "énergie"], ["💡", "Idée", "ampoule", "solution", "inspiration"], ["🔑", "Clé", "clé", "ouvrir"], ["🔒", "Verrouillé", "secret", "sécurité"], ["🛠️", "Réparer", "outil", "travaux"], ["⚙️", "Réglages", "paramètres", "configuration"], ["📦", "Colis", "paquet", "livraison"], ["🎁", "Cadeau", "surprise", "offrir"], ["🛍️", "Shopping", "acheter", "magasin"], ["💳", "Paiement", "carte bancaire", "payer"], ["💸", "Dépense", "argent qui part", "coût"], ["💎", "Précieux", "diamant", "valeur"], ["🪙", "Pièce", "monnaie", "rune"], ["📈", "En hausse", "progrès", "croissance"], ["📉", "En baisse", "chute", "diminution"], ["📅", "Calendrier", "date", "rendez-vous"], ["⏰", "Réveil", "alarme", "bientôt"], ["📝", "Note", "liste", "écrire"], ["📍", "Position", "localisation", "lieu"], ["🔔", "Notification", "alerte", "sonnerie"], ["🔕", "Silence", "pas de notification", "muet"], ["❤️", "Cœur rouge", "amour", "passion"], ["💚", "Cœur vert", "nature", "amitié"], ["💙", "Cœur bleu", "confiance", "paix"], ["💜", "Cœur violet", "tendresse", "affection"], ["🖤", "Cœur noir", "tristesse", "style"], ["💯", "Cent pour cent", "totalement", "parfait"], ["♾️", "Infini", "toujours", "sans limite"], ["❓", "Question", "pourquoi", "comment"], ["❗", "Important", "attention", "urgent"], ["✅", "Validé", "fait", "terminé", "oui"], ["❌", "Annulé", "non", "erreur"], ["♻️", "Recycler", "écologie", "réutiliser"], ["☮️", "Paix", "calme", "sans conflit"], ["🆘", "Aide", "urgence", "au secours"],
+  ]),
+];
+const EMOJI_CATEGORIES = ["Tout", "Essentiels", "Émotions", "Personnes", "Animaux & nature", "Repas & boissons", "Voyages & lieux", "Activités & loisirs", "Objets & symboles"];
+function contactSettingsFor(person) {
+  try { return JSON.parse(localStorage.getItem(`veloce_contact_settings_${person?._id || person?.id}`) || "{}"); }
+  catch { return {}; }
+}
+
+function contactDisplayName(person) {
+  return contactSettingsFor(person).nickname?.trim() || person?.username || "Contact";
+}
 const MESSAGE_EMOJIS = ["😀", "😂", "🥰", "😍", "😘", "😊", "😎", "😭", "😢", "😡", "🤔", "🙏", "👏", "👍", "👎", "❤️", "💖", "💔", "🔥", "✨", "🎉", "👋", "💪", "🤝", "✅", "❌", "⚠️", "💰", "🏠", "🎵", "🍽️", "☀️"];
 const MESSAGE_LETTERS = "abcdefghijklmnopqrstuvwxyzàâçéèêëîïôùûüÿœæ'!?.,".split("");
 
@@ -87,6 +123,7 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
   const [showCreateClan, setShowCreateClan] = useState(false);
   const [showEmojiLibrary, setShowEmojiLibrary] = useState(false);
   const [emojiSearch, setEmojiSearch] = useState("");
+  const [emojiCategory, setEmojiCategory] = useState("Tout");
   const [showEmojiKeyboard, setShowEmojiKeyboard] = useState(false);
   const [emojiKeyboardMode, setEmojiKeyboardMode] = useState("emoji");
   const activeConversationId = useRef("");
@@ -135,6 +172,21 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
   const [chatWallpaper, setChatWallpaper] = useState("night");
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [audioCall, setAudioCall] = useState(null);
+  const [callError, setCallError] = useState("");
+  const [callTalkers, setCallTalkers] = useState({ local: false, remote: false });
+  const audioCallRef = useRef(null);
+  const peerConnectionRef = useRef(null);
+  const localAudioStreamRef = useRef(null);
+  const remoteAudioRef = useRef(null);
+  const callEventSequenceRef = useRef(0);
+  const pendingRemoteIceRef = useRef([]);
+  const audioContextRef = useRef(null);
+  const audioAnalyserRef = useRef({});
+  const audioFrameRef = useRef({});
+  const callPollingRef = useRef(false);
+  const incomingCallRef = useRef(null);
 
   const addComposerText = (text) => {
     setContent((current) => keepLettersSeparated(`${current}${text}`));
@@ -144,12 +196,170 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
 
   const matchingEmojis = EMOJI_LIBRARY.filter((entry) => {
     const query = emojiSearch.trim().toLocaleLowerCase("fr");
-    return !query || entry.words.some((word) => word.toLocaleLowerCase("fr").includes(query)) || entry.label.toLocaleLowerCase("fr").includes(query);
+    const matchesCategory = emojiCategory === "Tout" || entry.category === emojiCategory;
+    const matchesSearch = !query || entry.words.some((word) => word.toLocaleLowerCase("fr").includes(query)) || entry.label.toLocaleLowerCase("fr").includes(query);
+    return matchesCategory && matchesSearch;
   });
 
   const openEmojiLibrary = () => {
     setEmojiSearch("");
+    setEmojiCategory("Tout");
     setShowEmojiLibrary(true);
+  };
+
+  useEffect(() => { audioCallRef.current = audioCall; }, [audioCall]);
+  useEffect(() => { incomingCallRef.current = incomingCall; }, [incomingCall]);
+  useEffect(() => {
+    if (audioCall?.role !== "caller" || audioCall.state !== "ringing") return undefined;
+    const timer = window.setTimeout(() => {
+      if (audioCallRef.current?.id === audioCall.id && audioCallRef.current.state === "ringing") {
+        setCallError("Pas de réponse. L’appel a été terminé.");
+        void endCall(true);
+      }
+    }, 45000);
+    return () => window.clearTimeout(timer);
+  }, [audioCall?.id, audioCall?.role, audioCall?.state]);
+
+  useEffect(() => () => {
+    const current = audioCallRef.current;
+    if (current?.id) void updateAudioCall({ callId: current.id, action: "end", token }).catch(() => {});
+    releaseCallMedia();
+  }, []);
+
+  const watchCallVoice = (stream, side) => {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass || !stream?.getAudioTracks?.().length) return;
+    try {
+      audioContextRef.current ||= new AudioContextClass();
+      const context = audioContextRef.current;
+      void context.resume();
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 512;
+      context.createMediaStreamSource(stream).connect(analyser);
+      audioAnalyserRef.current[side] = analyser;
+      const samples = new Uint8Array(analyser.fftSize);
+      const sampleVoice = () => {
+        if (audioAnalyserRef.current[side] !== analyser) return;
+        analyser.getByteTimeDomainData(samples);
+        let energy = 0;
+        for (const sample of samples) { const amplitude = (sample - 128) / 128; energy += amplitude * amplitude; }
+        const speaking = Math.sqrt(energy / samples.length) > 0.035;
+        setCallTalkers((current) => current[side] === speaking ? current : { ...current, [side]: speaking });
+        audioFrameRef.current[side] = requestAnimationFrame(sampleVoice);
+      };
+      audioFrameRef.current[side] = requestAnimationFrame(sampleVoice);
+    } catch (error) {
+      console.warn("Détection de la voix désactivée :", error);
+    }
+  };
+
+  const createCallPeer = (callId) => {
+    const peer = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+      ],
+    });
+    peerConnectionRef.current = peer;
+    for (const track of localAudioStreamRef.current?.getTracks?.() || []) peer.addTrack(track, localAudioStreamRef.current);
+    peer.onicecandidate = (event) => {
+      if (event.candidate) void sendAudioCallEvent({ callId, type: "ice", payload: event.candidate.toJSON(), token }).catch((error) => console.warn("ICE non transmis :", error.message));
+    };
+    peer.ontrack = (event) => {
+      const stream = event.streams?.[0];
+      if (!stream) return;
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = stream;
+        void remoteAudioRef.current.play().catch(() => setCallError("Autorise la lecture audio de Veloce dans ton navigateur."));
+      }
+      watchCallVoice(stream, "remote");
+    };
+    peer.onconnectionstatechange = () => {
+      if (peer.connectionState === "connected") setAudioCall((current) => current?.id === callId ? { ...current, state: "active" } : current);
+      if (["failed", "disconnected"].includes(peer.connectionState)) setCallError("La connexion audio est interrompue. Vérifie le réseau puis réessaie.");
+    };
+    return peer;
+  };
+
+  const releaseCallMedia = () => {
+    for (const frame of Object.values(audioFrameRef.current)) cancelAnimationFrame(frame);
+    audioFrameRef.current = {};
+    audioAnalyserRef.current = {};
+    peerConnectionRef.current?.close();
+    peerConnectionRef.current = null;
+    localAudioStreamRef.current?.getTracks?.().forEach((track) => track.stop());
+    localAudioStreamRef.current = null;
+    if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
+    if (audioContextRef.current) void audioContextRef.current.close().catch(() => {});
+    audioContextRef.current = null;
+    callEventSequenceRef.current = 0;
+    pendingRemoteIceRef.current = [];
+    callPollingRef.current = false;
+    setCallTalkers({ local: false, remote: false });
+  };
+
+  const requestMicrophone = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("L’appel nécessite un navigateur sécurisé (HTTPS) avec accès au micro.");
+    return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
+  };
+
+  const startCall = async () => {
+    if (!selectedUser || audioCallRef.current) return;
+    setCallError("");
+    let createdCall = null;
+    try {
+      localAudioStreamRef.current = await requestMicrophone();
+      watchCallVoice(localAudioStreamRef.current, "local");
+      createdCall = await startAudioCall({ recipientId: selectedUser._id, token });
+      const peer = createCallPeer(createdCall.id);
+      setAudioCall({ ...createdCall, person: selectedUser, role: "caller", state: "ringing" });
+      const offer = await peer.createOffer();
+      await peer.setLocalDescription(offer);
+      await sendAudioCallEvent({ callId: createdCall.id, type: "offer", payload: peer.localDescription.toJSON(), token });
+    } catch (error) {
+      if (createdCall?.id) void updateAudioCall({ callId: createdCall.id, action: "end", token }).catch(() => {});
+      releaseCallMedia();
+      setAudioCall(null);
+      setCallError(error.message || "Impossible de démarrer l’appel audio.");
+    }
+  };
+
+  const acceptCall = async () => {
+    if (!incomingCall) return;
+    const call = incomingCall;
+    setCallError("");
+    try {
+      localAudioStreamRef.current = await requestMicrophone();
+      watchCallVoice(localAudioStreamRef.current, "local");
+      createCallPeer(call.id);
+      await updateAudioCall({ callId: call.id, action: "accept", token });
+      const callerProfile = { ...call.caller, _id: call.caller.id };
+      void openConversation(callerProfile);
+      setIncomingCall(null);
+      setAudioCall({ ...call, person: callerProfile, role: "callee", state: "connecting" });
+    } catch (error) {
+      void updateAudioCall({ callId: call.id, action: "end", token }).catch(() => {});
+      releaseCallMedia();
+      setIncomingCall(null);
+      setCallError(error.message || "Impossible d’accepter l’appel.");
+    }
+  };
+
+  const declineCall = async () => {
+    if (!incomingCall) return;
+    try { await updateAudioCall({ callId: incomingCall.id, action: "decline", token }); }
+    catch (error) { setCallError(error.message || "Impossible de refuser cet appel."); }
+    setIncomingCall(null);
+  };
+
+  const endCall = async (notifyServer = true) => {
+    const current = audioCallRef.current;
+    if (notifyServer && current?.id) {
+      try { await updateAudioCall({ callId: current.id, action: "end", token }); }
+      catch (error) { console.warn("Fin d’appel non synchronisée :", error.message); }
+    }
+    releaseCallMedia();
+    setAudioCall(null);
   };
 
   useEffect(() => () => onComposerStateChange(false), [onComposerStateChange]);
@@ -246,6 +456,66 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
   useEffect(() => {
     getClans(token).then(setClans).catch((error) => console.error("Chargement clans :", error));
   }, [token]);
+
+  useEffect(() => {
+    let disposed = false;
+    const checkIncoming = async () => {
+      if (disposed || audioCallRef.current || incomingCallRef.current) return;
+      try {
+        const calls = await getIncomingCalls(token);
+        if (!disposed && !audioCallRef.current && !incomingCallRef.current && calls.length) setIncomingCall(calls[0]);
+      } catch (error) {
+        if (!disposed) console.warn("Vérification d’appel entrant :", error.message);
+      }
+    };
+    void checkIncoming();
+    const timer = window.setInterval(checkIncoming, 2200);
+    return () => { disposed = true; window.clearInterval(timer); };
+  }, [token]);
+
+  useEffect(() => {
+    if (!audioCall?.id) return undefined;
+    let disposed = false;
+    const pollCall = async () => {
+      if (disposed || callPollingRef.current) return;
+      callPollingRef.current = true;
+      try {
+        const snapshot = await getAudioCall({ callId: audioCall.id, after: callEventSequenceRef.current, token });
+        if (snapshot.status === "declined" || snapshot.status === "ended") {
+          setCallError(snapshot.status === "declined" ? "L’appel a été refusé." : "L’appel est terminé.");
+          window.setTimeout(() => { if (!disposed) void endCall(false); }, 1100);
+          return;
+        }
+        if (snapshot.status === "active") setAudioCall((current) => current?.id === audioCall.id ? { ...current, state: "active" } : current);
+        for (const event of snapshot.events || []) {
+          callEventSequenceRef.current = Math.max(callEventSequenceRef.current, event.sequence);
+          if (String(event.sender) === String(user?.id || user?._id)) continue;
+          const peer = peerConnectionRef.current;
+          if (!peer) continue;
+          if (event.type === "offer" && audioCall.role === "callee" && !peer.remoteDescription) {
+            await peer.setRemoteDescription(new RTCSessionDescription(event.payload));
+            for (const candidate of pendingRemoteIceRef.current.splice(0)) await peer.addIceCandidate(new RTCIceCandidate(candidate));
+            const answer = await peer.createAnswer();
+            await peer.setLocalDescription(answer);
+            await sendAudioCallEvent({ callId: audioCall.id, type: "answer", payload: peer.localDescription.toJSON(), token });
+          } else if (event.type === "answer" && audioCall.role === "caller" && !peer.remoteDescription) {
+            await peer.setRemoteDescription(new RTCSessionDescription(event.payload));
+            for (const candidate of pendingRemoteIceRef.current.splice(0)) await peer.addIceCandidate(new RTCIceCandidate(candidate));
+          } else if (event.type === "ice") {
+            if (peer.remoteDescription) await peer.addIceCandidate(new RTCIceCandidate(event.payload));
+            else pendingRemoteIceRef.current.push(event.payload);
+          }
+        }
+      } catch (error) {
+        if (!disposed) console.warn("Synchronisation de l’appel :", error.message);
+      } finally {
+        callPollingRef.current = false;
+      }
+    };
+    void pollCall();
+    const timer = window.setInterval(pollCall, 850);
+    return () => { disposed = true; window.clearInterval(timer); };
+  }, [audioCall?.id, token, user?.id, user?._id]);
 
 
   const openConversation = useCallback(
@@ -458,6 +728,10 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
   };
 
 
+  const orderedConversations = [...conversations].sort((left, right) =>
+    Number(Boolean(contactSettingsFor(right.user).pinned)) - Number(Boolean(contactSettingsFor(left.user).pinned))
+  );
+
   if (loading) {
     return (
       <div className="empty-feed">
@@ -560,7 +834,7 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
                 Aucune conversation.
               </p>
             ) : (
-              conversations.map(
+              orderedConversations.map(
                 conversation => (
                   <button
                     key={
@@ -600,8 +874,7 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
 
                       <strong>
                         {
-                          conversation.user
-                            .username
+                          contactDisplayName(conversation.user)
                         }
                       </strong>
 
@@ -613,7 +886,7 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
 
                     </div>
 
-                    {conversation.unread > 0 && (
+                    {conversation.unread > 0 && !contactSettingsFor(conversation.user).muted && (
                       <b>
                         {conversation.unread}
                       </b>
@@ -657,16 +930,16 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
                   type="button"
                   className="conversation-person-button"
                   onClick={() => setShowChatProfile(true)}
-                  aria-label={`Options de conversation avec ${selectedUser.username}`}
+                  aria-label={`Options de conversation avec ${contactDisplayName(selectedUser)}`}
                 >
                   <span className="message-avatar">
                     {selectedUser.avatar ? <img src={selectedUser.avatar} alt="" /> : selectedUser.username?.charAt(0).toUpperCase()}
                   </span>
-                  <span><strong>{selectedUser.username}</strong><small>Profil et apparence</small></span>
+                  <span><strong>{contactDisplayName(selectedUser)}</strong><small>Profil et paramètres</small></span>
                   <span className="conversation-profile-chevron">⌄</span>
                 </button>
                 <div className="conversation-call-actions" aria-label="Options d’appel">
-                  <button type="button" aria-label="Appel audio" title="Appel audio"><CallGlyph /><span>Appel</span></button>
+                  <button type="button" aria-label="Appel audio" title="Appel audio" onClick={startCall} disabled={Boolean(audioCall || incomingCall)}><CallGlyph /><span>Appel</span></button>
                   <button type="button" aria-label="Appel vidéo" title="Appel vidéo"><CallGlyph video /><span>Vidéo</span></button>
                 </div>
               </div>
@@ -775,7 +1048,7 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
                 <div className="veloce-emoji-keyboard-foot"><button type="button" onClick={() => { setContent((current) => Array.from(current).slice(0, -1).join("")); composerRef.current?.focus(); }}>⌫ Effacer</button><button type="button" onClick={() => addComposerText(" ")}>Espace</button></div>
               </div>}
 
-              {showChatProfile && <ChatProfileDialog person={selectedUser} wallpaper={chatWallpaper} onWallpaperChange={updateWallpaper} onClose={() => setShowChatProfile(false)} />}
+              {showChatProfile && <ChatProfileDialog person={selectedUser} wallpaper={chatWallpaper} onWallpaperChange={updateWallpaper} onClose={() => setShowChatProfile(false)} token={token} />}
               {activeMessage && <MessageActionsSheet message={activeMessage} onSelect={performMessageAction} onClose={() => setActiveMessage(null)} />}
               {forwardTarget && <ForwardMessageDialog conversations={conversations} onSelect={forwardMessageTo} onClose={() => setForwardTarget(null)} />}
 
@@ -787,8 +1060,12 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
 
       </div>
 
+      <audio ref={remoteAudioRef} autoPlay playsInline hidden />
+      {audioCall && <AudioCallStage call={audioCall} self={user} talkers={callTalkers} error={callError} onEnd={() => void endCall(true)} />}
+      {incomingCall && !audioCall && <IncomingCallStage call={incomingCall} self={user} error={callError} onAccept={() => void acceptCall()} onDecline={() => void declineCall()} />}
+      {!audioCall && !incomingCall && callError && <div className="call-error-toast" role="alert"><span>{callError}</span><button type="button" onClick={() => setCallError("")}>×</button></div>}
       {showCreateClan && <ClanCreateDialog token={token} onClose={() => setShowCreateClan(false)} onCreated={handleClanCreated} />}
-      {showEmojiLibrary && <div className="veloce-emoji-library-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowEmojiLibrary(false); }}><section className="veloce-emoji-library" role="dialog" aria-modal="true" aria-labelledby="emoji-library-title"><header><div><span>VOCE VISUELLE</span><h2 id="emoji-library-title">Bibliothèque d’emojis</h2></div><button type="button" onClick={() => setShowEmojiLibrary(false)} aria-label="Fermer">×</button></header><label className="veloce-emoji-search">Trouver une idée<input autoFocus value={emojiSearch} onChange={(event) => setEmojiSearch(event.target.value)} placeholder="Écris un mot : amour, merci, rire…" /></label><div className="veloce-emoji-library-results">{matchingEmojis.map((entry) => <button type="button" key={entry.label} onClick={() => { addComposerText(entry.emoji); setShowEmojiLibrary(false); }}><span>{entry.emoji}</span><strong>{entry.label}</strong><small>{entry.words.slice(0, 3).join(" · ")}</small></button>)}{matchingEmojis.length === 0 && <p>Aucun emoji trouvé. Essaie un autre mot.</p>}</div></section></div>}
+      {showEmojiLibrary && <div className="veloce-emoji-library-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowEmojiLibrary(false); }}><section className="veloce-emoji-library" role="dialog" aria-modal="true" aria-labelledby="emoji-library-title"><header><div><span>PLUS DE 200 IDÉES À EXPLORER</span><h2 id="emoji-library-title">Bibliothèque d’emojis</h2></div><button type="button" onClick={() => setShowEmojiLibrary(false)} aria-label="Fermer">×</button></header><label className="veloce-emoji-search">Trouver une idée<input autoFocus value={emojiSearch} onChange={(event) => setEmojiSearch(event.target.value)} placeholder="Écris un mot : amour, merci, rire…" /></label><div className="emoji-library-categories" role="tablist" aria-label="Catégories d’emojis">{EMOJI_CATEGORIES.map((category) => <button key={category} type="button" role="tab" aria-selected={emojiCategory === category} className={emojiCategory === category ? "active" : ""} onClick={() => setEmojiCategory(category)}>{category}</button>)}</div><div className="veloce-emoji-library-results">{matchingEmojis.map((entry) => <button type="button" key={`${entry.category}-${entry.label}`} onClick={() => { addComposerText(entry.emoji); setShowEmojiLibrary(false); }}><span>{entry.emoji}</span><strong>{entry.label}</strong><small>{entry.words.slice(0, 3).join(" · ")}</small></button>)}{matchingEmojis.length === 0 && <p>Aucun emoji trouvé. Essaie un autre mot.</p>}</div></section></div>}
 
     </section>
   );
@@ -801,25 +1078,99 @@ const CHAT_WALLPAPERS = [
   { id: "rose", label: "Prune", swatch: "#351d31" },
 ];
 
-function ChatProfileDialog({ person, wallpaper, onWallpaperChange, onClose }) {
+const CALL_EMOJIS = ["😀", "😎", "🥰", "😂", "😌", "🤗", "🦊", "🐼", "🐯", "🐨", "🦁", "🐸", "🐙", "🦋", "🐧", "🦄"];
+const emojiForPerson = (person) => {
+  const name = person?.username || person?.id || person?._id || "Veloce";
+  let hash = 0;
+  for (const character of name) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  return person?.emoji || person?.profileEmoji || CALL_EMOJIS[hash % CALL_EMOJIS.length];
+};
+
+function CallParticipant({ person, self = false, speaking = false, state = "" }) {
+  return <div className={`audio-call-participant${speaking ? " is-speaking" : ""}`}>
+    <div className="audio-call-emoji-wrap"><span className="audio-call-emoji" aria-label={`Emoji de ${person?.username || "participant"}`}>{emojiForPerson(person)}</span><span className="audio-call-reaction">{speaking ? "🎙️" : self ? "🎧" : "💬"}</span></div>
+    <strong>{self ? `${person?.username || "Moi"} · toi` : (person?.username || "Contact")}</strong>
+    <small>{state || (speaking ? "Parle maintenant" : "À l’écoute")}</small>
+  </div>;
+}
+
+function AudioCallStage({ call, self, talkers, error, onEnd }) {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    if (call.state !== "active") return undefined;
+    const timer = window.setInterval(() => setSeconds((value) => value + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [call.state]);
+  const clock = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+  const label = call.state === "ringing" ? "Appel en cours…" : call.state === "active" ? clock : "Connexion audio…";
+  return <div className="audio-call-overlay"><section className="audio-call-stage" role="dialog" aria-modal="true" aria-label={`Appel audio avec ${call.person?.username || "un contact"}`}>
+    <header><span>APPEL AUDIO VELOCE</span><button type="button" onClick={onEnd} aria-label="Terminer l’appel">×</button></header>
+    <div className="audio-call-status"><i className={call.state === "active" ? "connected" : ""} />{label}</div>
+    <div className="audio-call-participants"><CallParticipant person={self} self speaking={talkers.local} state={talkers.local ? "Ta voix réagit" : "Ton micro est prêt"} /><span className="audio-call-link">↔</span><CallParticipant person={call.person} speaking={talkers.remote} state={talkers.remote ? "Sa voix réagit" : call.state === "ringing" ? "Ça sonne chez cette personne" : "En attente de sa voix"} /></div>
+    {error && <p className="audio-call-error" role="alert">{error}</p>}
+    <div className="audio-call-controls"><button className="audio-call-end" type="button" onClick={onEnd}><CallGlyph /> Raccrocher</button></div>
+    <p className="audio-call-note">Les deux emojis s’animent au rythme des voix détectées par le micro.</p>
+  </section></div>;
+}
+
+function IncomingCallStage({ call, self, error, onAccept, onDecline }) {
+  return <div className="audio-call-overlay"><section className="audio-call-stage incoming" role="dialog" aria-modal="true" aria-label={`Appel entrant de ${call.caller?.username || "un contact"}`}>
+    <header><span>APPEL AUDIO ENTRANT</span></header>
+    <div className="audio-call-status"><i />Ça sonne dans ta messagerie</div>
+    <div className="audio-call-participants"><CallParticipant person={self} self state="Tu reçois l’appel" /><span className="audio-call-link">↔</span><CallParticipant person={call.caller} state="T’appelle" /></div>
+    {error && <p className="audio-call-error" role="alert">{error}</p>}
+    <div className="audio-call-controls"><button className="audio-call-accept" type="button" onClick={onAccept}><CallGlyph /> Répondre</button><button className="audio-call-end" type="button" onClick={onDecline}>Refuser</button></div>
+    <p className="audio-call-note">En répondant, ton navigateur demandera l’accès au micro.</p>
+  </section></div>;
+}
+
+function ChatProfileDialog({ person, wallpaper, onWallpaperChange, onClose, token }) {
+  const [activeTab, setActiveTab] = useState("profil");
+  const [profile, setProfile] = useState(person);
+  const [relationship, setRelationship] = useState(() => localStorage.getItem(`veloce_contact_relation_${person._id}`) || "Ami(e)");
+  const [chatSettings, setChatSettings] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`veloce_contact_settings_${person._id}`) || "{}"); }
+    catch { return {}; }
+  });
+  const [copied, setCopied] = useState(false);
+  const [profileError, setProfileError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    fetch(`${API_BASE_URL}/users/${person._id}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.message || "Profil indisponible."); return data; })
+      .then((data) => { if (active) setProfile({ ...person, ...(data.user || data), stats: data.stats || data.user?.stats }); })
+      .catch((error) => { if (active) setProfileError(error.message); });
+    return () => { active = false; };
+  }, [person, token]);
+
+  const changeRelationship = (value) => {
+    setRelationship(value);
+    localStorage.setItem(`veloce_contact_relation_${person._id}`, value);
+  };
+  const changeSetting = (key, value) => {
+    setChatSettings((current) => {
+      const next = { ...current, [key]: value };
+      localStorage.setItem(`veloce_contact_settings_${person._id}`, JSON.stringify(next));
+      return next;
+    });
+  };
+  const copyProfileLink = async () => {
+    const url = `${window.location.origin}/?profile=${encodeURIComponent(person._id)}`;
+    try { await navigator.clipboard.writeText(url); setCopied(true); window.setTimeout(() => setCopied(false), 1800); }
+    catch { setProfileError("Impossible de copier le lien sur cet appareil."); }
+  };
+
   return (
     <div className="chat-profile-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section className="chat-profile-dialog" role="dialog" aria-modal="true" aria-label={`Profil de ${person.username}`}>
-        <header><div><span>CONVERSATION PRIVÉE</span><h2>Profil du contact</h2></div><button type="button" onClick={onClose} aria-label="Fermer">×</button></header>
-        <div className="chat-profile-identity">
-          <span className="message-avatar">{person.avatar ? <img src={person.avatar} alt="" /> : person.username?.charAt(0).toUpperCase()}</span>
-          <div><strong>{person.username}</strong><small>{person.bio || "Membre de Veloce"}</small></div>
-        </div>
-        <h3>Fond d’écran de cette conversation</h3>
-        <p>Ce réglage est enregistré uniquement sur cet appareil.</p>
-        <div className="chat-wallpaper-options">
-          {CHAT_WALLPAPERS.map((option) => (
-            <button key={option.id} type="button" className={wallpaper === option.id ? "selected" : ""} onClick={() => onWallpaperChange(option.id)}>
-              <span style={{ background: option.swatch }} />{option.label}
-            </button>
-          ))}
-        </div>
-        <footer><button type="button" onClick={onClose}>Terminé</button></footer>
+      <section className="chat-profile-dialog chat-profile-page" role="dialog" aria-modal="true" aria-label={`Profil de ${person.username}`}>
+        <header><div><span>ESPACE CONTACT</span><h2>{profile.username || person.username}</h2></div><button type="button" onClick={onClose} aria-label="Fermer">×</button></header>
+        <nav className="chat-profile-tabs" aria-label="Rubriques du contact">{[["profil", "Profil"], ["conversation", "Conversation"], ["parametres", "Paramètres"]].map(([key, label]) => <button key={key} type="button" className={activeTab === key ? "active" : ""} onClick={() => setActiveTab(key)}>{label}</button>)}</nav>
+        {profileError && <p className="chat-profile-error" role="alert">{profileError}</p>}
+        {activeTab === "profil" && <div className="chat-profile-content"><div className="chat-profile-hero"><span className="chat-profile-avatar">{profile.avatar ? <img src={profile.avatar} alt="" /> : emojiForPerson(profile)}</span><div><h3>{profile.username || person.username}</h3><small>@{profile.username || person.username}</small><p>{profile.bio || "Aucune biographie renseignée."}</p></div></div><div className="chat-profile-stats"><div><strong>{profile.stats?.followersCount ?? "—"}</strong><span>Abonnés</span></div><div><strong>{profile.stats?.followingCount ?? "—"}</strong><span>Abonnements</span></div><div><strong>{relationship}</strong><span>Ton lien</span></div></div><label className="chat-relation-field">Le lien qui vous unit<select value={relationship} onChange={(event) => changeRelationship(event.target.value)}>{["Ami(e)", "Famille", "Collègue", "Partenaire", "Connaissance", "Autre"].map((value) => <option key={value}>{value}</option>)}</select></label><button className="chat-copy-profile-link" type="button" onClick={copyProfileLink}>🔗 {copied ? "Lien copié" : "Copier le lien du profil"}</button></div>}
+        {activeTab === "conversation" && <div className="chat-profile-content"><h3>Apparence de la conversation</h3><p>Le fond choisi est enregistré sur cet appareil.</p><div className="chat-wallpaper-options">{CHAT_WALLPAPERS.map((option) => <button key={option.id} type="button" className={wallpaper === option.id ? "selected" : ""} onClick={() => onWallpaperChange(option.id)}><span style={{ background: option.swatch }} />{option.label}</button>)}</div><label className="chat-relation-field">Nom affiché dans ta messagerie<input value={chatSettings.nickname ?? profile.username ?? person.username ?? ""} onChange={(event) => changeSetting("nickname", event.target.value)} /></label><p className="chat-profile-hint">Le nom personnalisé et le fond restent privés sur cet appareil.</p></div>}
+        {activeTab === "parametres" && <div className="chat-profile-content"><h3>Paramètres de ce contact</h3><label className="chat-setting-row"><span><strong>Mettre en sourdine</strong><small>Masquer les alertes de cette conversation</small></span><input type="checkbox" checked={Boolean(chatSettings.muted)} onChange={(event) => changeSetting("muted", event.target.checked)} /></label><label className="chat-setting-row"><span><strong>Épingler la conversation</strong><small>La garder en haut de ta liste</small></span><input type="checkbox" checked={Boolean(chatSettings.pinned)} onChange={(event) => changeSetting("pinned", event.target.checked)} /></label><label className="chat-relation-field">Relation<select value={relationship} onChange={(event) => changeRelationship(event.target.value)}>{["Ami(e)", "Famille", "Collègue", "Partenaire", "Connaissance", "Autre"].map((value) => <option key={value}>{value}</option>)}</select></label><p className="chat-profile-hint">Ces préférences sont locales à ton appareil.</p></div>}
+        <footer><button type="button" onClick={onClose}>Fermer</button></footer>
       </section>
     </div>
   );

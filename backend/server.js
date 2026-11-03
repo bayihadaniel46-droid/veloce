@@ -26,6 +26,7 @@ const assistantRoutes =
 
 const clanRoutes = require("./routes/clanRoutes");
 const marketRoutes = require("./routes/marketRoutes");
+const callRoutes = require("./routes/callRoutes");
 const { settleExpiredVotes } = require("./controllers/clanVoteController");
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
@@ -75,6 +76,7 @@ app.use(
 
 app.use("/api/clans", clanRoutes);
 app.use("/api/market", marketRoutes);
+app.use("/api/calls", callRoutes);
 
 app.get("/health", (req, res) => {
   res.json({

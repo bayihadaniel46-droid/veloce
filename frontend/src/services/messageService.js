@@ -2,6 +2,33 @@ import { API_BASE_URL } from "../config";
 
 const API_URL = `${API_BASE_URL}/messages`;
 const CLAN_URL = `${API_BASE_URL}/clans`;
+const CALL_URL = `${API_BASE_URL}/calls`;
+
+const callRequest = async (path, token, options = {}) => {
+  const response = await fetch(`${CALL_URL}${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...options.headers,
+    },
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Erreur d’appel.");
+  return data;
+};
+
+export const getIncomingCalls = (token) => callRequest("/incoming", token);
+export const startAudioCall = ({ recipientId, token }) => callRequest("/", token, {
+  method: "POST", body: JSON.stringify({ recipientId }),
+});
+export const getAudioCall = ({ callId, after = 0, token }) => callRequest(`/${callId}?after=${after}`, token);
+export const updateAudioCall = ({ callId, action, token }) => callRequest(`/${callId}/status`, token, {
+  method: "POST", body: JSON.stringify({ action }),
+});
+export const sendAudioCallEvent = ({ callId, type, payload, token }) => callRequest(`/${callId}/events`, token, {
+  method: "POST", body: JSON.stringify({ type, payload }),
+});
 
 const clanRequest = async (path, token, options = {}) => {
   const response = await fetch(`${CLAN_URL}${path}`, {
