@@ -26,6 +26,7 @@ function PostCard({
   const verificationTimerRef = useRef(null);
   const videoRefs = useRef({});
   const [playingVideo, setPlayingVideo] = useState(null);
+  const [videoErrors, setVideoErrors] = useState({});
   const [lightbox, setLightbox] = useState(null);
 
   useEffect(() => () => window.clearTimeout(verificationTimerRef.current), []);
@@ -496,8 +497,10 @@ function PostCard({
   const playVideo = (videoId) => {
     const video = videoRefs.current[videoId];
     if (!video) return;
+    setVideoErrors((current) => ({ ...current, [videoId]: "" }));
     video.play().catch((error) => {
       console.warn("La vidéo n’a pas pu démarrer :", error);
+      setVideoErrors((current) => ({ ...current, [videoId]: "Lecture impossible. Vérifie le format de la vidéo ou réessaie." }));
     });
   };
 
@@ -798,6 +801,8 @@ function PostCard({
                 playsInline
                 preload="metadata"
                 onPlay={() => setPlayingVideo(videoId)}
+                onLoadedMetadata={() => setVideoErrors((current) => ({ ...current, [videoId]: "" }))}
+                onError={() => setVideoErrors((current) => ({ ...current, [videoId]: "Cette vidéo n’a pas pu être chargée. Réessaie après actualisation." }))}
                 onPause={() => setPlayingVideo((current) => current === videoId ? null : current)}
                 onEnded={() => setPlayingVideo(null)}
               >
@@ -810,6 +815,7 @@ function PostCard({
                   <small>Lire la vidéo</small>
                 </button>
               )}
+              {videoErrors[videoId] && <p className="post-video-error" role="alert">{videoErrors[videoId]}</p>}
             </div>
           );
         })}

@@ -22,6 +22,8 @@ import {
   updateAudioCall, sendAudioCallEvent
 } from "../services/messageService";
 import { API_BASE_URL } from "../config";
+import { playUiSound } from "../services/soundService";
+import CommunityRoom from "../components/CommunityRoom";
 import "./Messages.css";
 
 const coreEmojiLibrary = [
@@ -119,6 +121,7 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
   ] = useState(null);
   const [clans, setClans] = useState([]);
   const [selectedClan, setSelectedClan] = useState(null);
+  const [showCommunity, setShowCommunity] = useState(false);
   const [showNewMenu, setShowNewMenu] = useState(false);
   const [showCreateClan, setShowCreateClan] = useState(false);
   const [showEmojiLibrary, setShowEmojiLibrary] = useState(false);
@@ -441,6 +444,7 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
     };
 
   const refreshMessagesPage = async () => {
+    playUiSound("refresh");
     setIsRefreshing(true);
     try {
       await Promise.all([
@@ -451,7 +455,7 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
         const data = await getMessages({ userId: selectedUser._id, token });
         skipAutoScroll.current = true;
         setMessages(data);
-      } else if (selectedClan) {
+      } else if (selectedClan || showCommunity) {
         window.location.reload();
         return;
       }
@@ -557,6 +561,7 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
     async (person) => {
       const personId = person._id || person.id;
       activeConversationId.current = personId;
+      setShowCommunity(false);
       setSelectedClan(null);
       setSelectedUser({ ...person, _id: personId });
       setShowChatProfile(false);
@@ -589,6 +594,108 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
     void openConversation(initialUser);
     onInitialUserHandled?.(null);
   }, [initialUser, openConversation, onInitialUserHandled]);
+
+  useEffect(() => {
+    const contact = selectedUser;
+    const contactId = contact?._id || contact?.id;
+    if (!contactId || !token) return undefined;
+
+    let disposed = false;
+    let requesting = false;
+    let initialized = false;
+    const seenIds = new Set();
+    const pollMessages = async () => {
+      if (disposed || requesting) return;
+      requesting = true;
+      try {
+        const data = await getMessages({ userId: contactId, token });
+        if (disposed || !Array.isArray(data)) return;
+
+        const myId = String(user?.id || user?._id || "");
+        const incoming = initialized ? data.filter((message) => {
+          const id = String(message._id || "");
+          const senderId = String(message.sender?._id || message.sender || "");
+          return id && !seenIds.has(id) && senderId !== myId;
+        }) : [];
+        for (const message of data) if (message._id) seenIds.add(String(message._id));
+        initialized = true;
+
+        if (incoming.length && !contactSettingsFor(contact).muted) {
+          playUiSound("message");
+        }
+        if (incoming.length && document.visibilityState !== "visible" && "Notification" in window && Notification.permission === "granted") {
+          const registration = await navigator.serviceWorker?.getRegistration?.();
+          for (const message of incoming) {
+            const sender = message.sender?.username || contact.username || "Contact";
+            const query = new URLSearchParams({ page: "messages", contact: String(contactId), username: sender });
+            const options = {
+              body: message.content?.trim()?.slice(0, 140) || "T’a envoyé une pièce jointe.",
+              icon: "/veloce-mark.svg",
+              tag: `message-${message._id}`,
+              renotify: true,
+              data: { url: `/?${query.toString()}` },
+            };
+            try {
+              if (registration) await registration.showNotification(`@${sender} t’a envoyé un message`, options);
+              else new Notification(`@${sender} t’a envoyé un message`, options);
+            } catch {
+              // L’actualisation du fil continue même si le navigateur bloque l’alerte locale.
+            }
+          }
+        }
+
+        setMessages((current) => {
+          const pending = current.filter((message) => message.pending);
+          const currentServerMessages = current.filter((message) => !message.pending);
+          const unchanged = currentServerMessages.length === data.length
+            && data.every((message, index) => String(message._id) === String(currentServerMessages[index]?._id)
+              && Boolean(message.read) === Boolean(currentServerMessages[index]?.read));
+          if (unchanged && !pending.length) return current;
+          return [...data, ...pending];
+        });
+      } catch {
+        // La messagerie reste utilisable lorsque le réseau est momentanément indisponible.
+      } finally {
+        requesting = false;
+      }
+    };
+
+    void pollMessages();
+    const timer = window.setInterval(pollMessages, 5000);
+    return () => { disposed = true; window.clearInterval(timer); };
+  }, [selectedUser?._id, selectedUser?.id, token, user?.id, user?._id]);
+
+  useEffect(() => {
+    if ((selectedUser?._id || selectedUser?.id) || !token) return undefined;
+    let disposed = false;
+    let requesting = false;
+    let initialized = false;
+    let previousUnread = 0;
+
+    const pollConversationList = async () => {
+      if (disposed || requesting) return;
+      requesting = true;
+      try {
+        const data = await getConversations(token);
+        if (disposed || !Array.isArray(data)) return;
+        const unread = data.reduce((sum, conversation) => sum + (Number(conversation.unread) || 0), 0);
+        if (initialized && unread > previousUnread && data.some((conversation) => conversation.unread > 0 && !contactSettingsFor(conversation.user).muted)) {
+          playUiSound("message");
+        }
+        initialized = true;
+        previousUnread = unread;
+        setConversations(data);
+      } catch {
+        // Garde la dernière liste de conversations si le serveur est momentanément inaccessible.
+      } finally {
+        requesting = false;
+      }
+    };
+
+    void pollConversationList();
+    const timer = window.setInterval(pollConversationList, 6000);
+    return () => { disposed = true; window.clearInterval(timer); };
+  }, [selectedUser?._id, selectedUser?.id, token]);
 
 
   useEffect(() => {
@@ -684,12 +791,22 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
 
   const closeConversation = () => {
     activeConversationId.current = "";
+    setShowCommunity(false);
     setSelectedUser(null);
     setSelectedClan(null);
   };
 
+  const openCommunity = () => {
+    activeConversationId.current = "server-community";
+    setSelectedUser(null);
+    setSelectedClan(null);
+    setShowCommunity(true);
+    setSendError("");
+  };
+
   const openClan = (clan) => {
     activeConversationId.current = clan._id;
+    setShowCommunity(false);
     setSelectedUser(null);
     setSelectedClan(clan);
     setSendError("");
@@ -790,7 +907,7 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
         </div>
       )}
 
-      <div className={`messages-layout ${selectedUser || selectedClan ? "conversation-open" : ""}`}>
+      <div className={`messages-layout ${selectedUser || selectedClan || showCommunity ? "conversation-open" : ""}`}>
 
         {/* ==================================================
             LISTE DES CONVERSATIONS
@@ -814,6 +931,14 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Rechercher une personne..."
           />
+
+          <div className="conversation-list">
+
+            <button type="button" className={`conversation-card server-community-card ${showCommunity ? "conversation-active" : ""}`} onClick={openCommunity}>
+              <div className="server-community-icon" aria-hidden="true">🌐</div>
+              <div className="conversation-info"><strong>Clan serveur</strong><span>Questions, nouveautés et aide</span></div>
+              <span className="server-community-label">TOUS</span>
+            </button>
 
 
           {(search.trim() || searchError) && (
@@ -855,8 +980,6 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
             </div>
           )}
 
-
-          <div className="conversation-list">
 
             {clans.length > 0 && <div className="conversation-group-label">TES CLANS</div>}
             {clans.map((clan) => <button key={clan._id} type="button" className={`conversation-card clan-conversation-card ${selectedClan?._id === clan._id ? "conversation-active" : ""}`} onClick={() => openClan(clan)}>
@@ -943,7 +1066,7 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
 
         <div className="messages-conversation">
 
-          {selectedClan ? <ClanRoom clan={selectedClan} token={token} user={user} onBack={closeConversation} onClanUpdated={(updated) => { setSelectedClan(updated); setClans((current) => current.map((item) => item._id === updated._id ? { ...item, ...updated, memberCount: updated.members?.length || item.memberCount } : item)); }} /> : !selectedUser ? (
+          {showCommunity ? <CommunityRoom token={token} user={user} onBack={closeConversation} /> : selectedClan ? <ClanRoom clan={selectedClan} token={token} user={user} onBack={closeConversation} onClanUpdated={(updated) => { setSelectedClan(updated); setClans((current) => current.map((item) => item._id === updated._id ? { ...item, ...updated, memberCount: updated.members?.length || item.memberCount } : item)); }} /> : !selectedUser ? (
             <div className="messages-placeholder">
 
               <h2>

@@ -11,11 +11,12 @@
 .post-video-list { display: grid; gap: 14px; }
 .post-video-frame { position: relative; overflow: hidden; border: 1px solid #ffffff22; border-radius: 16px; background: #080b12; }
 .post-video { display: block; width: 100%; max-height: min(72vh, 680px); aspect-ratio: 16 / 9; object-fit: contain; background: #080b12; }
-.post-video-play { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; width: 100%; border: 0; background: linear-gradient(90deg,#080b1240,#080b1210,#080b1240); color: #fff; cursor: pointer; transition: opacity .18s ease,background .18s ease; }
-.post-video-play:hover { background: #080b1240; }
+.post-video-play { position: absolute; top: 50%; left: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; width: auto; padding: 0; transform: translate(-50%,-50%); border: 0; background: transparent; color: #fff; cursor: pointer; transition: opacity .18s ease; }
+.post-video-play:hover span { background: #30314de8; }
 .post-video-play span { width: 64px; height: 64px; display: grid; place-items: center; padding-left: 4px; border: 1px solid #ffffff9c; border-radius: 50%; background: #171a2cbb; box-shadow: 0 8px 35px #0008,0 0 24px #8e8af360; font-size: 23px; }
 .post-video-play small { padding: 5px 10px; border-radius: 20px; background: #10131dba; font-size: 11px; font-weight: 700; }
 .post-video-frame.is-playing .post-video-play { pointer-events: none; opacity: 0; }
+.post-video-error { position: absolute; right: 12px; bottom: 12px; left: 12px; margin: 0; padding: 9px 12px; border: 1px solid #ff8b8b55; border-radius: 10px; background: #321b22e8; color: #ffd6da; font-size: 12px; line-height: 1.4; pointer-events: none; }
 .post-image-lightbox { position: fixed; inset: 0; z-index: 10050; display: flex; align-items: center; justify-content: center; padding: 56px 24px 42px; background: #05060bea; backdrop-filter: blur(12px); cursor: zoom-out; }
 .post-image-lightbox img { display: block; max-width: min(96vw,1500px); max-height: calc(100dvh - 120px); object-fit: contain; border-radius: 8px; box-shadow: 0 20px 90px #000b; cursor: default; }
 .post-image-lightbox>span { position: absolute; bottom: 14px; max-width: calc(100vw - 40px); overflow: hidden; color: #e4e6ed; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }

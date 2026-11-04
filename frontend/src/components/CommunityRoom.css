@@ -1,0 +1,60 @@
+.community-room { display:flex; flex:1; flex-direction:column; min-width:0; min-height:0; height:100%; overflow:hidden; background:linear-gradient(180deg,#fbfcff,#f5f6fb); color:#20263a; }
+.community-room-header { display:flex; align-items:center; gap:12px; min-height:76px; padding:12px 20px; border-bottom:1px solid #e4e7f0; background:rgba(255,255,255,.92); }
+.community-room-header .mobile-conversation-back { display:none; }
+.community-room-mark { display:grid; place-items:center; width:46px; height:46px; flex:0 0 46px; border:1px solid #dce1ff; border-radius:15px; background:linear-gradient(145deg,#eeefff,#e7f8f4); font-size:23px; }
+.community-room-heading { display:grid; min-width:0; gap:2px; }
+.community-room-heading span { color:#747be0; font-size:9px; font-weight:850; letter-spacing:.15em; }
+.community-room-heading strong { overflow:hidden; color:#252a42; font-size:16px; text-overflow:ellipsis; white-space:nowrap; }
+.community-room-heading small { color:#81889b; font-size:11px; }
+.community-room-presence { display:flex; align-items:center; gap:7px; margin-left:auto; padding:8px 11px; border:1px solid #dcefe7; border-radius:999px; background:#f2fbf6; color:#44816a; font-size:10px; font-weight:750; white-space:nowrap; }
+.community-room-presence i { width:7px; height:7px; border-radius:50%; background:#55bd8b; box-shadow:0 0 0 4px #55bd8b1c; }
+.community-room-messages { display:flex; flex:1; flex-direction:column; min-height:0; padding:22px clamp(14px,3vw,34px); overflow:auto; overscroll-behavior:contain; }
+.community-room-welcome { display:flex; align-items:flex-start; gap:12px; max-width:760px; margin:0 auto 20px; padding:16px 18px; border:1px solid #dfe4fb; border-radius:17px; background:linear-gradient(130deg,#f1f2ff,#f4fbfa); }
+.community-room-welcome>span { display:grid; place-items:center; width:34px; height:34px; flex:0 0 34px; border-radius:11px; background:#e3e5ff; font-size:18px; }
+.community-room-welcome strong { color:#353b69; font-size:13px; }
+.community-room-welcome p { margin:5px 0 0; color:#687087; font-size:11px; line-height:1.55; }
+.community-room-state { margin:18px auto; color:#8c92a2; font-size:12px; text-align:center; }
+.community-message { display:flex; align-items:flex-start; gap:10px; width:min(100%,800px); margin:0 auto 10px; padding:12px 14px; border:1px solid #e7e9f1; border-radius:16px; background:#fff; box-shadow:0 5px 15px #292f4a08; }
+.community-message.is-announcement { border-color:#dfdefd; background:linear-gradient(145deg,#fff,#f4f3ff); }
+.community-message.is-ad { border-color:#ebe2ce; background:#fffdf8; }
+.community-message.is-own { border-left:3px solid #8588e8; }
+.community-message-avatar { display:grid; place-items:center; width:36px; height:36px; flex:0 0 36px; overflow:hidden; border-radius:50%; background:linear-gradient(135deg,#e6e8ff,#def2ed); color:#5c62bc; font-size:15px; font-weight:800; }
+.community-message-avatar img { width:100%; height:100%; object-fit:cover; }
+.community-message-body { min-width:0; flex:1; }
+.community-message-meta { display:flex; align-items:center; flex-wrap:wrap; gap:7px; }
+.community-message-meta strong { color:#30364d; font-size:12px; }
+.community-message-meta time { margin-left:auto; color:#989eac; font-size:9px; }
+.community-message-tag { padding:4px 7px; border-radius:999px; background:#e8e7ff; color:#625ec1; font-size:8px; font-weight:850; letter-spacing:.06em; }
+.community-message-tag.ad { background:#f7edda; color:#936f2f; }
+.community-message-body p { margin:6px 0 0; color:#51586b; font-size:12px; line-height:1.55; overflow-wrap:anywhere; white-space:pre-wrap; }
+.community-room-error { width:min(100%,800px); margin:8px auto; color:#bd4057; font-size:11px; }
+.community-room-composer { padding:11px clamp(12px,3vw,28px) calc(12px + env(safe-area-inset-bottom)); border-top:1px solid #e4e7f0; background:rgba(255,255,255,.96); }
+.community-composer-note { width:min(100%,850px); margin:0 auto 7px; color:#878da0; font-size:9px; }
+.community-composer-row { display:flex; align-items:flex-end; gap:8px; width:min(100%,850px); margin:0 auto; }
+.community-composer-row textarea { flex:1; min-width:0; min-height:44px; max-height:130px; padding:11px 13px; resize:vertical; border:1px solid #dfe3ee; border-radius:14px; outline:none; background:#f9faff; color:#31374b; font:inherit; font-size:12px; }
+.community-composer-row textarea:focus { border-color:#8e91e7; box-shadow:0 0 0 3px #777be51a; }
+.community-composer-row>button { min-height:44px; padding:0 17px; border:0; border-radius:13px; background:linear-gradient(135deg,#646ddd,#8b6dda); color:#fff; font-size:11px; font-weight:800; cursor:pointer; }
+.community-composer-row>button:disabled { opacity:.5; cursor:not-allowed; }
+.community-post-kind { display:grid; gap:4px; color:#858ba0; font-size:9px; }
+.community-post-kind select { min-height:42px; max-width:150px; padding:0 10px; border:1px solid #dfe3ee; border-radius:12px; background:#f9faff; color:#404761; font:inherit; font-size:10px; }
+@media(max-width:600px) {
+  .community-room-header { min-height:64px; gap:9px; padding:9px 12px; }
+  .community-room-header .mobile-conversation-back { display:grid; width:38px; height:38px; flex:0 0 38px; }
+  .community-room-mark { width:39px; height:39px; flex-basis:39px; border-radius:13px; font-size:20px; }
+  .community-room-heading span { font-size:7px; }
+  .community-room-heading strong { font-size:14px; }
+  .community-room-heading small { font-size:9px; }
+  .community-room-presence { gap:5px; padding:7px 8px; font-size:8px; }
+  .community-room-messages { padding:14px 10px; }
+  .community-room-welcome { gap:9px; padding:12px; border-radius:14px; }
+  .community-room-welcome p { font-size:10px; }
+  .community-message { gap:8px; padding:10px; border-radius:14px; }
+  .community-message-avatar { width:31px; height:31px; flex-basis:31px; }
+  .community-message-meta { gap:5px; }
+  .community-message-meta strong { font-size:11px; }
+  .community-message-body p { font-size:11px; }
+  .community-composer-row { align-items:stretch; gap:6px; }
+  .community-composer-row textarea { min-height:42px; padding:10px; font-size:12px; }
+  .community-composer-row>button { min-height:42px; padding:0 12px; }
+  .community-post-kind select { max-width:112px; font-size:9px; }
+}

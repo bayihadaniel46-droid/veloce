@@ -24,3 +24,7 @@ services:
         value: https://piz-ledger.onrender.com
       - key: PIZ_SERVICE_KEY
         sync: false
+      - key: COMMUNITY_ADMIN_IDS
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        generateValue: true

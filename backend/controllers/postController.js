@@ -262,23 +262,50 @@ const getFile = async (req, res) => {
 
     const file = files[0];
 
-    res.set(
-      "Content-Type",
-      file.contentType ||
-      "application/octet-stream"
-    );
+    const fileSize = Number(file.length || 0);
+    const rangeHeader = req.headers.range;
+    let streamOptions = {};
 
-    res.set(
-      "Content-Disposition",
-      `inline; filename="${encodeURIComponent(
-        file.filename
-      )}"`
-    );
+    res.set("Content-Type", file.contentType || "application/octet-stream");
+    res.set("Content-Disposition", `inline; filename*=UTF-8''${encodeURIComponent(file.filename || "media")}`);
+    res.set("Accept-Ranges", "bytes");
 
-    const downloadStream =
-      bucket.openDownloadStream(
-        fileId
-      );
+    if (rangeHeader) {
+      const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader.trim());
+      if (!match || !fileSize) {
+        res.set("Content-Range", `bytes */${fileSize}`);
+        return res.status(416).end();
+      }
+
+      let start = match[1] ? Number(match[1]) : null;
+      let end = match[2] ? Number(match[2]) : null;
+
+      if (start === null) {
+        const suffixLength = end;
+        if (!suffixLength) {
+          res.set("Content-Range", `bytes */${fileSize}`);
+          return res.status(416).end();
+        }
+        start = Math.max(fileSize - suffixLength, 0);
+        end = fileSize - 1;
+      } else {
+        end = end === null ? fileSize - 1 : Math.min(end, fileSize - 1);
+      }
+
+      if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || start >= fileSize || end < start) {
+        res.set("Content-Range", `bytes */${fileSize}`);
+        return res.status(416).end();
+      }
+
+      res.status(206);
+      res.set("Content-Range", `bytes ${start}-${end}/${fileSize}`);
+      res.set("Content-Length", String(end - start + 1));
+      streamOptions = { start, end: end + 1 };
+    } else {
+      res.set("Content-Length", String(fileSize));
+    }
+
+    const downloadStream = bucket.openDownloadStream(fileId, streamOptions);
 
     downloadStream.on(
       "error",

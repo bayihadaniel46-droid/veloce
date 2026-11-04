@@ -170,6 +170,10 @@ function Explorer({ unreadNotifications = 0, onUnreadCountChange }) {
           </p>
         </div>
 
+        <button type="button" className="explorer-games-button" disabled aria-label="Jeux, bientôt disponible" title="Bientôt disponible">
+          <span aria-hidden="true">🎮</span><strong>Jeux</strong><small>À venir</small>
+        </button>
+
         <button type="button" className="explorer-notification-button" onClick={() => setShowNotifications((visible) => !visible)} aria-label={unreadNotifications ? `Notifications, ${unreadNotifications} non lues` : "Notifications"} aria-pressed={showNotifications}>
           <span aria-hidden="true">🔔</span>
           {unreadNotifications > 0 && <b>{unreadNotifications > 99 ? "99+" : unreadNotifications}</b>}

@@ -13,7 +13,7 @@ Veloce peut être déployé comme un seul service Node sur Render : Express sert
 
 1. Envoyer ce dossier dans un dépôt Git privé sur GitHub ou GitLab. Vérifier que les fichiers `.env` et les dossiers `node_modules` ne sont pas ajoutés. Le fichier `.gitignore` les exclut.
 2. Dans Render, choisir **New → Blueprint**, connecter le dépôt et sélectionner `render.yaml`.
-3. Lors de la création, fournir `MONGO_URI`. Render génère `JWT_SECRET` automatiquement.
+3. Lors de la création, fournir `MONGO_URI`. Render génère `JWT_SECRET` et `VAPID_PRIVATE_KEY` automatiquement.
 4. Une fois le déploiement terminé, ouvrir l’adresse `onrender.com` indiquée par Render. `/health` confirme l’état du serveur et indique si les intégrations sont configurées, sans révéler leurs clés.
 
 ## 3. Configurer la vérification des publications
@@ -25,6 +25,14 @@ La page **Tendances du marché** utilise Twelve Data. Ajouter `TWELVE_DATA_API_K
 ## 4. Activer l’assistant IA (facultatif)
 
 L’assistant personnel utilise aussi `GEMINI_API_KEY` pour générer des brouillons à partir des préférences privées et rechercher des sources avec Google Search. La clé Gemini est créée dans [Google AI Studio](https://aistudio.google.com/app/apikey). Le quota gratuit et les outils disponibles dépendent du modèle et du projet ; consulter la page officielle [des tarifs Gemini](https://ai.google.dev/gemini-api/docs/pricing). Aucun compte Perplexity ni `PERPLEXITY_API_KEY` n’est requis.
+
+## 5. Gérer le clan serveur
+
+Le clan serveur est un espace public réservé aux comptes connectés : les messages et questions y sont visibles par tous les membres. Pour autoriser l’équipe à publier les nouveautés et les guides, ajouter `COMMUNITY_ADMIN_IDS` dans l’environnement Render avec les identifiants Veloce des comptes d’administration, séparés par des virgules. Les annonces et les futures publicités restent dans ce canal.
+
+## 6. Activer les notifications de messages
+
+Le service Push utilise la variable secrète `VAPID_PRIVATE_KEY`, générée automatiquement par le blueprint Render. Chaque utilisateur doit ensuite ouvrir **Paramètres → Notifications → Activer** et autoriser les notifications dans son navigateur. Elles fonctionnent sur l’adresse HTTPS du site et sur les navigateurs qui prennent en charge les notifications Push.
 
 ## À savoir pour les essais gratuits
 

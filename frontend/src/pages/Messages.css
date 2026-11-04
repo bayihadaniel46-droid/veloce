@@ -599,6 +599,10 @@
 .chat-setting-row small { color: #848b9d; }
 .chat-setting-row input { width: 19px; height: 19px; accent-color: #6872da; }
 .chat-profile-error { margin: 16px 0 0; color: #a54659; font-size: 12px; }
+.server-community-card { border:1px solid #dedff8; background:linear-gradient(120deg,#f3f2ff,#f3fbf9); }
+.server-community-card .conversation-info strong { color:#444c9a; }
+.server-community-icon { display:grid; place-items:center; width:42px; height:42px; flex:0 0 42px; border:1px solid #e1e3fb; border-radius:14px; background:linear-gradient(145deg,#e8e8ff,#def4ed); font-size:21px; }
+.server-community-label { flex:0 0 auto; padding:5px 7px; border-radius:999px; background:#e2f2eb; color:#4b8b71; font-size:8px; font-weight:850; letter-spacing:.08em; }
 .chat-profile-page > footer { display: flex; justify-content: flex-end; margin-top: auto; padding-top: 14px; border-top: 1px solid #e5e6f1; }
 .chat-profile-page > footer button { min-height: 43px; padding: 0 19px; border: 0; border-radius: 14px; background: linear-gradient(135deg,#636ed8,#8b71db); color: #fff; font-weight: 800; cursor: pointer; }
 

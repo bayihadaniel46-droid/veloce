@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/authContext";
+import { disablePushNotifications, enablePushNotifications, getPushStatus } from "../services/pushService";
+import "./Settings.css";
 
 const getStorageKey = (user) => `veloce_settings_${user?._id || user?.id || "account"}`;
 const defaults = { density: "comfortable", reduceMotion: false, startPage: "home", showBadges: true };
@@ -20,15 +22,46 @@ function applySettings(settings) {
 }
 
 function Settings({ onBack, onLogout, onOpenProfile }) {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [settings, setSettings] = useState(() => readSettings(user));
+  const [pushStatus, setPushStatus] = useState({ supported: true, permission: "checking", subscribed: false });
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushMessage, setPushMessage] = useState("");
 
   useEffect(() => {
     applySettings(settings);
     localStorage.setItem(getStorageKey(user), JSON.stringify(settings));
   }, [settings, user]);
 
+  useEffect(() => {
+    let active = true;
+    getPushStatus().then((status) => { if (active) setPushStatus(status); })
+      .catch(() => { if (active) setPushStatus({ supported: false, permission: "unsupported", subscribed: false }); });
+    return () => { active = false; };
+  }, []);
+
   const update = (key, value) => setSettings((current) => ({ ...current, [key]: value }));
+
+  const togglePushNotifications = async () => {
+    if (pushBusy) return;
+    setPushBusy(true);
+    setPushMessage("");
+    try {
+      if (pushStatus.subscribed) {
+        await disablePushNotifications(token);
+        setPushMessage("Les notifications sont désactivées sur cet appareil.");
+      } else {
+        await enablePushNotifications(token);
+        setPushMessage("Les notifications de messages sont activées sur cet appareil.");
+      }
+      setPushStatus(await getPushStatus());
+    } catch (error) {
+      setPushMessage(error.message || "Impossible de modifier les notifications.");
+      setPushStatus(await getPushStatus().catch(() => pushStatus));
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   return (
     <section className="settings-page">
@@ -67,6 +100,13 @@ function Settings({ onBack, onLogout, onOpenProfile }) {
           <section className="settings-card">
             <div className="settings-card-heading"><span className="settings-card-icon">♧</span><div><h2>Notifications</h2><p>Gardez les compteurs de nouveaux éléments à portée de vue.</p></div></div>
             <label className="settings-toggle-row"><span><strong>Pastilles de notification</strong><small>Afficher les compteurs sur les raccourcis et la navigation.</small></span><input type="checkbox" checked={settings.showBadges} onChange={(event) => update("showBadges", event.target.checked)} /><i aria-hidden="true" /></label>
+            <div className="settings-push-row">
+              <div><strong>Messages même lorsque Veloce est fermé</strong><small>{!pushStatus.supported ? "Ce navigateur ne prend pas en charge les notifications Push." : pushStatus.permission === "denied" ? "Les notifications sont bloquées dans les réglages de ce navigateur." : pushStatus.subscribed ? "Cet appareil recevra les notifications de nouveaux messages." : "Autorise les notifications pour être averti des nouveaux messages."}</small></div>
+              <button type="button" className="settings-push-button" disabled={!pushStatus.supported || pushBusy || pushStatus.permission === "denied"} onClick={togglePushNotifications}>
+                {pushBusy ? "Mise à jour…" : pushStatus.subscribed ? "Désactiver" : "Activer"}
+              </button>
+              {pushMessage && <p className="settings-push-feedback" role="status">{pushMessage}</p>}
+            </div>
           </section>
 
           <section className="settings-card settings-session-card">

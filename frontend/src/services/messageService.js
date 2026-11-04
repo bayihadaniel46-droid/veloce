@@ -33,6 +33,29 @@ export const sendAudioCallEvent = ({ callId, type, payload, token }) => callRequ
   method: "POST", body: JSON.stringify({ type, payload }),
 });
 
+const COMMUNITY_URL = `${API_BASE_URL}/community`;
+const communityRequest = async (path, token, options = {}) => {
+  const response = await fetch(`${COMMUNITY_URL}${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...options.headers,
+    },
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Erreur du clan serveur.");
+  return data;
+};
+
+export const getCommunityMessages = (token) => communityRequest("/messages", token);
+export const sendCommunityMessage = ({ content, token }) => communityRequest("/messages", token, {
+  method: "POST", body: JSON.stringify({ content }),
+});
+export const publishCommunityUpdate = ({ content, kind = "announcement", token }) => communityRequest("/updates", token, {
+  method: "POST", body: JSON.stringify({ content, kind }),
+});
+
 const clanRequest = async (path, token, options = {}) => {
   const response = await fetch(`${CLAN_URL}${path}`, {
     ...options,

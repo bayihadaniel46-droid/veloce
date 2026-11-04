@@ -29,6 +29,7 @@ import {
 import { getUnreadMessageCount } from "../services/messageService";
 import { getUnreadNotificationCount } from "../services/notificationService";
 import { API_BASE_URL } from "../config";
+import { playUiSound } from "../services/soundService";
 
 import { useAuth } from "../context/authContext";
 
@@ -43,7 +44,9 @@ function Home() {
 
   const [currentPage, setCurrentPage] =
     useState(() => {
-      if (new URLSearchParams(window.location.search).has("profile")) return "user-profile";
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("profile")) return "user-profile";
+      if (params.has("contact") || params.get("page") === "messages") return "messages";
       try {
         const userId = user?._id || user?.id || "account";
         const saved = JSON.parse(localStorage.getItem(`veloce_settings_${userId}`) || "{}");
@@ -54,13 +57,28 @@ function Home() {
     });
 
   const [viewedUserId, setViewedUserId] = useState(() => new URLSearchParams(window.location.search).get("profile") || "");
-  const [messageRecipient, setMessageRecipient] = useState(null);
+  const [messageRecipient, setMessageRecipient] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const contact = params.get("contact");
+    return contact ? { _id: contact, username: params.get("username") || "Contact" } : null;
+  });
   const [messageComposerActive, setMessageComposerActive] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [feedType, setFeedType] = useState("posts");
   const [refreshingFeed, setRefreshingFeed] = useState(false);
   const feedTouchStart = useRef(null);
+  const lastUnreadMessageCount = useRef(null);
+
+  useEffect(() => {
+    const playForInteractiveControl = (event) => {
+      const control = event.target.closest?.("button, a, [role='button']");
+      if (!control || control.disabled || control.getAttribute("aria-disabled") === "true") return;
+      playUiSound("click");
+    };
+    document.addEventListener("click", playForInteractiveControl);
+    return () => document.removeEventListener("click", playForInteractiveControl);
+  }, []);
 
   const [posts, setPosts] =
     useState([]);
@@ -151,13 +169,23 @@ function Home() {
         getUnreadNotificationCount(token)
       ]);
       if (!active) return;
-      if (messages.status === "fulfilled") setUnreadMessages(messages.value);
+      if (messages.status === "fulfilled") {
+        const nextUnreadCount = Number(messages.value) || 0;
+        if (lastUnreadMessageCount.current !== null
+          && nextUnreadCount > lastUnreadMessageCount.current
+          && currentPage !== "messages"
+          && document.visibilityState === "visible") {
+          playUiSound("message");
+        }
+        lastUnreadMessageCount.current = nextUnreadCount;
+        setUnreadMessages(nextUnreadCount);
+      }
       if (notifications.status === "fulfilled") setUnreadNotifications(notifications.value);
     };
     refreshCounts();
     const timer = setInterval(refreshCounts, 15000);
     return () => { active = false; clearInterval(timer); };
-  }, [token]);
+  }, [token, currentPage]);
 
   useEffect(() => {
     const refreshNotificationBadge = async () => {
@@ -219,6 +247,7 @@ function Home() {
     const distance = event.changedTouches[0].clientY - feedTouchStart.current;
     feedTouchStart.current = null;
     if (distance < 75 || refreshingFeed || loading) return;
+    playUiSound("refresh");
     setRefreshingFeed(true);
     try {
       await loadPosts({ silent: true });

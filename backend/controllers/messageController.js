@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const ClanMessage = require("../models/ClanMessage");
 const Clan = require("../models/Clan");
 const { uploadMessageFiles, PRIVATE_BUCKET_NAME } = require("../utils/messageAttachments");
+const { sendPushToUser } = require("../utils/webPush");
 
 const getUnreadCount = async (req, res) => {
   try {
@@ -251,9 +252,21 @@ const sendMessage = async (
           "username avatar"
         );
 
-    res.status(201).json(
-      populated
-    );
+    res.status(201).json(populated);
+
+    const senderName = populated.sender?.username || "Un membre";
+    const messageBody = populated.content?.trim() || "T’a envoyé une pièce jointe.";
+    const notificationUrl = new URLSearchParams({
+      page: "messages",
+      contact: String(populated.sender?._id || sender),
+      username: senderName,
+    });
+    void sendPushToUser(recipient, {
+      title: `@${senderName} t’a envoyé un message`,
+      body: messageBody.slice(0, 140),
+      tag: `message-${message._id}`,
+      url: `/?${notificationUrl.toString()}`,
+    }).catch((error) => console.error("Notification de message non envoyée :", error.message));
 
   } catch (error) {
     console.error(
