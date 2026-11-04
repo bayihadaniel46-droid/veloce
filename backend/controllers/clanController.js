@@ -3,6 +3,7 @@ const Clan = require("../models/Clan");
 const ClanMessage = require("../models/ClanMessage");
 const User = require("../models/User");
 const { uploadMessageFiles, deleteMessageFiles } = require("../utils/messageAttachments");
+const { sendPushToUser } = require("../utils/webPush");
 const { getPizActivity, CLAN_CREATION_COST } = require("../services/pizEconomy");
 
 const idOf = (value) => String(value?._id || value);
@@ -225,6 +226,17 @@ const sendClanMessage = async (req, res) => {
     const message = await ClanMessage.create({ clan: clan._id, sender: userId, recipients: recipientIds, content, attachments, signed: req.body.signed === "true" || req.body.signed === true, replyTo: replyTo?._id, openedBy: [userId] });
     await Clan.updateOne({ _id: clan._id }, { $set: { updatedAt: new Date() } });
     const populated = await ClanMessage.findById(message._id).populate("sender", "username avatar").populate("recipients", "username avatar").populate("replyTo", "_id");
+    const senderName = populated.sender?.username || "Un membre";
+    const messageBody = populated.content?.trim() || "T’a envoyé une pièce jointe.";
+    for (const recipientId of recipientIds) {
+      const notificationUrl = new URLSearchParams({ page: "messages", clan: String(clan._id) });
+      void sendPushToUser(recipientId, {
+        title: `@${senderName} t’a envoyé une enveloppe dans ${clan.name}`,
+        body: messageBody.slice(0, 140),
+        tag: `clan-message-${message._id}-${recipientId}`,
+        url: `/?${notificationUrl.toString()}`,
+      }).catch((error) => console.error("Notification d’enveloppe non envoyée :", error.message));
+    }
     return res.status(201).json(safeEnvelope(populated, userId));
   } catch (error) {
     if (attachments.length) await deleteMessageFiles(attachments).catch(() => {});

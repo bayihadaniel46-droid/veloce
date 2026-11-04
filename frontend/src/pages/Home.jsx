@@ -62,6 +62,7 @@ function Home() {
     const contact = params.get("contact");
     return contact ? { _id: contact, username: params.get("username") || "Contact" } : null;
   });
+  const [messageClanId, setMessageClanId] = useState(() => new URLSearchParams(window.location.search).get("clan") || null);
   const [messageComposerActive, setMessageComposerActive] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -477,7 +478,7 @@ function Home() {
 
 
       case "messages":
-        return <Messages initialUser={messageRecipient} onInitialUserHandled={setMessageRecipient} onComposerStateChange={setMessageComposerActive} />;
+        return <Messages initialUser={messageRecipient} onInitialUserHandled={setMessageRecipient} initialClanId={messageClanId} onInitialClanHandled={setMessageClanId} onComposerStateChange={setMessageComposerActive} />;
 
 
       case "profile":

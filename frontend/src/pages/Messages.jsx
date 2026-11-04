@@ -106,7 +106,7 @@ import {
 } from "../services/userService";
 
 
-function Messages({ initialUser = null, onInitialUserHandled, onComposerStateChange = () => {} }) {
+function Messages({ initialUser = null, onInitialUserHandled, initialClanId = null, onInitialClanHandled, onComposerStateChange = () => {} }) {
   const { token, user } =
     useAuth();
 
@@ -811,6 +811,13 @@ function Messages({ initialUser = null, onInitialUserHandled, onComposerStateCha
     setSelectedClan(clan);
     setSendError("");
   };
+
+  useEffect(() => {
+    if (!initialClanId || !clans.length) return;
+    const clan = clans.find((item) => String(item._id) === String(initialClanId));
+    if (clan) openClan(clan);
+    onInitialClanHandled?.(null);
+  }, [initialClanId, clans, onInitialClanHandled]);
 
   const handleClanCreated = (clan) => {
     const readyClan = { ...clan, memberCount: clan.members?.length || 1 };
