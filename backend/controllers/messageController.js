@@ -56,6 +56,10 @@ const getConversations = async (
     const conversations = new Map();
 
     for (const message of messages) {
+      // A populated reference is null when a participant account was deleted.
+      // Ignore those orphaned records so one old message cannot break the inbox.
+      if (!message.sender?._id || !message.recipient?._id) continue;
+
       const otherUser =
         message.sender._id.toString() ===
         userId.toString()

@@ -173,6 +173,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
     loading,
     setLoading
   ] = useState(true);
+  const [conversationError, setConversationError] = useState("");
 
   const [deletingMessageId, setDeletingMessageId] = useState("");
   const [deleteError, setDeleteError] = useState("");
@@ -491,10 +492,17 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
             token
           );
 
-        setConversations(data);
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.conversations)
+            ? data.conversations
+            : [];
+        setConversations(list);
+        setConversationError("");
 
       } catch (error) {
         console.error(error);
+        setConversationError(error.message || "Impossible de charger tes conversations.");
       } finally {
         setLoading(false);
       }
@@ -1056,6 +1064,11 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
 
             </div>
           )}
+
+          {conversationError && <div className="messages-load-error" role="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, margin: "12px 10px", padding: "12px 14px", border: "1px solid #f0c4cc", borderRadius: 14, background: "#fff2f4", color: "#762d3b", fontSize: 12 }}>
+            <span>{conversationError}</span>
+            <button type="button" onClick={() => void loadConversations()} style={{ border: 0, borderRadius: 10, padding: "8px 12px", background: "#762d3b", color: "#fff", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Réessayer</button>
+          </div>}
 
             <details className="messages-list-group" open>
               <summary><span>Clans privés</span><b>{clans.length}</b></summary>
