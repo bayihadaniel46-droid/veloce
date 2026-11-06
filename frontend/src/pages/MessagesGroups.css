@@ -60,8 +60,8 @@
 .messages-conversation[class*="chat-theme-"] .conversation-header button{accent-color:var(--conversation-accent)}
 .messages-conversation[class*="chat-theme-"] .conversation-header .conversation-person-button{color:var(--conversation-accent)}
 .messages-conversation[class*="chat-theme-"] .conversation-header .call-action-button,.messages-conversation[class*="chat-theme-"] .conversation-header .conversation-header-action{border-color:color-mix(in srgb,var(--conversation-accent) 24%,#fff)}
-.messages-conversation[data-chat-wallpaper="night"] .message-list{background:radial-gradient(ellipse at 50% 0%,rgba(80,87,112,.12),transparent 58%),#17191f!important}
-.messages-conversation[data-chat-wallpaper="violet"] .message-list{background:radial-gradient(ellipse at 50% 0%,rgba(156,81,220,.2),transparent 58%),#211832!important}
-.messages-conversation[data-chat-wallpaper="ocean"] .message-list{background:radial-gradient(ellipse at 50% 0%,rgba(55,168,199,.18),transparent 58%),#122936!important}
-.messages-conversation[data-chat-wallpaper="rose"] .message-list{background:radial-gradient(ellipse at 50% 0%,rgba(198,87,164,.18),transparent 58%),#351d31!important}
+.messages-conversation[data-chat-wallpaper="night"] .message-list{background:radial-gradient(ellipse at 50% 0%,rgba(125,139,174,.14),transparent 58%),#f3f5f9!important}
+.messages-conversation[data-chat-wallpaper="violet"] .message-list{background:radial-gradient(ellipse at 50% 0%,rgba(156,81,220,.13),transparent 58%),#f6f2ff!important}
+.messages-conversation[data-chat-wallpaper="ocean"] .message-list{background:radial-gradient(ellipse at 50% 0%,rgba(55,168,199,.14),transparent 58%),#eff9fc!important}
+.messages-conversation[data-chat-wallpaper="rose"] .message-list{background:radial-gradient(ellipse at 50% 0%,rgba(198,87,164,.12),transparent 58%),#fff4f8!important}
 @media(max-width:600px){.clan-selection-toolbar{align-items:flex-start;flex-direction:column}.clan-selection-toolbar button{width:100%}.clan-recipient-list{max-height:110px}.chat-theme-options{gap:7px}}

@@ -730,19 +730,31 @@
 }
 
 .message-list.wallpaper-night {
-  background: radial-gradient(ellipse at 50% 0%, rgba(80, 87, 112, .12), transparent 58%), #17191f !important;
+  background: radial-gradient(ellipse at 50% 0%, rgba(125, 139, 174, .14), transparent 58%), #f3f5f9 !important;
 }
 
 .message-list.wallpaper-violet {
-  background: radial-gradient(ellipse at 50% 0%, rgba(156, 81, 220, .2), transparent 58%), #211832 !important;
+  background: radial-gradient(ellipse at 50% 0%, rgba(156, 81, 220, .13), transparent 58%), #f6f2ff !important;
 }
 
 .message-list.wallpaper-ocean {
-  background: radial-gradient(ellipse at 50% 0%, rgba(55, 168, 199, .18), transparent 58%), #122936 !important;
+  background: radial-gradient(ellipse at 50% 0%, rgba(55, 168, 199, .14), transparent 58%), #eff9fc !important;
 }
 
 .message-list.wallpaper-rose {
-  background: radial-gradient(ellipse at 50% 0%, rgba(198, 87, 164, .18), transparent 58%), #351d31 !important;
+  background: radial-gradient(ellipse at 50% 0%, rgba(198, 87, 164, .12), transparent 58%), #fff4f8 !important;
+}
+
+.message-list .message-mine .message-bubble {
+  background: linear-gradient(135deg, #6672e8, #8462d3) !important;
+  color: #fff !important;
+}
+
+.message-list .message-theirs .message-bubble {
+  border: 1px solid #e4e7f0;
+  background: #fff !important;
+  color: #30384d !important;
+  box-shadow: 0 5px 16px rgba(37, 45, 72, .07);
 }
 
 .chat-profile-overlay,

@@ -383,6 +383,22 @@ function Home() {
           const hasVideo = Array.isArray(post.attachments) && post.attachments.some((file) => file.mimetype?.startsWith("video/"));
           return feedType === "videos" ? hasVideo : !hasVideo;
         });
+        const authorStacks = new Map();
+        if (feedType === "posts") {
+          visiblePosts.forEach((post, index) => {
+            const author = post.author && typeof post.author === "object" ? post.author : {};
+            const authorId = String(author._id || (typeof post.author === "string" ? post.author : "") || post.username || post._id || `post-${index}`);
+            if (!authorStacks.has(authorId)) {
+              authorStacks.set(authorId, {
+                id: authorId,
+                name: post.username || author.username || "Membre",
+                avatar: author.avatar || post.avatar || "",
+                posts: [],
+              });
+            }
+            authorStacks.get(authorId).posts.push(post);
+          });
+        }
 
         if (loading) {
 
@@ -454,21 +470,23 @@ function Home() {
           <VideoFeed posts={visiblePosts} onLike={handleLike} />
         ) : (
           <section className="home-feed">
-
-              {visiblePosts.map(
-              (post, index) => (
-
-                <PostCard
-                  key={
-                    post._id ||
-                    `post-${index}`
-                  }
-                  post={post}
-                  onLike={handleLike}
-                />
-
-              )
-            )}
+            {[...authorStacks.values()].map((stack) => (
+              <details className="author-publication-stack" key={stack.id}>
+                <summary className="author-publication-stack-summary">
+                  <span className="publication-stack-avatar">{stack.avatar ? <img src={stack.avatar} alt="" /> : stack.name.charAt(0).toUpperCase()}</span>
+                  <span className="publication-stack-copy">
+                    <strong>{stack.name}</strong>
+                    <span>{stack.posts.length} publication{stack.posts.length === 1 ? "" : "s"} · {stack.posts[0]?.content || "Contenu photo ou vidéo"}</span>
+                  </span>
+                  <span className="publication-stack-toggle">Ouvrir <b>⌄</b></span>
+                </summary>
+                <div className="author-publication-stack-list">
+                  {stack.posts.map((post, index) => (
+                    <PostCard key={post._id || `${stack.id}-post-${index}`} post={post} onLike={handleLike} />
+                  ))}
+                </div>
+              </details>
+            ))}
 
           </section>
         );

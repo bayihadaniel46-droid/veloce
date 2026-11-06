@@ -5,3 +5,17 @@
 .home-feed-switch .home-feed-carrefour{border-color:#ef9acb58;background:radial-gradient(circle at 30% 15%,#f39ad244,transparent 43%),linear-gradient(145deg,#563957,#252440);color:#ffd7ec;font-size:21px}
 .home-feed-switch .home-feed-carrefour small{font-size:9px;font-weight:750}
 @media(max-width:600px){.home-feed-switch{gap:14px;margin:8px auto 13px}.home-feed-switch button{width:59px;height:59px;font-size:10px}.home-feed-switch .home-feed-carrefour{font-size:18px}.home-feed-switch .home-feed-carrefour small{font-size:8px}}
+.author-publication-stack{width:min(100%,760px);margin:0 auto 14px;overflow:hidden;border:1px solid #e4e6f2;border-radius:20px;background:linear-gradient(145deg,#fff,#f7f7ff);box-shadow:0 8px 24px #31375b0d}
+.author-publication-stack-summary{display:flex;align-items:center;gap:12px;min-height:78px;padding:13px 16px;list-style:none;cursor:pointer}
+.author-publication-stack-summary::-webkit-details-marker{display:none}
+.publication-stack-avatar{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;overflow:hidden;border:2px solid #fff;border-radius:50%;background:linear-gradient(140deg,#7668df,#dc85c4);color:#fff;font-size:16px;font-weight:800;box-shadow:0 3px 12px #6556b832}
+.publication-stack-avatar img{width:100%;height:100%;object-fit:cover}
+.publication-stack-copy{display:grid;min-width:0;gap:5px;flex:1}
+.publication-stack-copy strong{color:#293148;font-size:14px}
+.publication-stack-copy>span{overflow:hidden;color:#788098;font-size:11px;text-overflow:ellipsis;white-space:nowrap}
+.publication-stack-toggle{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;padding:8px 11px;border:1px solid #e6e4f5;border-radius:999px;background:#fff;color:#655fc4;font-size:10px;font-weight:800}
+.publication-stack-toggle b{font-size:15px;transition:transform .18s ease}
+.author-publication-stack[open] .publication-stack-toggle b{transform:rotate(180deg)}
+.author-publication-stack-list{display:grid;gap:12px;padding:0 12px 12px}
+.author-publication-stack-list .post-card{width:100%;margin:0}
+@media(max-width:600px){.author-publication-stack{margin-bottom:11px;border-radius:16px}.author-publication-stack-summary{min-height:68px;gap:9px;padding:11px}.publication-stack-avatar{flex-basis:38px;width:38px;height:38px}.publication-stack-copy strong{font-size:12px}.publication-stack-copy>span{max-width:48vw;font-size:10px}.publication-stack-toggle{gap:4px;padding:7px 8px;font-size:9px}.author-publication-stack-list{gap:9px;padding:0 8px 8px}}
