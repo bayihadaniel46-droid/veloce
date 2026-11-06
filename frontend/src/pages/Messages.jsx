@@ -105,7 +105,8 @@ function CallGlyph({ video = false }) {
 }
 
 import {
-  searchUsers
+  searchUsers,
+  toggleFollow as toggleUserFollow
 } from "../services/userService";
 
 
@@ -125,6 +126,10 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
   const [clans, setClans] = useState([]);
   const [selectedClan, setSelectedClan] = useState(null);
   const [showCommunity, setShowCommunity] = useState(false);
+  const [serverClanBadge, setServerClanBadge] = useState(() => {
+    const accountId = user?.id || user?._id;
+    return Boolean(accountId && localStorage.getItem(`veloce_server_clan_intro_seen_${accountId}`) !== "true");
+  });
   const [showNewMenu, setShowNewMenu] = useState(false);
   const [showCreateClan, setShowCreateClan] = useState(false);
   const [showEmojiLibrary, setShowEmojiLibrary] = useState(false);
@@ -179,6 +184,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
   const [forwardTarget, setForwardTarget] = useState(null);
   const [showChatProfile, setShowChatProfile] = useState(false);
   const [chatWallpaper, setChatWallpaper] = useState("night");
+  const [chatTheme, setChatTheme] = useState("violet");
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [incomingCall, setIncomingCall] = useState(null);
@@ -435,12 +441,34 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
     if (!selectedUser?._id) return;
     const key = `veloce_chat_wallpaper_${selectedUser._id}`;
     setChatWallpaper(localStorage.getItem(key) || "night");
+    setChatTheme(contactSettingsFor(selectedUser).theme || "violet");
   }, [selectedUser?._id]);
+
+  useEffect(() => {
+    const accountId = user?.id || user?._id;
+    setServerClanBadge(Boolean(accountId && localStorage.getItem(`veloce_server_clan_intro_seen_${accountId}`) !== "true"));
+  }, [user?.id, user?._id]);
+
+  useEffect(() => {
+    if (!showCommunity) return;
+    const accountId = user?.id || user?._id;
+    if (accountId) localStorage.setItem(`veloce_server_clan_intro_seen_${accountId}`, "true");
+    setServerClanBadge(false);
+  }, [showCommunity, user?.id, user?._id]);
 
   const updateWallpaper = (value) => {
     setChatWallpaper(value);
     if (selectedUser?._id) {
       localStorage.setItem(`veloce_chat_wallpaper_${selectedUser._id}`, value);
+    }
+  };
+
+  const updateChatTheme = (value) => {
+    setChatTheme(value);
+    if (selectedUser?._id) {
+      const key = `veloce_contact_settings_${selectedUser._id}`;
+      localStorage.setItem(key, JSON.stringify({ ...contactSettingsFor(selectedUser), theme: value }));
+      window.dispatchEvent(new Event("veloce:contact-settings"));
     }
   };
 
@@ -982,9 +1010,9 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
             <details className="messages-list-group" open>
               <summary><span>Clan serveur</span><b>OUVERT</b></summary>
 
-            <button type="button" className={`conversation-card server-community-card ${showCommunity ? "conversation-active" : ""}`} onClick={openCommunity}>
+            <button type="button" className={`conversation-card server-community-card ${showCommunity ? "conversation-active" : ""} ${serverClanBadge ? "needs-attention" : ""}`} onClick={openCommunity}>
               <div className="server-community-icon" aria-hidden="true">🌐</div>
-              <div className="conversation-info"><strong>Clan serveur</strong><span>Questions, nouveautés et aide</span></div>
+              <div className="conversation-info"><strong>Clan serveur</strong><span>Questions, nouveautés et aide</span>{serverClanBadge && <small className="server-community-badge">À DÉCOUVRIR</small>}</div>
               <span className="server-community-label">TOUS</span>
             </button>
             </details>
@@ -1032,9 +1060,13 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
             <details className="messages-list-group" open>
               <summary><span>Clans privés</span><b>{clans.length}</b></summary>
             {clans.length > 0 && <div className="conversation-group-label">TES CLANS</div>}
-            {clans.map((clan) => <button key={clan._id} type="button" className={`conversation-card clan-conversation-card ${selectedClan?._id === clan._id ? "conversation-active" : ""}`} onClick={() => openClan(clan)}>
-              <div className="clan-avatar">✉</div><div className="conversation-info"><strong>{clan.name}</strong><span>{clan.memberCount} membres · Enveloppes privées</span></div>
-            </button>)}
+            {clans.map((clan) => {
+              const accountId = String(user?.id || user?._id || "");
+              const role = String(clan.owner?._id || clan.owner) === accountId ? "Chef" : (clan.administrators || []).some((id) => String(id?._id || id) === accountId) ? "Administrateur" : (clan.moderators || []).some((id) => String(id?._id || id) === accountId) ? "Modérateur" : "Membre";
+              return <button key={clan._id} type="button" className={`conversation-card clan-conversation-card ${selectedClan?._id === clan._id ? "conversation-active" : ""}`} onClick={() => openClan(clan)}>
+                <div className="clan-avatar">✉</div><div className="conversation-info"><strong>{clan.name}</strong><span>{clan.description || `${clan.memberCount} membres · Enveloppes privées`}</span><small className="clan-card-meta"><b>{role}</b><i />{clan.memberCount || clan.members?.length || 1} membres</small></div>
+              </button>;
+            })}
             </details>
             <details className="messages-list-group">
               <summary><span>Favoris</span><b>{favoriteConversations.length}</b></summary>
@@ -1128,7 +1160,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
             CONVERSATION
         ================================================== */}
 
-        <div className="messages-conversation">
+        <div className={`messages-conversation chat-theme-${chatTheme}`} data-chat-wallpaper={chatWallpaper}>
 
           {showCommunity ? <CommunityRoom token={token} user={user} onBack={closeConversation} /> : selectedClan ? <ClanRoom clan={selectedClan} token={token} user={user} onBack={closeConversation} onClanUpdated={(updated) => { setSelectedClan(updated); setClans((current) => current.map((item) => item._id === updated._id ? { ...item, ...updated, memberCount: updated.members?.length || item.memberCount } : item)); }} /> : !selectedUser ? (
             <div className="messages-placeholder">
@@ -1271,7 +1303,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
                 <div className="veloce-emoji-keyboard-foot"><button type="button" onClick={() => { setContent((current) => Array.from(current).slice(0, -1).join("")); composerRef.current?.focus(); }}>⌫ Effacer</button><button type="button" onClick={() => addComposerText(" ")}>Espace</button></div>
               </div>}
 
-              {showChatProfile && <ChatProfileDialog person={selectedUser} wallpaper={chatWallpaper} onWallpaperChange={updateWallpaper} onClose={() => setShowChatProfile(false)} token={token} />}
+              {showChatProfile && <ChatProfileDialog person={selectedUser} wallpaper={chatWallpaper} onWallpaperChange={updateWallpaper} theme={chatTheme} onThemeChange={updateChatTheme} onClose={() => setShowChatProfile(false)} token={token} />}
               {activeMessage && <MessageActionsSheet message={activeMessage} onSelect={performMessageAction} onClose={() => setActiveMessage(null)} />}
               {forwardTarget && <ForwardMessageDialog conversations={conversations} onSelect={forwardMessageTo} onClose={() => setForwardTarget(null)} />}
 
@@ -1300,6 +1332,12 @@ const CHAT_WALLPAPERS = [
   { id: "violet", label: "Violet", swatch: "#211832" },
   { id: "ocean", label: "Océan", swatch: "#122936" },
   { id: "rose", label: "Prune", swatch: "#351d31" },
+];
+const CHAT_THEMES = [
+  { id: "violet", label: "Aurore violette", swatch: "linear-gradient(135deg,#8071e7,#c274c3)" },
+  { id: "ocean", label: "Lagune", swatch: "linear-gradient(135deg,#37a8c7,#487be2)" },
+  { id: "rose", label: "Rose tendre", swatch: "linear-gradient(135deg,#e56d9b,#f2ad8d)" },
+  { id: "jade", label: "Jade", swatch: "linear-gradient(135deg,#37a980,#8acb88)" },
 ];
 
 const CALL_EMOJIS = ["😀", "😎", "🥰", "😂", "😌", "🤗", "🦊", "🐼", "🐯", "🐨", "🦁", "🐸", "🐙", "🦋", "🐧", "🦄"];
@@ -1395,7 +1433,7 @@ function IncomingCallStage({ call, self, error, onAccept, onDecline }) {
   </section></div>;
 }
 
-function ChatProfileDialog({ person, wallpaper, onWallpaperChange, onClose, token }) {
+function ChatProfileDialog({ person, wallpaper, onWallpaperChange, theme, onThemeChange, onClose, token }) {
   const [activeTab, setActiveTab] = useState("profil");
   const [profile, setProfile] = useState(person);
   const [relationship, setRelationship] = useState(() => localStorage.getItem(`veloce_contact_relation_${person._id}`) || "Ami(e)");
@@ -1405,12 +1443,15 @@ function ChatProfileDialog({ person, wallpaper, onWallpaperChange, onClose, toke
   });
   const [copied, setCopied] = useState(false);
   const [profileError, setProfileError] = useState("");
+  const [followNotice, setFollowNotice] = useState("");
+  const [following, setFollowing] = useState(false);
+  const [followSaving, setFollowSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
     fetch(`${API_BASE_URL}/users/${person._id}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.message || "Profil indisponible."); return data; })
-      .then((data) => { if (active) setProfile({ ...person, ...(data.user || data), stats: data.stats || data.user?.stats }); })
+      .then((data) => { if (active) { setProfile({ ...person, ...(data.user || data), stats: data.stats || data.user?.stats }); setFollowing(Boolean(data.isFollowing)); } })
       .catch((error) => { if (active) setProfileError(error.message); });
     return () => { active = false; };
   }, [person, token]);
@@ -1432,6 +1473,19 @@ function ChatProfileDialog({ person, wallpaper, onWallpaperChange, onClose, toke
     try { await navigator.clipboard.writeText(url); setCopied(true); window.setTimeout(() => setCopied(false), 1800); }
     catch { setProfileError("Impossible de copier le lien sur cet appareil."); }
   };
+  const changeFollow = async () => {
+    try {
+      setFollowSaving(true); setProfileError(""); setFollowNotice("");
+      const result = await toggleUserFollow({ userId: person._id || person.id, token });
+      setFollowing(Boolean(result.following));
+      setProfile((current) => ({ ...current, stats: { ...current.stats, followersCount: Math.max(0, Number(current.stats?.followersCount || 0) + (result.following ? 1 : -1)) } }));
+      setFollowNotice(result.following ? "Abonnement effectué · 0,5 Piz versé à cette personne." : "Tu ne suis plus cette personne.");
+    } catch (error) {
+      setProfileError(error.message || "Impossible de modifier cet abonnement.");
+    } finally {
+      setFollowSaving(false);
+    }
+  };
 
   return (
     <div className="chat-profile-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
@@ -1440,8 +1494,8 @@ function ChatProfileDialog({ person, wallpaper, onWallpaperChange, onClose, toke
         <nav className="chat-profile-tabs" aria-label="Rubriques du contact">{[["profil", "Profil"], ["conversation", "Conversation"], ["parametres", "Paramètres"]].map(([key, label]) => <button key={key} type="button" className={activeTab === key ? "active" : ""} onClick={() => setActiveTab(key)}>{label}</button>)}</nav>
         {profileError && <p className="chat-profile-error" role="alert">{profileError}</p>}
         <label className="chat-favorite-toggle"><span>☆ Ajouter cette conversation aux favoris</span><input type="checkbox" checked={Boolean(chatSettings.favorite)} onChange={(event) => changeSetting("favorite", event.target.checked)} /></label>
-        {activeTab === "profil" && <div className="chat-profile-content"><div className="chat-profile-hero"><span className="chat-profile-avatar">{profile.avatar ? <img src={profile.avatar} alt="" /> : emojiForPerson(profile)}</span><div><h3>{profile.username || person.username}</h3><small>@{profile.username || person.username}</small><p>{profile.bio || "Aucune biographie renseignée."}</p></div></div><div className="chat-profile-stats"><div><strong>{profile.stats?.followersCount ?? "—"}</strong><span>Abonnés</span></div><div><strong>{profile.stats?.followingCount ?? "—"}</strong><span>Abonnements</span></div><div><strong>{relationship}</strong><span>Ton lien</span></div></div><label className="chat-relation-field">Le lien qui vous unit<select value={relationship} onChange={(event) => changeRelationship(event.target.value)}>{["Ami(e)", "Famille", "Collègue", "Partenaire", "Connaissance", "Autre"].map((value) => <option key={value}>{value}</option>)}</select></label><button className="chat-copy-profile-link" type="button" onClick={copyProfileLink}>🔗 {copied ? "Lien copié" : "Copier le lien du profil"}</button></div>}
-        {activeTab === "conversation" && <div className="chat-profile-content"><h3>Apparence de la conversation</h3><p>Le fond choisi est enregistré sur cet appareil.</p><div className="chat-wallpaper-options">{CHAT_WALLPAPERS.map((option) => <button key={option.id} type="button" className={wallpaper === option.id ? "selected" : ""} onClick={() => onWallpaperChange(option.id)}><span style={{ background: option.swatch }} />{option.label}</button>)}</div><label className="chat-relation-field">Nom affiché dans ta messagerie<input value={chatSettings.nickname ?? profile.username ?? person.username ?? ""} onChange={(event) => changeSetting("nickname", event.target.value)} /></label><p className="chat-profile-hint">Le nom personnalisé et le fond restent privés sur cet appareil.</p></div>}
+        {activeTab === "profil" && <div className="chat-profile-content"><div className="chat-profile-hero"><span className="chat-profile-avatar">{profile.avatar ? <img src={profile.avatar} alt="" /> : emojiForPerson(profile)}</span><div><h3>{profile.username || person.username}</h3><small>@{profile.username || person.username}</small><p>{profile.bio || "Aucune biographie renseignée."}</p></div></div><div className="chat-profile-stats"><div><strong>{profile.stats?.followersCount ?? "—"}</strong><span>Abonnés</span></div><div><strong>{profile.stats?.followingCount ?? "—"}</strong><span>Abonnements</span></div><div><strong>{relationship}</strong><span>Ton lien</span></div></div><button type="button" className={`chat-follow-button ${following ? "following" : ""}`} onClick={() => void changeFollow()} disabled={followSaving}>{followSaving ? "Mise à jour…" : following ? "✓ Abonné(e) · Se désabonner" : "＋ S’abonner · 0,5 Piz"}</button>{followNotice && <p className="chat-follow-notice" role="status">{followNotice}</p>}<label className="chat-relation-field">Le lien qui vous unit<select value={relationship} onChange={(event) => changeRelationship(event.target.value)}>{["Ami(e)", "Famille", "Collègue", "Partenaire", "Connaissance", "Autre"].map((value) => <option key={value}>{value}</option>)}</select></label><button className="chat-copy-profile-link" type="button" onClick={copyProfileLink}>🔗 {copied ? "Lien copié" : "Copier le lien du profil"}</button></div>}
+        {activeTab === "conversation" && <div className="chat-profile-content"><h3>Apparence de la conversation</h3><p>Le thème et le fond sont enregistrés sur cet appareil.</p><div className="chat-theme-options">{CHAT_THEMES.map((option) => <button key={option.id} type="button" className={theme === option.id ? "selected" : ""} onClick={() => onThemeChange(option.id)}><span style={{ background: option.swatch }} />{option.label}</button>)}</div><div className="chat-wallpaper-options">{CHAT_WALLPAPERS.map((option) => <button key={option.id} type="button" className={wallpaper === option.id ? "selected" : ""} onClick={() => onWallpaperChange(option.id)}><span style={{ background: option.swatch }} />Fond · {option.label}</button>)}</div><label className="chat-relation-field">Nom affiché dans ta messagerie<input value={chatSettings.nickname ?? profile.username ?? person.username ?? ""} onChange={(event) => changeSetting("nickname", event.target.value)} /></label><p className="chat-profile-hint">Le nom personnalisé et le fond restent privés sur cet appareil.</p></div>}
         {activeTab === "parametres" && <div className="chat-profile-content"><h3>Paramètres de ce contact</h3><label className="chat-setting-row"><span><strong>Mettre en sourdine</strong><small>Masquer les alertes de cette conversation</small></span><input type="checkbox" checked={Boolean(chatSettings.muted)} onChange={(event) => changeSetting("muted", event.target.checked)} /></label><label className="chat-setting-row"><span><strong>Épingler la conversation</strong><small>La garder en haut de ta liste</small></span><input type="checkbox" checked={Boolean(chatSettings.pinned)} onChange={(event) => changeSetting("pinned", event.target.checked)} /></label><label className="chat-relation-field">Relation<select value={relationship} onChange={(event) => changeRelationship(event.target.value)}>{["Ami(e)", "Famille", "Collègue", "Partenaire", "Connaissance", "Autre"].map((value) => <option key={value}>{value}</option>)}</select></label><p className="chat-profile-hint">Ces préférences sont locales à ton appareil.</p></div>}
         <footer><button type="button" onClick={onClose}>Fermer</button></footer>
       </section>
@@ -1508,14 +1562,35 @@ function ClanCreateDialog({ token, onClose, onCreated }) {
     finally { setSaving(false); }
   };
 
+  const visibleIds = results.map((person) => String(person.id || person._id)).filter(Boolean);
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id));
+  const toggleAllVisible = () => {
+    setError("");
+    if (!allVisibleSelected && new Set([...selected, ...visibleIds]).size > 99) {
+      setError("Un clan peut compter au maximum 100 membres, chef compris. Retire d’abord des membres déjà sélectionnés.");
+      return;
+    }
+    setSelected((current) => {
+      if (allVisibleSelected) return current.filter((id) => !visibleIds.includes(id));
+      return [...new Set([...current, ...visibleIds])].slice(0, 99);
+    });
+  };
+  const toggleClanMember = (id) => {
+    const memberId = String(id);
+    setError("");
+    if (selected.includes(memberId)) { setSelected((current) => current.filter((item) => item !== memberId)); return; }
+    if (selected.length >= 99) { setError("Un clan peut compter au maximum 100 membres, chef compris."); return; }
+    setSelected((current) => [...current, memberId]);
+  };
+
   return <div className="clan-modal-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <form className="clan-modal" onSubmit={submit}>
       <header><div><span>NOUVEL ESPACE PRIVÉ</span><h2>Créer un clan</h2></div><button type="button" onClick={onClose} aria-label="Fermer">×</button></header>
       <label>Nom du clan<input value={name} onChange={(event) => setName(event.target.value)} maxLength={60} placeholder="Ex. Cercle de lecture" required /></label>
       <label>Description <small>(facultative)</small><textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={240} placeholder="De quoi parle ce clan ?" /></label>
       <label>Inviter des membres<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher un nom d’utilisateur" /></label>
-      {selected.length > 0 && <p className="clan-selection-count">{selected.length} membre{selected.length > 1 ? "s" : ""} sélectionné{selected.length > 1 ? "s" : ""}</p>}
-      <div className="clan-user-results">{results.map((person) => <label key={person.id} className="clan-user-option"><input type="checkbox" checked={selected.includes(person.id)} onChange={() => setSelected((current) => current.includes(person.id) ? current.filter((id) => id !== person.id) : [...current, person.id])} /><span className="message-avatar">{person.avatar ? <img src={person.avatar} alt="" /> : person.username?.charAt(0).toUpperCase()}</span><span><strong>{person.username}</strong><small>{person.bio || "Membre de Veloce"}</small></span></label>)}</div>
+      <div className="clan-selection-toolbar"><span>{selected.length} membre{selected.length === 1 ? "" : "s"} sélectionné{selected.length === 1 ? "" : "s"} · {selected.length + 1}/100 places</span>{visibleIds.length > 0 && <button type="button" onClick={toggleAllVisible}>{allVisibleSelected ? "Désélectionner les résultats" : `Tout cocher · ${visibleIds.length} résultats`}</button>}</div>
+      <div className="clan-user-results">{results.map((person) => { const id = String(person.id || person._id); return <label key={id} className={`clan-user-option ${selected.includes(id) ? "selected" : ""}`}><input type="checkbox" checked={selected.includes(id)} onChange={() => toggleClanMember(id)} /><span className="message-avatar">{person.avatar ? <img src={person.avatar} alt="" /> : person.username?.charAt(0).toUpperCase()}</span><span><strong>{person.username}</strong><small>{person.bio || "Membre de Veloce"}</small></span></label>; })}{query.trim() && results.length === 0 && <p className="clan-search-empty">Aucun membre ne correspond à cette recherche.</p>}</div>
       {error && <p className="clan-form-error" role="alert">{error}</p>}
       <p className="clan-modal-note">Les messages du clan sont des enveloppes : seuls les destinataires choisis pourront les ouvrir.</p>
       <footer><button type="button" onClick={onClose}>Annuler</button><button type="submit" disabled={saving || !name.trim()}>{saving ? "Création…" : "Créer le clan"}</button></footer>
@@ -1584,6 +1659,9 @@ function ClanRoom({ clan, token, user, onBack, onClanUpdated }) {
   };
 
   const selectableMembers = replyTo ? (replyTo.replyTargets || []).map((target) => ({ ...target, id: target._id })) : members;
+  const selectableIds = selectableMembers.map((member) => String(member.id || member._id));
+  const everyoneSelected = selectableIds.length > 0 && selectableIds.every((id) => recipientIds.includes(id));
+  const toggleAllRecipients = () => setRecipientIds((current) => everyoneSelected ? current.filter((id) => !selectableIds.includes(id)) : [...new Set([...current.filter((id) => selectableIds.includes(id)), ...selectableIds])]);
   const toggleRecipient = (id) => setRecipientIds((current) => current.includes(String(id)) ? current.filter((value) => value !== String(id)) : [...current, String(id)]);
 
   return <div className={`clan-room ${darkMode ? "clan-room-dark" : ""}`}>
@@ -1603,7 +1681,7 @@ function ClanRoom({ clan, token, user, onBack, onClanUpdated }) {
     {error && <p className="message-send-error" role="alert">{error}</p>}
     <form className="clan-composer" onSubmit={submit}>
       {replyTo && <div className="clan-replying"><span>Réponse à une enveloppe</span><button type="button" onClick={() => { setReplyTo(null); setRecipientIds([]); }}>Annuler</button></div>}
-      <div className="clan-recipient-picker"><strong>Destinataires</strong><div>{selectableMembers.map((member) => { const id = String(member.id || member._id); return <label key={id}><input type="checkbox" checked={recipientIds.includes(id)} onChange={() => toggleRecipient(id)} />{member.username || "Membre"}</label>; })}{selectableMembers.length === 0 && <small>Ouvre une enveloppe pour pouvoir y répondre.</small>}</div></div>
+      <div className="clan-recipient-picker"><div className="clan-recipient-heading"><strong>Destinataires</strong>{selectableMembers.length > 0 && <span>{recipientIds.filter((id) => selectableIds.includes(id)).length}/{selectableMembers.length} sélectionnés</span>}</div>{selectableMembers.length > 0 && <button type="button" className="clan-select-all" onClick={toggleAllRecipients}>{everyoneSelected ? "Tout désélectionner" : `Tout cocher · ${selectableMembers.length}`}</button>}<div className="clan-recipient-list">{selectableMembers.map((member) => { const id = String(member.id || member._id); return <label key={id}><input type="checkbox" checked={recipientIds.includes(id)} onChange={() => toggleRecipient(id)} />{member.avatar ? <img src={member.avatar} alt="" /> : <span className="clan-recipient-initial">{member.username?.charAt(0)?.toUpperCase() || "M"}</span>}<span>{member.username || "Membre"}</span></label>; })}{selectableMembers.length === 0 && <small>Ouvre une enveloppe pour pouvoir y répondre.</small>}</div></div>
       <label className="clan-attach-button">＋ Photo ou fichier<input type="file" multiple hidden accept="image/*,.pdf,.doc,.docx,.txt,.zip" onChange={(event) => { const chosen = Array.from(event.target.files || []); if (chosen.length + files.length > 4 || chosen.some((file) => file.size > 8 * 1024 * 1024)) { setError("Maximum 4 fichiers, 8 Mo chacun."); return; } setFiles((current) => [...current, ...chosen]); event.target.value = ""; }} /></label>
       {files.length > 0 && <div className="message-file-chips">{files.map((file, index) => <button type="button" key={`${file.name}-${index}`} onClick={() => setFiles((current) => current.filter((_, i) => i !== index))}>📎 {file.name} ×</button>)}</div>}
       <textarea value={text} onChange={(event) => setText(event.target.value)} maxLength={5000} placeholder="Écris un message à placer dans une enveloppe…" />
@@ -1614,24 +1692,46 @@ function ClanRoom({ clan, token, user, onBack, onClanUpdated }) {
 }
 
 function ClanGovernance({ clan, token, user, darkMode, onClose, onClanUpdated }) {
-  const [votes, setVotes] = useState([]); const [kind, setKind] = useState("leader"); const [title, setTitle] = useState(""); const [target, setTarget] = useState(""); const [candidates, setCandidates] = useState([]); const [query, setQuery] = useState(""); const [results, setResults] = useState([]); const [error, setError] = useState(""); const [stakeAmount, setStakeAmount] = useState("1");
+  const [votes, setVotes] = useState([]); const [kind, setKind] = useState("leader"); const [title, setTitle] = useState(""); const [target, setTarget] = useState(""); const [candidates, setCandidates] = useState([]); const [inviteeIds, setInviteeIds] = useState([]); const [query, setQuery] = useState(""); const [results, setResults] = useState([]); const [error, setError] = useState(""); const [stakeAmount, setStakeAmount] = useState("1");
   const [localMembers, setLocalMembers] = useState(clan.members || []);
   const [localClan, setLocalClan] = useState(clan);
   const myId = String(user?.id || user?._id); const members = localMembers.filter((person) => String(person._id || person.id) !== myId);
   const chief = String(localClan.owner?._id || localClan.owner) === myId;
   const admins = localClan.administrators || [];
   const moderators = localClan.moderators || [];
+  const knownMembers = new Set(localMembers.map((person) => String(person._id || person.id)));
+  const inviteResults = results.filter((person) => {
+    const id = String(person.id || person._id);
+    return id !== myId && !knownMembers.has(id);
+  });
+  const inviteResultIds = inviteResults.map((person) => String(person.id || person._id));
+  const allInviteesSelected = inviteResultIds.length > 0 && inviteResultIds.every((id) => inviteeIds.includes(id));
+  const toggleAllInvitees = () => setInviteeIds((current) => allInviteesSelected
+    ? current.filter((id) => !inviteResultIds.includes(id))
+    : [...new Set([...current, ...inviteResultIds])]);
   const canInvite = chief || admins.some((id) => String(id?._id || id) === myId) || moderators.some((id) => String(id?._id || id) === myId);
+  const memberRole = (person) => {
+    const id = String(person._id || person.id);
+    if (id === String(localClan.owner?._id || localClan.owner)) return "Chef";
+    if (admins.some((item) => String(item?._id || item) === id)) return "Administrateur";
+    if (moderators.some((item) => String(item?._id || item) === id)) return "Modérateur";
+    return "Membre";
+  };
+  const memberSections = ["Chef", "Administrateur", "Modérateur", "Membre"].map((role) => ({
+    role,
+    members: localMembers.filter((person) => memberRole(person) === role).sort((a, b) => String(a.username || "").localeCompare(String(b.username || ""), "fr"))
+  })).filter((section) => section.members.length);
   const refresh = () => Promise.all([getClanVotes({ clanId: clan._id, token }), getClans(token)]).then(([items, currentClans]) => { setVotes(items); const current = currentClans.find((item) => String(item._id) === String(clan._id)); if (current) { setLocalClan(current); setLocalMembers(current.members || []); onClanUpdated?.(current); } }).catch((e) => setError(e.message));
   useEffect(() => { refresh(); }, [clan._id, token]);
   useEffect(() => { const timer = setInterval(refresh, 30000); return () => clearInterval(timer); }, [clan._id, token]);
   useEffect(() => { const q = query.trim(); if (!q) { setResults([]); return; } const timer = setTimeout(() => searchUsers({ q, token }).then(setResults).catch(() => {}), 250); return () => clearTimeout(timer); }, [query, token]);
-  const invite = async () => { try { const chosen = results.filter((person) => candidates.includes(String(person.id || person._id))); if (!chosen.length) return; const updated = await addClanMembers({ clanId: clan._id, memberIds: chosen.map((p) => p.id || p._id), token }); setLocalMembers(updated.members || localMembers); setLocalClan(updated); onClanUpdated?.(updated); setCandidates([]); setQuery(""); setResults([]); setError("Les membres sélectionnés ont été ajoutés au clan."); } catch (e) { setError(e.message); } };
+  const invite = async () => { try { const chosen = inviteResults.filter((person) => inviteeIds.includes(String(person.id || person._id))); if (!chosen.length) return; const updated = await addClanMembers({ clanId: clan._id, memberIds: chosen.map((p) => p.id || p._id), token }); setLocalMembers(updated.members || localMembers); setLocalClan(updated); onClanUpdated?.(updated); setInviteeIds([]); setQuery(""); setResults([]); setError("Les membres sélectionnés ont été ajoutés au clan."); } catch (e) { setError(e.message); } };
   const startVote = async (event) => { event.preventDefault(); try { const payload = kind === "leader" ? { title, kind, options: candidates.map((id) => { const person = localMembers.find((m) => String(m._id || m.id) === id); return { key: id, label: person?.username || "Membre" }; }) } : { title, kind, target }; await createClanVote({ clanId: clan._id, payload, token }); setTitle(""); setCandidates([]); await refresh(); } catch (e) { setError(e.message); } };
   const toggle = (id) => setCandidates((list) => list.includes(String(id)) ? list.filter((item) => item !== String(id)) : [...list, String(id)]);
+  const toggleInvitee = (id) => setInviteeIds((list) => list.includes(String(id)) ? list.filter((item) => item !== String(id)) : [...list, String(id)]);
   return <div className={`clan-modal-overlay ${darkMode ? "clan-dark-modal-overlay" : ""}`}><section className={`clan-modal clan-governance-modal ${darkMode ? "clan-governance-dark" : ""}`}><header><div><span>DÉCISIONS COLLECTIVES</span><h2>Gouvernance du clan</h2></div><button type="button" onClick={onClose}>×</button></header>
-    <div className="clan-rank-list"><strong>Hiérarchie et privilèges</strong><small>Chef : contrôle du clan et invitations · Administrateur : invitations · Modérateur : invitations · Membre : messages et votes anonymes</small>{localMembers.map((person) => { const id = String(person._id || person.id); const role = id === String(localClan.owner?._id || localClan.owner) ? "Chef" : admins.some((a) => String(a?._id || a) === id) ? "Administrateur" : moderators.some((a) => String(a?._id || a) === id) ? "Modérateur" : "Membre"; return <span key={id}>{person.username} <small>{role}</small></span>; })}</div>
-    {canInvite && <div className="clan-invite-controls"><input placeholder="Rechercher un membre à ajouter" value={query} onChange={(e) => setQuery(e.target.value)} />{results.map((p) => <label key={p.id}><input type="checkbox" checked={candidates.includes(String(p.id || p._id))} onChange={() => toggle(p.id || p._id)} />{p.username}</label>)}<button type="button" onClick={invite} disabled={!results.some((p) => candidates.includes(String(p.id || p._id)))}>Ajouter les membres sélectionnés</button></div>}
+    <div className="clan-rank-list"><div className="clan-member-roster-heading"><strong>Membres du clan</strong><span>{localMembers.length}/100</span></div><small>Les rôles sont regroupés pour retrouver rapidement les responsables et les membres.</small>{memberSections.map((section) => <section className="clan-member-section" key={section.role}><header><strong>{section.role}</strong><span>{section.members.length}</span></header>{section.members.map((person) => { const id = String(person._id || person.id); return <div className="clan-member-row" key={id}><span className="clan-member-avatar">{person.avatar ? <img src={person.avatar} alt="" /> : person.username?.charAt(0)?.toUpperCase() || "M"}</span><span className="clan-member-name">{person.username || "Membre"}</span>{id === myId && <small>Toi</small>}</div>; })}</section>)}</div>
+    {canInvite && <div className="clan-invite-controls"><strong>Inviter des membres</strong><p>Recherche un nom, puis sélectionne une personne ou tout le résultat.</p><input placeholder="Rechercher un membre à ajouter" value={query} onChange={(e) => setQuery(e.target.value)} />{inviteResults.length > 0 && <div className="clan-invite-select-all"><span>{inviteeIds.filter((id) => inviteResultIds.includes(id)).length}/{inviteResults.length} sélectionnés</span><button type="button" onClick={toggleAllInvitees}>{allInviteesSelected ? "Tout désélectionner" : `Tout cocher · ${inviteResults.length}`}</button></div>}{inviteResults.map((p) => <label className="clan-invite-result" key={p.id || p._id}><input type="checkbox" checked={inviteeIds.includes(String(p.id || p._id))} onChange={() => toggleInvitee(p.id || p._id)} /><span className="clan-member-avatar">{p.avatar ? <img src={p.avatar} alt="" /> : p.username?.charAt(0)?.toUpperCase() || "M"}</span>{p.username}</label>)}{query.trim() && inviteResults.length === 0 && <small>Aucun nouveau membre à ajouter dans ces résultats.</small>}<button type="button" onClick={invite} disabled={!inviteResults.some((p) => inviteeIds.includes(String(p.id || p._id)))}>Ajouter les membres sélectionnés</button></div>}
     <form className="clan-vote-form" onSubmit={startVote}><strong>Proposer un vote anonyme</strong><input required maxLength={140} placeholder="Objet du vote" value={title} onChange={(e) => setTitle(e.target.value)} /><select value={kind} onChange={(e) => { setKind(e.target.value); setCandidates([]); }}><option value="leader">Élire un nouveau chef</option><option value="rank">Modifier le rang d’un membre</option></select>{kind === "rank" ? <select required value={target} onChange={(e) => setTarget(e.target.value)}><option value="">Membre concerné</option>{members.filter((m) => String(m._id || m.id) !== String(clan.owner?._id || clan.owner)).map((m) => <option key={m._id || m.id} value={m._id || m.id}>{m.username}</option>)}</select> : <div className="clan-candidate-list">{localMembers.map((m) => <label key={m._id || m.id}><input type="checkbox" checked={candidates.includes(String(m._id || m.id))} onChange={() => toggle(m._id || m.id)} />{m.username}</label>)}</div>}<button disabled={!title.trim() || (kind === "leader" && candidates.length < 2) || (kind === "rank" && !target)}>Lancer le vote (72 h)</button></form>
     <div className="clan-vote-list"><strong>Votes anonymes pondérés par Piz</strong>{votes.map((vote) => <article key={vote._id}><h3>{vote.title}</h3>{vote.status === "open" && !vote.hasVoted && <label className="clan-vote-stake">Piz déployés · 1 Piz = 1 voix<input type="number" min="0.01" max="100000" step="0.01" value={stakeAmount} onChange={(event) => setStakeAmount(event.target.value)} /></label>}{vote.options.map((option) => <div className="clan-vote-option" key={option.key}><span>{option.label} · {Number(option.votes).toLocaleString("fr-FR")} Piz de poids</span>{vote.status === "open" && !vote.hasVoted && <button onClick={() => castClanVote({ clanId: clan._id, voteId: vote._id, option: option.key, amount: Number(stakeAmount), token }).then(refresh).catch((e) => setError(e.message))}>Déployer</button>}</div>)}<small>{vote.status === "open" ? `Ouvert jusqu’au ${new Date(vote.closesAt).toLocaleString("fr-FR")}` : vote.result === "no-majority" ? "Clos : aucun candidat élu, les Piz ont été rendus" : `Résultat validé · ${Number(vote.totalPizStaked).toLocaleString("fr-FR")} Piz engagés`}</small>{vote.status === "open" && vote.hasVoted && <small>Ton poids de vote est enregistré. Le choix individuel reste privé.</small>}</article>)}</div>
     {error && <p className="clan-form-error">{error}</p>}<footer><button type="button" onClick={onClose}>Fermer</button></footer></section></div>;

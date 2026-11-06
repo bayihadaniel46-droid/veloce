@@ -49,6 +49,8 @@ const communityRequest = async (path, token, options = {}) => {
 };
 
 export const getCommunityMessages = (token) => communityRequest("/messages", token);
+export const getCommunityGuides = async (token) => communityRequest("/guides", token);
+export const unlockCommunityGuide = ({ guideId, token }) => communityRequest(`/guides/${encodeURIComponent(guideId)}/unlock`, token, { method: "POST" });
 export const sendCommunityMessage = ({ content, kind = "message", token }) => communityRequest("/messages", token, {
   method: "POST", body: JSON.stringify({ content, kind }),
 });

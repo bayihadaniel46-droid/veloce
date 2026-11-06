@@ -195,28 +195,49 @@ const toggleFollow = async (
       });
     }
 
-    await Follow.create({
+    const follow = await Follow.create({
       follower,
       following
     });
 
-    const sender =
-      await User.findById(
-        follower
-      );
-
-    if (sender) {
-      await Notification.create({
-        recipient: following,
-        sender: follower,
+    try {
+      await transferPiz({
+        fromUserId: follower,
+        toUserId: following,
+        amount: 0.5,
+        platformShare: 0,
         type: "follow",
-        message:
-          `${sender.username} a commencé à te suivre.`
+        description: "Abonnement reçu",
+        operationId: `follow:${follow._id}`,
+        metadata: { followId: String(follow._id) }
       });
+    } catch (paymentError) {
+      await Follow.deleteOne({ _id: follow._id });
+      if (paymentError.code === "PIZ_INSUFFICIENT_FUNDS") {
+        return res.status(402).json({ message: "Cet abonnement coûte 0,5 Piz. Ton solde est insuffisant." });
+      }
+      throw paymentError;
+    }
+
+    try {
+      const sender = await User.findById(follower);
+      if (sender) {
+        await Notification.create({
+          recipient: following,
+          sender: follower,
+          type: "follow",
+          message: `${sender.username} a commencé à te suivre.`
+        });
+      }
+    } catch (notificationError) {
+      console.error("Notification d’abonnement non enregistrée :", notificationError.message);
     }
 
     res.json({
-      following: true
+      following: true,
+      cost: 0.5,
+      recipientReceives: 0.5,
+      platformFee: 0
     });
 
   } catch (error) {

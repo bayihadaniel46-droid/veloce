@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getCommunityMessages, publishCommunityUpdate, sendCommunityMessage } from "../services/messageService";
+import { getCommunityGuides, getCommunityMessages, publishCommunityUpdate, sendCommunityMessage, unlockCommunityGuide } from "../services/messageService";
 import "./CommunityRoom.css";
 
 function CommunityRoom({ token, user, onBack }) {
@@ -10,6 +10,12 @@ function CommunityRoom({ token, user, onBack }) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [section, setSection] = useState("discussions");
+  const [guides, setGuides] = useState([]);
+  const [guideLoading, setGuideLoading] = useState(false);
+  const [guideError, setGuideError] = useState("");
+  const [selectedGuideId, setSelectedGuideId] = useState("");
+  const [unlockingGuideId, setUnlockingGuideId] = useState("");
   const listRef = useRef(null);
   const stayAtBottomRef = useRef(true);
 
@@ -63,6 +69,38 @@ function CommunityRoom({ token, user, onBack }) {
     stayAtBottomRef.current = list.scrollHeight - list.scrollTop - list.clientHeight < 100;
   };
 
+  const openGuides = async () => {
+    setSection("guides");
+    if (guides.length) return;
+    try {
+      setGuideLoading(true);
+      setGuideError("");
+      const data = await getCommunityGuides(token);
+      const nextGuides = Array.isArray(data.guides) ? data.guides : [];
+      setGuides(nextGuides);
+      setSelectedGuideId(nextGuides[0]?.id || "");
+    } catch (requestError) {
+      setGuideError(requestError.message || "Impossible de charger les guides.");
+    } finally {
+      setGuideLoading(false);
+    }
+  };
+
+  const unlockGuide = async (guide) => {
+    try {
+      setUnlockingGuideId(guide.id);
+      setGuideError("");
+      const data = await unlockCommunityGuide({ guideId: guide.id, token });
+      setGuides((current) => current.map((item) => item.id === guide.id ? { ...item, ...data.guide, unlocked: true } : item));
+    } catch (requestError) {
+      setGuideError(requestError.message || "Impossible d’acheter ce guide.");
+    } finally {
+      setUnlockingGuideId("");
+    }
+  };
+
+  const selectedGuide = guides.find((guide) => guide.id === selectedGuideId);
+
   return <section className="community-room">
     <header className="community-room-header">
       <button type="button" className="mobile-conversation-back" onClick={onBack} aria-label="Retour aux conversations">←</button>
@@ -71,6 +109,12 @@ function CommunityRoom({ token, user, onBack }) {
       <div className="community-room-presence"><i />Ouvert à tous</div>
     </header>
 
+    <nav className="community-room-nav" aria-label="Rubriques du clan serveur">
+      <button type="button" className={section === "discussions" ? "active" : ""} onClick={() => setSection("discussions")}>Discussions</button>
+      <button type="button" className={section === "guides" ? "active" : ""} onClick={() => void openGuides()}>Guides Veloce <span>10</span></button>
+    </nav>
+
+    {section === "discussions" && <>
     <div className="community-room-messages" ref={listRef} onScroll={handleScroll} role="log" aria-label="Messages du clan serveur" aria-live="polite">
       <div className="community-room-welcome"><span>✨</span><div><strong>Bienvenue dans le clan serveur</strong><p>Pose une question, partage une idée ou retrouve ici les nouveautés et les guides de Veloce. Les messages sont visibles par tous les membres.</p></div></div>
       {loading && messages.length === 0 && <p className="community-room-state">Chargement de l’espace commun…</p>}
@@ -100,6 +144,21 @@ function CommunityRoom({ token, user, onBack }) {
         <button type="submit" disabled={sending || !content.trim()}>{sending ? "Envoi…" : "Envoyer"}</button>
       </div>
     </form>
+    </>}
+
+    {section === "guides" && <section className="community-guides-panel" aria-label="Guides Veloce">
+      <header className="community-guides-heading"><div><span>10 DOCUMENTS À DÉCOUVRIR</span><h2>La bibliothèque Veloce</h2><p>Chaque guide déverrouillé reste accessible dans ton compte.</p></div><span className="community-guide-price">1 Piz · par guide</span></header>
+      {guideError && <p className="community-room-error" role="alert">{guideError}</p>}
+      {guideLoading ? <p className="community-room-state">Chargement des documents…</p> : <div className="community-guide-layout">
+        <div className="community-guide-catalog">{guides.map((guide, index) => <button type="button" key={guide.id} className={`community-guide-card ${selectedGuideId === guide.id ? "active" : ""} ${guide.unlocked ? "unlocked" : "locked"}`} onClick={() => setSelectedGuideId(guide.id)}>
+          <span className="community-guide-number">{String(index + 1).padStart(2, "0")}</span><span className="community-guide-icon">{guide.icon}</span><span className="community-guide-card-copy"><small>{guide.category}</small><strong>{guide.title}</strong><span>{guide.summary}</span></span><span className="community-guide-status" aria-label={guide.unlocked ? "Déverrouillé" : "Verrouillé"}>{guide.unlocked ? "✓" : "🔒"}</span>
+        </button>)}</div>
+        {selectedGuide && <article className={`community-guide-reader ${selectedGuide.unlocked ? "is-unlocked" : "is-locked"}`}>
+          <div className="community-guide-reader-icon">{selectedGuide.icon}</div><span className="community-guide-category">{selectedGuide.category} · GUIDE {String(guides.findIndex((guide) => guide.id === selectedGuide.id) + 1).padStart(2, "0")}/10</span><h3>{selectedGuide.title}</h3><p className="community-guide-summary">{selectedGuide.summary}</p>
+          {selectedGuide.unlocked ? <div className="community-guide-content">{selectedGuide.content?.split("\n\n").map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div> : <div className="community-guide-lock-card"><span>🔐</span><strong>Document verrouillé</strong><p>Le contenu complet s’ouvrira après l’achat. Le déverrouillage est définitif pour ton compte.</p><button type="button" disabled={unlockingGuideId === selectedGuide.id} onClick={() => void unlockGuide(selectedGuide)}>{unlockingGuideId === selectedGuide.id ? "Déverrouillage…" : "Déverrouiller · 1 Piz"}</button></div>}
+        </article>}
+      </div>}
+    </section>}
   </section>;
 }
 
