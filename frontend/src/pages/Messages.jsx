@@ -16,6 +16,7 @@ import {
   createClan,
   getClanMessages,
   openClanEnvelope,
+  revealClanSender,
   sendClanEnvelope,
   addClanMembers, getClanVotes, createClanVote, castClanVote,
   getIncomingCalls, startAudioCall, startVideoCall, getAudioCall,
@@ -25,6 +26,7 @@ import { API_BASE_URL } from "../config";
 import { playUiSound } from "../services/soundService";
 import CommunityRoom from "../components/CommunityRoom";
 import "./Messages.css";
+import "./MessagesGroups.css";
 
 const coreEmojiLibrary = [
   { words: ["amour", "aimer", "je t'aime", "jtm"], emoji: "❤️", label: "Amour" },
@@ -85,7 +87,8 @@ function contactDisplayName(person) {
 const MESSAGE_EMOJIS = ["😀", "😂", "🥰", "😍", "😘", "😊", "😎", "😭", "😢", "😡", "🤔", "🙏", "👏", "👍", "👎", "❤️", "💖", "💔", "🔥", "✨", "🎉", "👋", "💪", "🤝", "✅", "❌", "⚠️", "💰", "🏠", "🎵", "🍽️", "☀️"];
 const MESSAGE_LETTERS = "abcdefghijklmnopqrstuvwxyzàâçéèêëîïôùûüÿœæ'!?.,".split("");
 
-function keepLettersSeparated(value) {
+function keepLettersSeparated(value, allowFullText = false) {
+  if (allowFullText) return value;
   let result = "";
   let previousWasLetter = false;
   for (const character of Array.from(value)) {
@@ -129,6 +132,9 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
   const [emojiCategory, setEmojiCategory] = useState("Tout");
   const [showEmojiKeyboard, setShowEmojiKeyboard] = useState(false);
   const [emojiKeyboardMode, setEmojiKeyboardMode] = useState("emoji");
+  const [fullKeyboardUntil, setFullKeyboardUntil] = useState(null);
+  const [fullKeyboardError, setFullKeyboardError] = useState("");
+  const hasFullKeyboard = Boolean(fullKeyboardUntil && new Date(fullKeyboardUntil).getTime() > Date.now());
   const activeConversationId = useRef("");
   const messageListRef = useRef(null);
   const composerRef = useRef(null);
@@ -194,8 +200,31 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
   const callPollingRef = useRef(false);
   const incomingCallRef = useRef(null);
 
+  useEffect(() => {
+    let active = true;
+    fetch(`${API_BASE_URL}/users/stats`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => { if (active) setFullKeyboardUntil(data?.fullKeyboardUntil || null); })
+      .catch(() => {});
+    const timer = window.setInterval(() => setFullKeyboardUntil((value) => value ? new Date(value).toISOString() : value), 60000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [token]);
+
+  const unlockFullKeyboard = async () => {
+    try {
+      setFullKeyboardError("");
+      const response = await fetch(`${API_BASE_URL}/users/full-keyboard`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Impossible d’activer le clavier complet.");
+      setFullKeyboardUntil(data.fullKeyboardUntil);
+      setEmojiKeyboardMode("letters");
+    } catch (error) {
+      setFullKeyboardError(error.message);
+    }
+  };
+
   const addComposerText = (text) => {
-    setContent((current) => keepLettersSeparated(`${current}${text}`));
+    setContent((current) => keepLettersSeparated(`${current}${text}`, hasFullKeyboard));
     onComposerStateChange(true);
     window.setTimeout(() => composerRef.current?.focus(), 0);
   };
@@ -495,6 +524,12 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
   useEffect(() => {
     getClans(token).then(setClans).catch((error) => console.error("Chargement clans :", error));
   }, [token]);
+
+  useEffect(() => {
+    const updateSettings = () => setContactSettingsRevision((revision) => revision + 1);
+    window.addEventListener("veloce:contact-settings", updateSettings);
+    return () => window.removeEventListener("veloce:contact-settings", updateSettings);
+  }, []);
 
   useEffect(() => {
     let disposed = false;
@@ -890,6 +925,9 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
   const orderedConversations = [...conversations].sort((left, right) =>
     Number(Boolean(contactSettingsFor(right.user).pinned)) - Number(Boolean(contactSettingsFor(left.user).pinned))
   );
+  const favoriteConversations = orderedConversations.filter((conversation) => contactSettingsFor(conversation.user).favorite);
+  const directConversations = orderedConversations.filter((conversation) => !contactSettingsFor(conversation.user).favorite);
+  void contactSettingsRevision;
 
   if (loading) {
     return (
@@ -941,11 +979,15 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
 
           <div className="conversation-list">
 
+            <details className="messages-list-group" open>
+              <summary><span>Clan serveur</span><b>OUVERT</b></summary>
+
             <button type="button" className={`conversation-card server-community-card ${showCommunity ? "conversation-active" : ""}`} onClick={openCommunity}>
               <div className="server-community-icon" aria-hidden="true">🌐</div>
               <div className="conversation-info"><strong>Clan serveur</strong><span>Questions, nouveautés et aide</span></div>
               <span className="server-community-label">TOUS</span>
             </button>
+            </details>
 
 
           {(search.trim() || searchError) && (
@@ -987,19 +1029,33 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
             </div>
           )}
 
-
+            <details className="messages-list-group" open>
+              <summary><span>Clans privés</span><b>{clans.length}</b></summary>
             {clans.length > 0 && <div className="conversation-group-label">TES CLANS</div>}
             {clans.map((clan) => <button key={clan._id} type="button" className={`conversation-card clan-conversation-card ${selectedClan?._id === clan._id ? "conversation-active" : ""}`} onClick={() => openClan(clan)}>
               <div className="clan-avatar">✉</div><div className="conversation-info"><strong>{clan.name}</strong><span>{clan.memberCount} membres · Enveloppes privées</span></div>
             </button>)}
-            <div className="conversation-group-label">CONVERSATIONS</div>
+            </details>
+            <details className="messages-list-group">
+              <summary><span>Favoris</span><b>{favoriteConversations.length}</b></summary>
+              {favoriteConversations.length === 0
+                ? <p className="messages-empty">Ajoute une conversation aux favoris depuis le profil du contact.</p>
+                : favoriteConversations.map((conversation) => <button key={conversation.user._id} className={"conversation-card " + (selectedUser?._id === conversation.user._id ? "conversation-active" : "")} onClick={() => openConversation(conversation.user)}>
+                  <div className="message-avatar">{conversation.user.avatar ? <img src={conversation.user.avatar} alt="" /> : conversation.user.username?.charAt(0).toUpperCase()}</div>
+                  <div className="conversation-info"><strong>{contactDisplayName(conversation.user)}</strong><span>{conversation.lastMessage}</span></div>
+                  {conversation.unread > 0 && !contactSettingsFor(conversation.user).muted && <b>{conversation.unread}</b>}
+                </button>)}
+            </details>
+            <details className="messages-list-group" open>
+              <summary><span>Messages privés</span><b>{directConversations.length}</b></summary>
+          <div className="conversation-group-label">CONVERSATIONS</div>
 
-            {conversations.length === 0 ? (
+            {directConversations.length === 0 ? (
               <p className="messages-empty">
                 Aucune conversation.
               </p>
             ) : (
-              orderedConversations.map(
+              directConversations.map(
                 conversation => (
                   <button
                     key={
@@ -1062,6 +1118,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
               )
             )}
 
+            </details>
           </div>
 
         </div>
@@ -1178,7 +1235,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
                   onFocus={() => onComposerStateChange(true)}
                   onBlur={() => { if (!content.trim()) onComposerStateChange(false); }}
                   onChange={(event) => {
-                    const nextValue = keepLettersSeparated(event.target.value);
+                    const nextValue = keepLettersSeparated(event.target.value, hasFullKeyboard);
                     setContent(nextValue);
                     onComposerStateChange(Boolean(nextValue.trim()) || Boolean(replyTarget));
                   }}
@@ -1207,9 +1264,10 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
 
               </form>
 
+              {fullKeyboardError && <p className="message-send-error" role="alert">{fullKeyboardError}</p>}
               {showEmojiKeyboard && <div className="veloce-emoji-keyboard" aria-label="Clavier Veloce">
-                <div className="veloce-emoji-keyboard-head"><strong>{emojiKeyboardMode === "emoji" ? "Clavier emoji" : "Une lettre à la fois"}</strong><button type="button" onClick={() => setEmojiKeyboardMode((mode) => mode === "emoji" ? "letters" : "emoji")}>{emojiKeyboardMode === "emoji" ? "ABC" : "😊"}</button><button type="button" onClick={() => setShowEmojiKeyboard(false)} aria-label="Fermer le clavier">×</button></div>
-                <div className="veloce-emoji-keyboard-grid">{(emojiKeyboardMode === "emoji" ? MESSAGE_EMOJIS : MESSAGE_LETTERS).map((key) => <button type="button" key={key} disabled={emojiKeyboardMode === "letters" && /^(\p{L})$/u.test(key) && /\p{L}$/u.test(Array.from(content).at(-1) || "")} onClick={() => addComposerText(key)}>{key}</button>)}</div>
+                <div className="veloce-emoji-keyboard-head"><strong>{emojiKeyboardMode === "emoji" ? "Clavier emoji" : hasFullKeyboard ? "Clavier alphabétique · actif" : "Accès alphabétique expiré"}</strong><button type="button" onClick={() => { if (emojiKeyboardMode === "emoji" && !hasFullKeyboard) void unlockFullKeyboard(); else setEmojiKeyboardMode((mode) => mode === "emoji" ? "letters" : "emoji"); }}>{emojiKeyboardMode === "emoji" ? (hasFullKeyboard ? "ABC" : "ABC · 1 Piz") : "😊"}</button><button type="button" onClick={() => setShowEmojiKeyboard(false)} aria-label="Fermer le clavier">×</button></div>
+                <div className="veloce-emoji-keyboard-grid">{(emojiKeyboardMode === "emoji" ? MESSAGE_EMOJIS : MESSAGE_LETTERS).map((key) => <button type="button" key={key} disabled={emojiKeyboardMode === "letters" && !hasFullKeyboard || emojiKeyboardMode === "letters" && /^(\p{L})$/u.test(key) && /\p{L}$/u.test(Array.from(content).at(-1) || "")} onClick={() => addComposerText(key)}>{key}</button>)}</div>
                 <div className="veloce-emoji-keyboard-foot"><button type="button" onClick={() => { setContent((current) => Array.from(current).slice(0, -1).join("")); composerRef.current?.focus(); }}>⌫ Effacer</button><button type="button" onClick={() => addComposerText(" ")}>Espace</button></div>
               </div>}
 
@@ -1365,6 +1423,7 @@ function ChatProfileDialog({ person, wallpaper, onWallpaperChange, onClose, toke
     setChatSettings((current) => {
       const next = { ...current, [key]: value };
       localStorage.setItem(`veloce_contact_settings_${person._id}`, JSON.stringify(next));
+      window.dispatchEvent(new Event("veloce:contact-settings"));
       return next;
     });
   };
@@ -1380,6 +1439,7 @@ function ChatProfileDialog({ person, wallpaper, onWallpaperChange, onClose, toke
         <header><div><span>ESPACE CONTACT</span><h2>{profile.username || person.username}</h2></div><button type="button" onClick={onClose} aria-label="Fermer">×</button></header>
         <nav className="chat-profile-tabs" aria-label="Rubriques du contact">{[["profil", "Profil"], ["conversation", "Conversation"], ["parametres", "Paramètres"]].map(([key, label]) => <button key={key} type="button" className={activeTab === key ? "active" : ""} onClick={() => setActiveTab(key)}>{label}</button>)}</nav>
         {profileError && <p className="chat-profile-error" role="alert">{profileError}</p>}
+        <label className="chat-favorite-toggle"><span>☆ Ajouter cette conversation aux favoris</span><input type="checkbox" checked={Boolean(chatSettings.favorite)} onChange={(event) => changeSetting("favorite", event.target.checked)} /></label>
         {activeTab === "profil" && <div className="chat-profile-content"><div className="chat-profile-hero"><span className="chat-profile-avatar">{profile.avatar ? <img src={profile.avatar} alt="" /> : emojiForPerson(profile)}</span><div><h3>{profile.username || person.username}</h3><small>@{profile.username || person.username}</small><p>{profile.bio || "Aucune biographie renseignée."}</p></div></div><div className="chat-profile-stats"><div><strong>{profile.stats?.followersCount ?? "—"}</strong><span>Abonnés</span></div><div><strong>{profile.stats?.followingCount ?? "—"}</strong><span>Abonnements</span></div><div><strong>{relationship}</strong><span>Ton lien</span></div></div><label className="chat-relation-field">Le lien qui vous unit<select value={relationship} onChange={(event) => changeRelationship(event.target.value)}>{["Ami(e)", "Famille", "Collègue", "Partenaire", "Connaissance", "Autre"].map((value) => <option key={value}>{value}</option>)}</select></label><button className="chat-copy-profile-link" type="button" onClick={copyProfileLink}>🔗 {copied ? "Lien copié" : "Copier le lien du profil"}</button></div>}
         {activeTab === "conversation" && <div className="chat-profile-content"><h3>Apparence de la conversation</h3><p>Le fond choisi est enregistré sur cet appareil.</p><div className="chat-wallpaper-options">{CHAT_WALLPAPERS.map((option) => <button key={option.id} type="button" className={wallpaper === option.id ? "selected" : ""} onClick={() => onWallpaperChange(option.id)}><span style={{ background: option.swatch }} />{option.label}</button>)}</div><label className="chat-relation-field">Nom affiché dans ta messagerie<input value={chatSettings.nickname ?? profile.username ?? person.username ?? ""} onChange={(event) => changeSetting("nickname", event.target.value)} /></label><p className="chat-profile-hint">Le nom personnalisé et le fond restent privés sur cet appareil.</p></div>}
         {activeTab === "parametres" && <div className="chat-profile-content"><h3>Paramètres de ce contact</h3><label className="chat-setting-row"><span><strong>Mettre en sourdine</strong><small>Masquer les alertes de cette conversation</small></span><input type="checkbox" checked={Boolean(chatSettings.muted)} onChange={(event) => changeSetting("muted", event.target.checked)} /></label><label className="chat-setting-row"><span><strong>Épingler la conversation</strong><small>La garder en haut de ta liste</small></span><input type="checkbox" checked={Boolean(chatSettings.pinned)} onChange={(event) => changeSetting("pinned", event.target.checked)} /></label><label className="chat-relation-field">Relation<select value={relationship} onChange={(event) => changeRelationship(event.target.value)}>{["Ami(e)", "Famille", "Collègue", "Partenaire", "Connaissance", "Autre"].map((value) => <option key={value}>{value}</option>)}</select></label><p className="chat-profile-hint">Ces préférences sont locales à ton appareil.</p></div>}
@@ -1502,6 +1562,15 @@ function ClanRoom({ clan, token, user, onBack, onClanUpdated }) {
     } catch (requestError) { setError(requestError.message || "Impossible d'ouvrir cette enveloppe."); }
   };
 
+  const revealEnvelopeSender = async (messageId) => {
+    try {
+      const updated = await revealClanSender({ clanId: clan._id, messageId, token });
+      setEnvelopes((current) => current.map((item) => item._id === messageId ? updated : item));
+    } catch (requestError) {
+      setError(requestError.message || "Impossible de révéler l’expéditeur.");
+    }
+  };
+
   const submit = async (event) => {
     event.preventDefault();
     if ((!text.trim() && !files.length) || !recipientIds.length) return;
@@ -1524,9 +1593,10 @@ function ClanRoom({ clan, token, user, onBack, onClanUpdated }) {
       {!loadingClan && envelopes.length === 0 && <div className="clan-empty-state"><span>✉</span><strong>Un message privé au milieu du clan</strong><p>Écris à certains membres. Les autres ne verront qu’une enveloppe verrouillée.</p></div>}
       {envelopes.map((envelope) => <article className={`clan-envelope ${envelope.isOwn ? "clan-envelope-own" : ""} ${envelope.replyTo ? "clan-envelope-reply" : ""}`} key={envelope._id}>
         {envelope.replyTo && <small className="clan-reply-context">↳ Réponse à une enveloppe</small>}
-        {envelope.signed && envelope.sender?.username && <span className="clan-signature">Signé par {envelope.sender.username}</span>}
+        {(envelope.signed || envelope.senderRevealed) && envelope.sender?.username && <span className="clan-signature">{envelope.signed ? `Signé par ${envelope.sender.username}` : `Expéditeur révélé : @${envelope.sender.username}`}</span>}
         {envelope.opened ? <div className="clan-open-content"><span className="clan-open-stamp">✉</span>{envelope.content && <p>{envelope.content}</p>}{envelope.attachments?.map((file) => <PrivateAttachment key={file.fileId} attachment={file} token={token} />)}</div> : envelope.canOpen ? <button type="button" className="clan-open-button" onClick={() => openEnvelope(envelope._id)}><span>✉</span><strong>Ouvrir mon enveloppe</strong><small>Ce message t’a été adressé</small></button> : <div className="clan-locked-envelope" aria-label="Enveloppe verrouillée, non destinée à ce membre"><span>🔒</span><strong>Enveloppe verrouillée</strong><small>Le contenu est réservé à ses destinataires.</small></div>}
         <time>{new Date(envelope.createdAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</time>
+        {envelope.canRevealSender && <button type="button" className="clan-reply-button" onClick={() => revealEnvelopeSender(envelope._id)}>Révéler l’expéditeur · 5 Piz</button>}
         {envelope.canReply && <button type="button" className="clan-reply-button" onClick={() => chooseReply(envelope)}>Répondre dans une enveloppe</button>}
       </article>)}
     </div>
@@ -1544,7 +1614,7 @@ function ClanRoom({ clan, token, user, onBack, onClanUpdated }) {
 }
 
 function ClanGovernance({ clan, token, user, darkMode, onClose, onClanUpdated }) {
-  const [votes, setVotes] = useState([]); const [kind, setKind] = useState("leader"); const [title, setTitle] = useState(""); const [target, setTarget] = useState(""); const [candidates, setCandidates] = useState([]); const [query, setQuery] = useState(""); const [results, setResults] = useState([]); const [error, setError] = useState("");
+  const [votes, setVotes] = useState([]); const [kind, setKind] = useState("leader"); const [title, setTitle] = useState(""); const [target, setTarget] = useState(""); const [candidates, setCandidates] = useState([]); const [query, setQuery] = useState(""); const [results, setResults] = useState([]); const [error, setError] = useState(""); const [stakeAmount, setStakeAmount] = useState("1");
   const [localMembers, setLocalMembers] = useState(clan.members || []);
   const [localClan, setLocalClan] = useState(clan);
   const myId = String(user?.id || user?._id); const members = localMembers.filter((person) => String(person._id || person.id) !== myId);
@@ -1563,7 +1633,7 @@ function ClanGovernance({ clan, token, user, darkMode, onClose, onClanUpdated })
     <div className="clan-rank-list"><strong>Hiérarchie et privilèges</strong><small>Chef : contrôle du clan et invitations · Administrateur : invitations · Modérateur : invitations · Membre : messages et votes anonymes</small>{localMembers.map((person) => { const id = String(person._id || person.id); const role = id === String(localClan.owner?._id || localClan.owner) ? "Chef" : admins.some((a) => String(a?._id || a) === id) ? "Administrateur" : moderators.some((a) => String(a?._id || a) === id) ? "Modérateur" : "Membre"; return <span key={id}>{person.username} <small>{role}</small></span>; })}</div>
     {canInvite && <div className="clan-invite-controls"><input placeholder="Rechercher un membre à ajouter" value={query} onChange={(e) => setQuery(e.target.value)} />{results.map((p) => <label key={p.id}><input type="checkbox" checked={candidates.includes(String(p.id || p._id))} onChange={() => toggle(p.id || p._id)} />{p.username}</label>)}<button type="button" onClick={invite} disabled={!results.some((p) => candidates.includes(String(p.id || p._id)))}>Ajouter les membres sélectionnés</button></div>}
     <form className="clan-vote-form" onSubmit={startVote}><strong>Proposer un vote anonyme</strong><input required maxLength={140} placeholder="Objet du vote" value={title} onChange={(e) => setTitle(e.target.value)} /><select value={kind} onChange={(e) => { setKind(e.target.value); setCandidates([]); }}><option value="leader">Élire un nouveau chef</option><option value="rank">Modifier le rang d’un membre</option></select>{kind === "rank" ? <select required value={target} onChange={(e) => setTarget(e.target.value)}><option value="">Membre concerné</option>{members.filter((m) => String(m._id || m.id) !== String(clan.owner?._id || clan.owner)).map((m) => <option key={m._id || m.id} value={m._id || m.id}>{m.username}</option>)}</select> : <div className="clan-candidate-list">{localMembers.map((m) => <label key={m._id || m.id}><input type="checkbox" checked={candidates.includes(String(m._id || m.id))} onChange={() => toggle(m._id || m.id)} />{m.username}</label>)}</div>}<button disabled={!title.trim() || (kind === "leader" && candidates.length < 2) || (kind === "rank" && !target)}>Lancer le vote (72 h)</button></form>
-    <div className="clan-vote-list"><strong>Votes anonymes</strong>{votes.map((vote) => <article key={vote._id}><h3>{vote.title}</h3>{vote.options.map((option) => <div className="clan-vote-option" key={option.key}><span>{option.label} · {option.votes} vote{option.votes === 1 ? "" : "s"}</span>{vote.status === "open" && !vote.hasVoted && <button onClick={() => castClanVote({ clanId: clan._id, voteId: vote._id, option: option.key, token }).then(refresh).catch((e) => setError(e.message))}>Voter</button>}</div>)}<small>{vote.status === "open" ? `Ouvert jusqu’au ${new Date(vote.closesAt).toLocaleString("fr-FR")}` : vote.result === "no-majority" ? "Clos : aucune majorité stricte" : `Résultat validé · ${vote.totalVotes} votes`}</small>{vote.status === "open" && vote.hasVoted && <small>Ton vote est enregistré. Le choix individuel reste privé.</small>}</article>)}</div>
+    <div className="clan-vote-list"><strong>Votes anonymes pondérés par Piz</strong>{votes.map((vote) => <article key={vote._id}><h3>{vote.title}</h3>{vote.status === "open" && !vote.hasVoted && <label className="clan-vote-stake">Piz déployés · 1 Piz = 1 voix<input type="number" min="0.01" max="100000" step="0.01" value={stakeAmount} onChange={(event) => setStakeAmount(event.target.value)} /></label>}{vote.options.map((option) => <div className="clan-vote-option" key={option.key}><span>{option.label} · {Number(option.votes).toLocaleString("fr-FR")} Piz de poids</span>{vote.status === "open" && !vote.hasVoted && <button onClick={() => castClanVote({ clanId: clan._id, voteId: vote._id, option: option.key, amount: Number(stakeAmount), token }).then(refresh).catch((e) => setError(e.message))}>Déployer</button>}</div>)}<small>{vote.status === "open" ? `Ouvert jusqu’au ${new Date(vote.closesAt).toLocaleString("fr-FR")}` : vote.result === "no-majority" ? "Clos : aucun candidat élu, les Piz ont été rendus" : `Résultat validé · ${Number(vote.totalPizStaked).toLocaleString("fr-FR")} Piz engagés`}</small>{vote.status === "open" && vote.hasVoted && <small>Ton poids de vote est enregistré. Le choix individuel reste privé.</small>}</article>)}</div>
     {error && <p className="clan-form-error">{error}</p>}<footer><button type="button" onClick={onClose}>Fermer</button></footer></section></div>;
 }
 

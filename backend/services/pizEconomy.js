@@ -4,9 +4,11 @@ const Like = require("../models/Like");
 const Comment = require("../models/comment");
 const Message = require("../models/Message");
 const Clan = require("../models/Clan");
+const PizTransaction = require("../models/PizTransaction");
+const PizReserve = require("../models/PizReserve");
 
-// Small participation rewards; clan creation also pays 0.80 PIZ and awards
-// 1 PIZ after it succeeds (net +0.20 PIZ for an eligible account).
+// Small participation rewards remain active. Wallet amounts use millionths so
+// the 50/50 distributions can settle exactly, including the 2.5-PIZ fee.
 const PIZ_REWARD_RATES = Object.freeze({
   activeHour: 0.005,
   post: 0.01,
@@ -17,16 +19,19 @@ const PIZ_REWARD_RATES = Object.freeze({
   referral: 0.1
 });
 const CLAN_CREATION_COST = 0.8;
+const PIZ_UNIT = 1000000;
+const OPENING_GRANT_UNITS = 100 * PIZ_UNIT;
+const toUnits = (amount) => Math.max(0, Math.round((Number(amount) || 0) * PIZ_UNIT));
+const fromUnits = (units) => Math.max(0, Number(units) || 0) / PIZ_UNIT;
 
-const getPizActivity = async (userId, activeSeconds) => {
-  const [postsCount, likesCount, commentsCount, messagesCount, clansManagedCount, referralsCount, account] = await Promise.all([
+const calculateActivity = async (userId, activeSeconds) => {
+  const [postsCount, likesCount, commentsCount, messagesCount, clansManagedCount, referralsCount] = await Promise.all([
     Post.countDocuments({ author: userId }),
     Like.countDocuments({ userId }),
     Comment.countDocuments({ userId }),
     Message.countDocuments({ sender: userId }),
     Clan.countDocuments({ owner: userId }),
-    User.countDocuments({ referredBy: userId }),
-    User.findById(userId).select("pizSpent")
+    User.countDocuments({ referredBy: userId })
   ]);
   const seconds = Number.isFinite(Number(activeSeconds)) ? Math.max(0, Number(activeSeconds)) : 0;
   const generatedPiz = Math.round((
@@ -37,10 +42,227 @@ const getPizActivity = async (userId, activeSeconds) => {
     messagesCount * PIZ_REWARD_RATES.message +
     clansManagedCount * PIZ_REWARD_RATES.clan +
     referralsCount * PIZ_REWARD_RATES.referral
-  ) * 1000000) / 1000000;
-  const pizSpent = Number(account?.pizSpent) || 0;
-  const pizBalance = Math.round(Math.max(0, generatedPiz - pizSpent) * 1000000) / 1000000;
-  return { postsCount, likesCount, commentsCount, messagesCount, clansManagedCount, referralsCount, pizBalance, generatedPiz, pizSpent };
+  ) * PIZ_UNIT) / PIZ_UNIT;
+  return { postsCount, likesCount, commentsCount, messagesCount, clansManagedCount, referralsCount, generatedPiz };
 };
 
-module.exports = { PIZ_REWARD_RATES, CLAN_CREATION_COST, getPizActivity };
+const ensurePizWallet = async (userId, activity = null) => {
+  let user = await User.findById(userId).select("pizBalanceUnits pizWalletInitializedAt pizRewardCheckpoint pizSpent activeSeconds");
+  if (!user) throw new Error("Compte utilisateur introuvable.");
+  const totals = activity || await calculateActivity(userId, user.activeSeconds || 0);
+
+  if (!user.pizWalletInitializedAt) {
+    const openingBalance = Math.max(0, totals.generatedPiz - (Number(user.pizSpent) || 0)) + 100;
+    await User.updateOne(
+      { _id: user._id, pizWalletInitializedAt: null },
+      { $set: {
+        pizBalanceUnits: toUnits(openingBalance),
+        pizRewardCheckpoint: totals.generatedPiz,
+        pizWalletInitializedAt: new Date()
+      } }
+    );
+    await PizTransaction.updateOne(
+      { operationId: `opening-grant:${user._id}` },
+      { $setOnInsert: {
+        operationId: `opening-grant:${user._id}`,
+        type: "opening-grant",
+        toUser: user._id,
+        amountUnits: OPENING_GRANT_UNITS,
+        status: "completed",
+        description: "Dotation initiale unique de 100 Piz"
+      } },
+      { upsert: true }
+    );
+    user = await User.findById(user._id).select("pizBalanceUnits pizWalletInitializedAt pizRewardCheckpoint pizSpent activeSeconds");
+  }
+
+  // Keep the existing participation rewards without recalculating or erasing
+  // amounts already spent through the new wallet.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const checkpoint = Number(user.pizRewardCheckpoint) || 0;
+    const delta = Math.max(0, Math.round((totals.generatedPiz - checkpoint) * PIZ_UNIT));
+    if (delta <= 0) break;
+    const update = await User.updateOne(
+      { _id: user._id, pizRewardCheckpoint: user.pizRewardCheckpoint },
+      { $inc: { pizBalanceUnits: delta }, $set: { pizRewardCheckpoint: totals.generatedPiz } }
+    );
+    if (update.modifiedCount) {
+      user.pizBalanceUnits = (Number(user.pizBalanceUnits) || 0) + delta;
+      user.pizRewardCheckpoint = totals.generatedPiz;
+      break;
+    }
+    user = await User.findById(user._id).select("pizBalanceUnits pizWalletInitializedAt pizRewardCheckpoint pizSpent activeSeconds");
+  }
+  return { ...totals, user, balanceUnits: Math.max(0, Number(user.pizBalanceUnits) || 0) };
+};
+
+const getPizActivity = async (userId, activeSeconds) => {
+  const activity = await calculateActivity(userId, activeSeconds);
+  const wallet = await ensurePizWallet(userId, activity);
+  return {
+    ...activity,
+    pizBalance: fromUnits(wallet.balanceUnits),
+    pizBalanceUnits: wallet.balanceUnits,
+    pizSpent: Number(wallet.user.pizSpent) || 0
+  };
+};
+
+const transferPiz = async ({
+  fromUserId,
+  toUserId = null,
+  amount,
+  type,
+  description,
+  metadata = {},
+  operationId = null,
+  platformShare = null
+}) => {
+  const amountUnits = toUnits(amount);
+  if (amountUnits <= 0) throw new Error("Le montant Piz doit être supérieur à zéro.");
+  if (!fromUserId) throw new Error("Compte débiteur manquant.");
+  if (toUserId && String(fromUserId) === String(toUserId)) throw new Error("Le compte ne peut pas se verser des Piz à lui-même.");
+  if (toUserId) await ensurePizWallet(toUserId);
+  await ensurePizWallet(fromUserId);
+  const platformUnits = platformShare == null
+    ? (toUserId ? 0 : amountUnits)
+    : Math.max(0, Math.min(amountUnits, toUnits(platformShare)));
+  const recipientUnits = amountUnits - platformUnits;
+
+  let transaction = null;
+  if (operationId) {
+    const existing = await PizTransaction.findOne({ operationId });
+    if (existing?.status === "completed") return existing;
+    if (existing?.status === "pending") throw new Error("Cette opération Piz est déjà en cours.");
+    if (existing) {
+      existing.type = type;
+      existing.fromUser = fromUserId;
+      existing.toUser = toUserId;
+      existing.amountUnits = amountUnits;
+      existing.platformUnits = platformUnits;
+      existing.description = String(description || "Mouvement Piz").slice(0, 240);
+      existing.metadata = metadata;
+      existing.status = "pending";
+      transaction = await existing.save();
+    }
+  }
+
+  if (!transaction) transaction = await PizTransaction.create({
+    operationId: operationId || undefined,
+    type,
+    fromUser: fromUserId,
+    toUser: toUserId,
+    amountUnits,
+    platformUnits,
+    description: String(description || "Mouvement Piz").slice(0, 240),
+    status: "pending",
+    metadata
+  });
+
+  const debit = await User.updateOne(
+    { _id: fromUserId, pizBalanceUnits: { $gte: amountUnits } },
+    { $inc: { pizBalanceUnits: -amountUnits } }
+  );
+  if (!debit.modifiedCount) {
+    transaction.status = "failed";
+    transaction.description = "Solde Piz insuffisant";
+    await transaction.save();
+    const error = new Error("Solde Piz insuffisant pour cette action.");
+    error.code = "PIZ_INSUFFICIENT_FUNDS";
+    throw error;
+  }
+
+  try {
+    if (recipientUnits && toUserId) {
+      await User.updateOne({ _id: toUserId }, { $inc: { pizBalanceUnits: recipientUnits } });
+    }
+    if (platformUnits) {
+      await PizReserve.findOneAndUpdate(
+        { key: "platform-admin" },
+        { $inc: { balanceUnits: platformUnits } },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    }
+    transaction.status = "completed";
+    await transaction.save();
+    return transaction;
+  } catch (error) {
+    await User.updateOne({ _id: fromUserId }, { $inc: { pizBalanceUnits: amountUnits } });
+    if (recipientUnits && toUserId) await User.updateOne({ _id: toUserId }, { $inc: { pizBalanceUnits: -recipientUnits } });
+    if (platformUnits) await PizReserve.updateOne({ key: "platform-admin" }, { $inc: { balanceUnits: -platformUnits } });
+    transaction.status = "failed";
+    await transaction.save();
+    throw error;
+  }
+};
+
+const payFromReserve = async ({ toUserId, amountUnits, type, description, metadata = {}, operationId }) => {
+  const units = Math.max(0, Math.floor(Number(amountUnits) || 0));
+  if (!toUserId || units <= 0) return null;
+  await ensurePizWallet(toUserId);
+  let transaction = null;
+  if (operationId) {
+    const existing = await PizTransaction.findOne({ operationId });
+    if (existing?.status === "completed") return existing;
+    if (existing?.status === "pending") throw new Error("Cette distribution Piz est déjà en cours.");
+    if (existing) {
+      existing.toUser = toUserId;
+      existing.amountUnits = units;
+      existing.description = String(description || "Distribution depuis la réserve Piz").slice(0, 240);
+      existing.metadata = metadata;
+      existing.status = "pending";
+      transaction = await existing.save();
+    }
+  }
+  if (!transaction) transaction = await PizTransaction.create({
+    operationId: operationId || undefined,
+    type,
+    toUser: toUserId,
+    amountUnits: units,
+    description: String(description || "Distribution depuis la réserve Piz").slice(0, 240),
+    status: "pending",
+    metadata
+  });
+  const reserve = await PizReserve.findOneAndUpdate(
+    { key: "platform-admin", balanceUnits: { $gte: units } },
+    { $inc: { balanceUnits: -units } },
+    { new: true }
+  );
+  if (!reserve) {
+    transaction.status = "failed";
+    transaction.description = "Réserve administrative insuffisante";
+    await transaction.save();
+    throw new Error("La réserve administrative ne contient pas assez de Piz pour cette distribution.");
+  }
+  try {
+    await User.updateOne({ _id: toUserId }, { $inc: { pizBalanceUnits: units } });
+    transaction.status = "completed";
+    await transaction.save();
+    return transaction;
+  } catch (error) {
+    await PizReserve.updateOne({ key: "platform-admin" }, { $inc: { balanceUnits: units } });
+    transaction.status = "failed";
+    await transaction.save();
+    throw error;
+  }
+};
+
+const ensureAllPizWallets = async () => {
+  const cursor = User.find({ pizWalletInitializedAt: null }).select("_id").lean().cursor();
+  for await (const user of cursor) {
+    try { await ensurePizWallet(user._id); }
+    catch (error) { console.error("Initialisation du portefeuille Piz impossible :", String(user._id), error.message); }
+  }
+};
+
+module.exports = {
+  PIZ_REWARD_RATES,
+  CLAN_CREATION_COST,
+  PIZ_UNIT,
+  toUnits,
+  fromUnits,
+  getPizActivity,
+  ensurePizWallet,
+  ensureAllPizWallets,
+  transferPiz,
+  payFromReserve
+};

@@ -37,6 +37,11 @@ const userSchema = new mongoose.Schema(
     referredBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
     activeSeconds: { type: Number, default: 0, min: 0 },
     pizSpent: { type: Number, default: 0, min: 0 },
+    // Wallet values are stored in millionths of a PIZ to support half-PIZ splits.
+    pizBalanceUnits: { type: Number, default: null, min: 0 },
+    pizWalletInitializedAt: { type: Date, default: null },
+    pizRewardCheckpoint: { type: Number, default: null, min: 0 },
+    fullKeyboardUntil: { type: Date, default: null },
     lastActivityPing: { type: Date },
     pizAccountId: { type: mongoose.Schema.Types.ObjectId, default: null, index: true }
   },

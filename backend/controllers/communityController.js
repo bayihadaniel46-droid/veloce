@@ -1,4 +1,5 @@
 const CommunityMessage = require("../models/CommunityMessage");
+const { transferPiz } = require("../services/pizEconomy");
 
 const communityAdminIds = () => (process.env.COMMUNITY_ADMIN_IDS || "")
   .split(",")
@@ -35,10 +36,22 @@ const listCommunityMessages = async (req, res) => {
 
 const sendCommunityMessage = async (req, res) => {
   const content = String(req.body.content || "").trim();
+  const kind = req.body.kind === "question" ? "question" : "message";
   if (!content) return res.status(400).json({ message: "Écris une question ou un message avant l’envoi." });
   if (content.length > 3000) return res.status(400).json({ message: "Le message ne peut pas dépasser 3 000 caractères." });
   try {
     const message = await CommunityMessage.create({ sender: req.user.userId, kind: "message", content });
+    if (kind === "question") {
+      message.kind = "question";
+      await message.save();
+      try {
+        await transferPiz({ fromUserId: req.user.userId, amount: 10, type: "server-clan-question", description: "Question publiée dans le clan serveur", metadata: { messageId: String(message._id) } });
+      } catch (paymentError) {
+        await CommunityMessage.deleteOne({ _id: message._id });
+        if (paymentError.code === "PIZ_INSUFFICIENT_FUNDS") return res.status(402).json({ message: paymentError.message });
+        throw paymentError;
+      }
+    }
     await message.populate("sender", "username avatar");
     return res.status(201).json(serializeMessage(message));
   } catch (error) {

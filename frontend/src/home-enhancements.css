@@ -1,0 +1,7 @@
+.home-feed-switch{display:flex;align-items:center;justify-content:center;gap:clamp(10px,3vw,22px);margin:12px auto 16px;padding:0;border:0;background:transparent}
+.home-feed-switch button{width:clamp(64px,8vw,78px);height:clamp(64px,8vw,78px);min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px;border:1px solid #d8d3f32e;border-radius:50%;background:linear-gradient(145deg,#202a42,#181e2e);color:#d9ddee;font-size:12px;font-weight:750;box-shadow:0 8px 22px #0b10202b;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.home-feed-switch button:hover{transform:translateY(-2px);border-color:#a78bfa8c;box-shadow:0 10px 25px #8164e62c}
+.home-feed-switch button.is-active{border-color:#b9a4ff;background:linear-gradient(145deg,#795ce9,#8b57d3);color:white;box-shadow:0 8px 24px #7658e05c}
+.home-feed-switch .home-feed-carrefour{border-color:#ef9acb58;background:radial-gradient(circle at 30% 15%,#f39ad244,transparent 43%),linear-gradient(145deg,#563957,#252440);color:#ffd7ec;font-size:21px}
+.home-feed-switch .home-feed-carrefour small{font-size:9px;font-weight:750}
+@media(max-width:600px){.home-feed-switch{gap:14px;margin:8px auto 13px}.home-feed-switch button{width:59px;height:59px;font-size:10px}.home-feed-switch .home-feed-carrefour{font-size:18px}.home-feed-switch .home-feed-carrefour small{font-size:8px}}

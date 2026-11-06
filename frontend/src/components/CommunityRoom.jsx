@@ -46,7 +46,7 @@ function CommunityRoom({ token, user, onBack }) {
       stayAtBottomRef.current = true;
       const sent = kind === "announcement"
         ? await publishCommunityUpdate({ content, kind, token })
-        : await sendCommunityMessage({ content, token });
+        : await sendCommunityMessage({ content, kind, token });
       setMessages((current) => [...current, sent]);
       setContent("");
       setKind("message");
@@ -77,13 +77,14 @@ function CommunityRoom({ token, user, onBack }) {
       {!loading && messages.length === 0 && <p className="community-room-state">L’espace est prêt. Lance la première discussion !</p>}
       {messages.map((message) => {
         const isAnnouncement = message.kind === "announcement";
+        const isQuestion = message.kind === "question";
         const isAd = message.kind === "ad";
         const isOwn = String(message.sender?._id || "") === String(user?.id || user?._id || "");
         const author = message.sender?.username || (isAd ? "Partenaire Veloce" : "Équipe Veloce");
-        return <article className={`community-message${isAnnouncement ? " is-announcement" : ""}${isAd ? " is-ad" : ""}${isOwn ? " is-own" : ""}`} key={message._id}>
+        return <article className={`community-message${isAnnouncement ? " is-announcement" : ""}${isQuestion ? " is-question" : ""}${isAd ? " is-ad" : ""}${isOwn ? " is-own" : ""}`} key={message._id}>
           <div className="community-message-avatar">{message.sender?.avatar ? <img src={message.sender.avatar} alt="" /> : (author.charAt(0).toUpperCase() || "V")}</div>
           <div className="community-message-body">
-            <div className="community-message-meta"><strong>{author}</strong>{isAnnouncement && <span className="community-message-tag">NOUVEAUTÉ</span>}{isAd && <span className="community-message-tag ad">PUBLICITÉ</span>}<time dateTime={message.createdAt}>{new Date(message.createdAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</time></div>
+            <div className="community-message-meta"><strong>{author}</strong>{isAnnouncement && <span className="community-message-tag">NOUVEAUTÉ</span>}{isQuestion && <span className="community-message-tag question">QUESTION · 10 PIZ</span>}{isAd && <span className="community-message-tag ad">PUBLICITÉ</span>}<time dateTime={message.createdAt}>{new Date(message.createdAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</time></div>
             <p>{message.content}</p>
           </div>
         </article>;
@@ -94,7 +95,7 @@ function CommunityRoom({ token, user, onBack }) {
     <form className="community-room-composer" onSubmit={submit}>
       <div className="community-composer-note">Ton message sera public dans le clan serveur.</div>
       <div className="community-composer-row">
-        {canPublish && <label className="community-post-kind"><span>Publier</span><select value={kind} onChange={(event) => setKind(event.target.value)}><option value="message">Discussion</option><option value="announcement">Nouveauté / guide</option></select></label>}
+        {canPublish ? <label className="community-post-kind"><span>Publier</span><select value={kind} onChange={(event) => setKind(event.target.value)}><option value="message">Discussion</option><option value="question">Question · 10 Piz</option><option value="announcement">Nouveauté / guide</option></select></label> : <label className="community-post-kind"><span>Type</span><select value={kind} onChange={(event) => setKind(event.target.value)}><option value="message">Discussion</option><option value="question">Question · 10 Piz</option></select></label>}
         <textarea value={content} onChange={(event) => setContent(event.target.value)} maxLength={3000} rows={2} placeholder={kind === "announcement" ? "Explique la nouveauté ou le guide…" : "Pose ta question ou démarre une discussion…"} aria-label="Écrire dans le clan serveur" />
         <button type="submit" disabled={sending || !content.trim()}>{sending ? "Envoi…" : "Envoyer"}</button>
       </div>

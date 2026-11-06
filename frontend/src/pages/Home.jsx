@@ -16,6 +16,8 @@ import Settings from "./Settings";
 import PublicProfile from "./PublicProfile";
 import Assistant from "./Assistant";
 import Market from "./Market";
+import Carrefour from "./Carrefour";
+import "../home-enhancements.css";
 
 import FloatingButton from "../components/FloatingButton";
 import MobileNavigation from "../components/MobileNavigation";
@@ -496,6 +498,9 @@ function Home() {
       case "market":
         return <Market />;
 
+      case "carrefour":
+        return <Carrefour onBack={() => setCurrentPage("home")} />;
+
 
       default:
 
@@ -533,6 +538,7 @@ function Home() {
       <main className="feed" onTouchStart={startFeedTouch} onTouchEnd={finishFeedTouch}>
         {currentPage === "home" && <div className="home-feed-switch" role="tablist" aria-label="Type de publications">
           <button type="button" role="tab" aria-selected={feedType === "videos"} className={feedType === "videos" ? "is-active" : ""} onClick={() => setFeedType("videos")}>▶ Vidéos</button>
+          <button type="button" className="home-feed-carrefour" aria-label="Ouvrir le Carrefour Veloce" onClick={() => setCurrentPage("carrefour")}>◈<small>Carrefour</small></button>
           <button type="button" role="tab" aria-selected={feedType === "posts"} className={feedType === "posts" ? "is-active" : ""} onClick={() => setFeedType("posts")}>▤ Posts</button>
         </div>}
         {refreshingFeed && <div className="feed-refresh-status" role="status">Actualisation…</div>}

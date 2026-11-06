@@ -4,7 +4,7 @@ const ClanMessage = require("../models/ClanMessage");
 const User = require("../models/User");
 const { uploadMessageFiles, deleteMessageFiles } = require("../utils/messageAttachments");
 const { sendPushToUser } = require("../utils/webPush");
-const { getPizActivity, CLAN_CREATION_COST } = require("../services/pizEconomy");
+const { CLAN_CREATION_COST, transferPiz } = require("../services/pizEconomy");
 
 const idOf = (value) => String(value?._id || value);
 const isMember = (clan, userId) => clan.members.some((member) => idOf(member) === String(userId));
@@ -54,47 +54,17 @@ const createClan = async (req, res) => {
     }
     const [foundMembers, owner] = await Promise.all([
       User.find({ _id: { $in: memberIds } }).select("_id"),
-      User.findById(ownerId).select("username activeSeconds pizAccountId")
+      User.findById(ownerId).select("username")
     ]);
     if (foundMembers.length !== memberIds.length) return res.status(400).json({ message: "Un membre sélectionné est introuvable." });
     if (!owner) return res.status(401).json({ message: "Compte introuvable. Reconnecte-toi puis réessaie." });
-    if (!owner.pizAccountId) return res.status(400).json({ message: "Connecte d’abord ton ID PIZ dans Compte finances pour payer la création du clan depuis ton portefeuille central." });
-    const balance = await getPizActivity(ownerId, owner.activeSeconds);
-    let clan;
+    const clan = await Clan.create({ name, description, owner: ownerId, members: [ownerId, ...memberIds] });
     try {
-      clan = await Clan.create({ name, description, owner: ownerId, members: [ownerId, ...memberIds] });
+      await transferPiz({ fromUserId: ownerId, amount: CLAN_CREATION_COST, type: "clan-creation", description: "Création d’un clan Veloce", metadata: { clanId: String(clan._id) } });
     } catch (error) {
+      await Clan.deleteOne({ _id: clan._id });
+      if (error.code === "PIZ_INSUFFICIENT_FUNDS") return res.status(402).json({ message: error.message });
       throw error;
-    }
-    const pizApiUrl = String(process.env.PIZ_API_URL || "").trim().replace(/\/+$/, "").replace(/\/api$/i, "");
-    const serviceKey = process.env.PIZ_SERVICE_KEY || "";
-    if (!pizApiUrl || !serviceKey) {
-      await Clan.deleteOne({ _id: clan._id });
-      return res.status(503).json({ message: "La liaison au registre PIZ n’est pas configurée. Le clan n’a pas été créé et aucun PIZ n’a été débité." });
-    }
-    try {
-      let charged = false;
-      let lastError;
-      for (let attempt = 0; attempt < 2 && !charged; attempt += 1) {
-        try {
-          const response = await fetch(`${pizApiUrl}/api/wallet/internal/clan-charge`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "x-piz-service-key": serviceKey },
-            body: JSON.stringify({ pizUserId: String(owner.pizAccountId), legacyUserId: String(ownerId), username: owner.username, totalPiz: balance.pizBalance, clanId: String(clan._id) }),
-            signal: AbortSignal.timeout(12000)
-          });
-          const data = await response.json().catch(() => ({}));
-          if (!response.ok) throw Object.assign(new Error(data.message || "PIZ a refusé les frais de création du clan."), { httpStatus: response.status === 400 ? 400 : response.status === 401 ? 503 : 502 });
-          charged = true;
-        } catch (error) {
-          lastError = error;
-          if (error.httpStatus) break;
-        }
-      }
-      if (!charged) throw lastError || new Error("Le registre PIZ n’a pas confirmé le débit.");
-    } catch (error) {
-      await Clan.deleteOne({ _id: clan._id });
-      return res.status(error.httpStatus || 502).json({ message: error.message || "Le registre PIZ n’a pas confirmé le débit. Le clan n’a pas été créé." });
     }
     const populated = await Clan.findById(clan._id).populate("owner", "username avatar").populate("members", "username avatar");
     return res.status(201).json(populated);
@@ -135,10 +105,13 @@ const safeEnvelope = (message, userId) => {
   const addressed = message.recipients.some((recipient) => idOf(recipient) === String(userId));
   const opened = own || message.openedBy.some((id) => idOf(id) === String(userId));
   const canReply = (own || addressed) && opened;
+  const senderRevealed = message.signed || own || (message.revealedBy || []).some((id) => idOf(id) === String(userId));
   return {
     _id: message._id,
     clan: message.clan,
-    sender: message.signed || own ? message.sender : null,
+    sender: senderRevealed ? message.sender : null,
+    senderRevealed: Boolean(senderRevealed && !message.signed && !own),
+    canRevealSender: Boolean(addressed && opened && !message.signed && !own && !senderRevealed),
     signed: message.signed,
     recipientCount: opened ? message.recipients.length : null,
     replyTargets: opened ? [...message.recipients, message.sender]
@@ -154,6 +127,41 @@ const safeEnvelope = (message, userId) => {
     content: opened ? message.content : undefined,
     attachments: opened ? message.attachments : undefined
   };
+};
+
+const revealClanSender = async (req, res) => {
+  try {
+    const message = await ClanMessage.findOne({ _id: req.params.messageId, clan: req.params.clanId })
+      .populate("sender", "username avatar")
+      .populate("recipients", "username avatar")
+      .populate("replyTo", "_id");
+    if (!message) return res.status(404).json({ message: "Enveloppe introuvable." });
+    const userId = String(req.user.userId);
+    const addressed = message.recipients.some((recipient) => idOf(recipient) === userId);
+    const opened = message.openedBy.some((id) => idOf(id) === userId);
+    if (!addressed || !opened) return res.status(403).json({ message: "Ouvre d’abord une enveloppe qui t’est destinée." });
+    if (message.signed) return res.json(safeEnvelope(message, userId));
+    const alreadyRevealed = (message.revealedBy || []).some((id) => idOf(id) === userId);
+    if (!alreadyRevealed) {
+      await transferPiz({
+        fromUserId: userId,
+        toUserId: idOf(message.sender),
+        amount: 5,
+        platformShare: 2.5,
+        type: "clan-message-identity-reveal",
+        operationId: `reveal-clan:${message._id}:${userId}`,
+        description: "Révélation de l’expéditeur d’un message de clan",
+        metadata: { clanId: String(message.clan), messageId: String(message._id) }
+      });
+      await ClanMessage.updateOne({ _id: message._id }, { $addToSet: { revealedBy: req.user.userId } });
+      message.revealedBy.push(req.user.userId);
+    }
+    return res.json(safeEnvelope(message, userId));
+  } catch (error) {
+    if (error.code === "PIZ_INSUFFICIENT_FUNDS") return res.status(402).json({ message: error.message });
+    console.error("Erreur révélation expéditeur de clan :", error.message);
+    return res.status(500).json({ message: "Impossible de révéler cet expéditeur." });
+  }
 };
 
 const listClanMessages = async (req, res) => {
@@ -245,4 +253,4 @@ const sendClanMessage = async (req, res) => {
   }
 };
 
-module.exports = { listClans, createClan, addClanMembers, listClanMessages, openClanMessage, sendClanMessage };
+module.exports = { listClans, createClan, addClanMembers, listClanMessages, openClanMessage, revealClanSender, sendClanMessage };

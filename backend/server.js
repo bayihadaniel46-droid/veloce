@@ -29,11 +29,15 @@ const marketRoutes = require("./routes/marketRoutes");
 const callRoutes = require("./routes/callRoutes");
 const communityRoutes = require("./routes/communityRoutes");
 const pushRoutes = require("./routes/pushRoutes");
+const carrefourRoutes = require("./routes/carrefourRoutes");
 const { settleExpiredVotes } = require("./controllers/clanVoteController");
+const { ensureAllPizWallets } = require("./services/pizEconomy");
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
-connectDB();
+connectDB()
+  .then(() => ensureAllPizWallets())
+  .catch((error) => console.error("Initialisation des portefeuilles Piz impossible :", error.message));
 
 const app = express();
 
@@ -81,6 +85,7 @@ app.use("/api/market", marketRoutes);
 app.use("/api/calls", callRoutes);
 app.use("/api/community", communityRoutes);
 app.use("/api/push", pushRoutes);
+app.use("/api/carrefour", carrefourRoutes);
 
 app.get("/health", (req, res) => {
   res.json({
@@ -89,7 +94,7 @@ app.get("/health", (req, res) => {
     integrations: {
       tavilyConfigured: Boolean(process.env.TAVILY_API_KEY?.trim()),
       geminiConfigured: Boolean(process.env.GEMINI_API_KEY?.trim()),
-      marketDataConfigured: Boolean(process.env.TWELVE_DATA_API_KEY?.trim())
+      pizMarketConfigured: Boolean(process.env.PIZ_SERVICE_KEY?.trim())
     }
   });
 });

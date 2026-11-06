@@ -4,6 +4,7 @@ const User = require("../models/User");
 const Post = require("../models/Post");
 const AssistantProfile = require("../models/AssistantProfile");
 const crypto = require("crypto");
+const { ensurePizWallet } = require("../services/pizEconomy");
 
 // ============================================================
 // CRÉER UN TOKEN JWT
@@ -125,6 +126,7 @@ const register = async (req, res) => {
       referralCode,
       referredBy: referrer?._id || null
     });
+    await ensurePizWallet(user._id);
 
     // Crée l’espace IA privé avec le nouveau compte.
     await AssistantProfile.create({ owner: user._id });
@@ -204,6 +206,8 @@ const login = async (req, res) => {
           "Email ou mot de passe incorrect."
       });
     }
+
+    await ensurePizWallet(user._id);
 
     const token =
       createToken(

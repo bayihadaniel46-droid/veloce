@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
 const Post = require("../models/Post");
+const { transferPiz } = require("../services/pizEconomy");
 const Like = require("../models/Like");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
@@ -201,6 +202,23 @@ const createPost = async (req, res) => {
 
       attachments
     });
+
+    try {
+      await transferPiz({
+        fromUserId: user._id,
+        amount: 1,
+        type: "post-publication",
+        description: "Publication d’un post",
+        metadata: { postId: String(post._id) }
+      });
+    } catch (paymentError) {
+      await Post.deleteOne({ _id: post._id });
+      await Promise.all(attachments.map((file) => bucket.delete(file.fileId).catch(() => {})));
+      if (paymentError.code === "PIZ_INSUFFICIENT_FUNDS") {
+        return res.status(402).json({ message: paymentError.message });
+      }
+      throw paymentError;
+    }
 
     const populatedPost =
       await Post

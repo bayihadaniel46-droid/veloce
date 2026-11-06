@@ -18,6 +18,7 @@ const clanMessageSchema = new mongoose.Schema({
   signed: { type: Boolean, default: false },
   replyTo: { type: mongoose.Schema.Types.ObjectId, ref: "ClanMessage", default: null },
   openedBy: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], default: [] }
+  ,revealedBy: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], default: [] }
 }, { timestamps: true });
 
 clanMessageSchema.index({ clan: 1, createdAt: 1 });

@@ -1,6 +1,6 @@
 const express = require("express");
 const authMiddleware = require("../middleware/authMiddleware");
-const { listClans, createClan, addClanMembers, listClanMessages, openClanMessage, sendClanMessage } = require("../controllers/clanController");
+const { listClans, createClan, addClanMembers, listClanMessages, openClanMessage, revealClanSender, sendClanMessage } = require("../controllers/clanController");
 const { listVotes, createVote, castVote } = require("../controllers/clanVoteController");
 const { parseMessageFiles } = require("../middleware/messageUploads");
 
@@ -15,5 +15,6 @@ router.post("/:clanId/votes/:voteId/cast", castVote);
 router.get("/:clanId/messages", listClanMessages);
 router.post("/:clanId/messages", parseMessageFiles, sendClanMessage);
 router.post("/:clanId/messages/:messageId/open", openClanMessage);
+router.post("/:clanId/messages/:messageId/reveal", revealClanSender);
 
 module.exports = router;

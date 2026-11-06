@@ -4,6 +4,7 @@ const Notification = require("../models/Notification");
 const Post = require("../models/Post");
 const crypto = require("crypto");
 const { getPizActivity, PIZ_REWARD_RATES, CLAN_CREATION_COST } = require("../services/pizEconomy");
+const { transferPiz } = require("../services/pizEconomy");
 
 
 /* ============================================================
@@ -244,7 +245,7 @@ const getUserStats = async (
     const userId =
       req.user.userId;
 
-    const user = await User.findById(userId).select("username referralCode activeSeconds createdAt pizAccountId");
+    const user = await User.findById(userId).select("username referralCode activeSeconds createdAt pizAccountId fullKeyboardUntil");
 
     if (!user) {
       return res.status(404).json({
@@ -276,6 +277,7 @@ const getUserStats = async (
       referralCode: user.referralCode,
       pizBalance,
       pizAccountId: user.pizAccountId ? String(user.pizAccountId) : "",
+      fullKeyboardUntil: user.fullKeyboardUntil,
       pizRates: PIZ_REWARD_RATES,
       clanCreationCost: CLAN_CREATION_COST,
       followersCount,
@@ -292,6 +294,29 @@ const getUserStats = async (
       message:
         "Erreur statistiques."
     });
+  }
+};
+
+const unlockFullKeyboard = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select("fullKeyboardUntil");
+    if (!user) return res.status(404).json({ message: "Utilisateur introuvable." });
+    const now = new Date();
+    const activeUntil = user.fullKeyboardUntil && user.fullKeyboardUntil > now ? user.fullKeyboardUntil : null;
+    if (activeUntil) return res.json({ fullKeyboardUntil: activeUntil, alreadyActive: true });
+    await transferPiz({
+      fromUserId: user._id,
+      amount: 1,
+      type: "full-keyboard",
+      description: "Accès au clavier alphabétique complet pendant 3 heures"
+    });
+    const expiresAt = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+    await User.updateOne({ _id: user._id }, { $set: { fullKeyboardUntil: expiresAt } });
+    return res.json({ fullKeyboardUntil: expiresAt, alreadyActive: false });
+  } catch (error) {
+    if (error.code === "PIZ_INSUFFICIENT_FUNDS") return res.status(402).json({ message: error.message });
+    console.error("Erreur activation clavier complet :", error.message);
+    return res.status(500).json({ message: "Impossible d’activer le clavier complet." });
   }
 };
 
@@ -379,5 +404,6 @@ module.exports = {
   getUserStats,
   recordActivityHeartbeat,
   getPublicUserProfile,
-  linkPizAccount
+  linkPizAccount,
+  unlockFullKeyboard
 };

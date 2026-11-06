@@ -49,8 +49,8 @@ const communityRequest = async (path, token, options = {}) => {
 };
 
 export const getCommunityMessages = (token) => communityRequest("/messages", token);
-export const sendCommunityMessage = ({ content, token }) => communityRequest("/messages", token, {
-  method: "POST", body: JSON.stringify({ content }),
+export const sendCommunityMessage = ({ content, kind = "message", token }) => communityRequest("/messages", token, {
+  method: "POST", body: JSON.stringify({ content, kind }),
 });
 export const publishCommunityUpdate = ({ content, kind = "announcement", token }) => communityRequest("/updates", token, {
   method: "POST", body: JSON.stringify({ content, kind }),
@@ -76,10 +76,11 @@ export const createClan = ({ name, description, memberIds, token }) => clanReque
 });
 export const getClanMessages = ({ clanId, token }) => clanRequest(`/${clanId}/messages`, token);
 export const openClanEnvelope = ({ clanId, messageId, token }) => clanRequest(`/${clanId}/messages/${messageId}/open`, token, { method: "POST" });
+export const revealClanSender = ({ clanId, messageId, token }) => clanRequest(`/${clanId}/messages/${messageId}/reveal`, token, { method: "POST" });
 export const addClanMembers = ({ clanId, memberIds, token }) => clanRequest(`/${clanId}/members`, token, { method: "POST", body: JSON.stringify({ memberIds }) });
 export const getClanVotes = ({ clanId, token }) => clanRequest(`/${clanId}/votes`, token);
 export const createClanVote = ({ clanId, payload, token }) => clanRequest(`/${clanId}/votes`, token, { method: "POST", body: JSON.stringify(payload) });
-export const castClanVote = ({ clanId, voteId, option, token }) => clanRequest(`/${clanId}/votes/${voteId}/cast`, token, { method: "POST", body: JSON.stringify({ option }) });
+export const castClanVote = ({ clanId, voteId, option, amount = 1, token }) => clanRequest(`/${clanId}/votes/${voteId}/cast`, token, { method: "POST", body: JSON.stringify({ option, amount }) });
 export const sendClanEnvelope = ({ clanId, content, recipientIds, signed, replyTo, files = [], token }) => {
   const body = new FormData(); body.append("content", content || ""); body.append("recipientIds", JSON.stringify(recipientIds)); body.append("signed", String(signed));
   if (replyTo) body.append("replyTo", replyTo); files.forEach((file) => body.append("files", file));

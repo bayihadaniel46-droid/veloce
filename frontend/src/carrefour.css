@@ -1,0 +1,49 @@
+.carrefour-page{width:100%;max-width:900px;margin:0 auto;padding:10px 0 40px;color:#f5f6fb}
+.carrefour-hero{position:relative;overflow:hidden;margin-bottom:20px;padding:30px;border:1px solid #7773f252;border-radius:26px;background:radial-gradient(circle at 87% 5%,#bd78ff45,transparent 30%),linear-gradient(135deg,#24213b,#161c2b 70%);box-shadow:0 18px 48px #090b1640}
+.carrefour-hero:after{position:absolute;right:7%;bottom:-70px;width:220px;height:220px;border:1px solid #d4a0ff28;border-radius:50%;content:"";box-shadow:0 0 0 22px #d4a0ff08,0 0 0 45px #d4a0ff05}
+.carrefour-back{position:relative;z-index:1;margin-bottom:22px;padding:8px 12px;border:1px solid #ffffff1c;border-radius:999px;background:#ffffff0d;color:#e3d8ff;cursor:pointer}
+.carrefour-kicker,.carrefour-section-heading>div>span,.piz-market-panel-heading>div>span,.piz-price-panel>div:first-child>span{color:#c6a8ff;font-size:10px;font-weight:850;letter-spacing:.16em}
+.carrefour-hero h1{position:relative;z-index:1;margin:7px 0;color:#fff;font-size:clamp(29px,5vw,45px);letter-spacing:-.04em}
+.carrefour-hero p{position:relative;z-index:1;max-width:600px;margin:0;color:#b8bdd0;font-size:14px;line-height:1.6}
+.carrefour-status-section,.carrefour-anonymous-section{margin-bottom:20px;padding:22px;border:1px solid #ffffff14;border-radius:22px;background:linear-gradient(150deg,#1a2030,#141924);box-shadow:0 10px 34px #07091030}
+.carrefour-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.carrefour-section-heading h2{margin:5px 0 0;color:#f7f6ff;font-size:21px;letter-spacing:-.025em}
+.carrefour-section-heading>small{padding:7px 10px;border:1px solid #a882ff38;border-radius:999px;background:#8e6af319;color:#d9c9ff;font-size:11px;white-space:nowrap}
+.carrefour-composer{display:flex;align-items:center;gap:10px}
+.carrefour-status-composer{margin-bottom:13px;padding:11px;border:1px solid #ffffff12;border-radius:16px;background:#101520}
+.carrefour-user-avatar{width:40px;height:40px;display:grid;place-items:center;flex:0 0 40px;overflow:hidden;border:1px solid #b18cff8a;border-radius:50%;background:linear-gradient(145deg,#805ad5,#287e9d);color:white;font-weight:800}
+.carrefour-user-avatar img{width:100%;height:100%;object-fit:cover}
+.carrefour-status-composer input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:#f7f6ff;font:inherit}
+.carrefour-status-composer button,.carrefour-anonymous-composer button{padding:10px 16px;border:0;border-radius:12px;background:linear-gradient(120deg,#9167ff,#c766d2);color:white;font-weight:800;cursor:pointer}
+.carrefour-status-composer button:disabled,.carrefour-anonymous-composer button:disabled{opacity:.45;cursor:not-allowed}
+.carrefour-status-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:10px}
+.carrefour-status-card{display:flex;align-items:flex-start;gap:10px;min-width:0;padding:13px;border:1px solid #ffffff12;border-radius:15px;background:linear-gradient(130deg,#25223a,#191e2c)}
+.carrefour-status-card>div{min-width:0}
+.carrefour-status-card strong{color:#fff;font-size:13px}
+.carrefour-status-card p{margin:5px 0;color:#d8dbea;font-size:13px;line-height:1.5;overflow-wrap:anywhere;white-space:pre-wrap}
+.carrefour-status-card small{color:#929bb0;font-size:10px}
+.carrefour-empty-inline{grid-column:1/-1;margin:0;padding:15px;border:1px dashed #6c6586;border-radius:14px;color:#9da4b7;font-size:12px;text-align:center}
+.carrefour-anonymous-section{background:radial-gradient(circle at 90% 10%,#fe7a9d13,transparent 26%),linear-gradient(150deg,#1c2030,#151925)}
+.carrefour-anonymous-composer{padding:15px;border:1px solid #ff83bd2c;border-radius:17px;background:linear-gradient(135deg,#241f31,#171c28)}
+.carrefour-anonymous-composer label{display:block;margin-bottom:9px;color:#f0e9fb;font-size:13px;font-weight:700}
+.carrefour-anonymous-composer textarea{width:100%;box-sizing:border-box;resize:vertical;min-height:86px;padding:12px;border:1px solid #ffffff19;border-radius:12px;outline:none;background:#0d121d;color:white;font:inherit;line-height:1.5}
+.carrefour-anonymous-composer textarea:focus{border-color:#c071e8}
+.carrefour-anonymous-composer>div{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:9px}
+.carrefour-anonymous-composer>div>small{color:#a8aabd;font-size:11px}
+.carrefour-anonymous-feed{display:grid;gap:12px;margin-top:15px}
+.carrefour-anonymous-card{padding:17px;border:1px solid #ffffff14;border-radius:17px;background:linear-gradient(145deg,#202637,#161b27);box-shadow:0 9px 25px #080a1330}
+.carrefour-anonymous-meta{display:flex;align-items:center;gap:9px}
+.carrefour-anonymous-mark{width:32px;height:32px;display:grid;place-items:center;border:1px solid #f78aba52;border-radius:11px;background:#eb65a21c;color:#ffa7d0;font-size:17px}
+.carrefour-anonymous-meta strong{color:#eeeaf5;font-size:12px}
+.carrefour-anonymous-meta time{margin-left:auto;color:#949caf;font-size:10px}
+.carrefour-anonymous-card>p{margin:14px 0;color:#e5e7ef;font-size:14px;line-height:1.65;overflow-wrap:anywhere;white-space:pre-wrap}
+.carrefour-reveal-button{padding:8px 11px;border:1px solid #e783b74f;border-radius:10px;background:#d95e9b17;color:#ffc3df;font-size:11px;font-weight:750;cursor:pointer}
+.carrefour-revealed-author{display:inline-flex;gap:5px;padding:8px 10px;border-radius:10px;background:#63d6a218;color:#a5e8c9;font-size:11px}
+.carrefour-empty{display:grid;justify-items:center;gap:8px;padding:30px 16px;border:1px dashed #605970;border-radius:17px;color:#a7aabd;text-align:center}
+.carrefour-empty>span{color:#cf9cff;font-size:28px}
+.carrefour-empty strong{color:#f3effa}
+.carrefour-empty p{margin:0;font-size:12px}
+.carrefour-notice,.carrefour-error{padding:10px 12px;border-radius:11px;font-size:12px}
+.carrefour-notice{background:#37b87818;color:#a7e8c5}
+.carrefour-error{background:#ff64641a;color:#ffb1b1}
+@media(max-width:600px){.carrefour-page{padding:0 0 26px}.carrefour-hero{padding:21px 18px;border-radius:21px}.carrefour-hero p{font-size:12px}.carrefour-status-section,.carrefour-anonymous-section{padding:15px 12px;border-radius:18px}.carrefour-section-heading{align-items:flex-start;flex-direction:column;gap:8px}.carrefour-section-heading h2{font-size:18px}.carrefour-status-composer{padding:8px;gap:7px}.carrefour-user-avatar{width:34px;height:34px;flex-basis:34px}.carrefour-status-composer button{padding:9px 11px;font-size:11px}.carrefour-anonymous-composer{padding:12px}.carrefour-anonymous-composer>div{align-items:flex-start;flex-direction:column}.carrefour-anonymous-composer button{width:100%}.carrefour-anonymous-card{padding:13px}.carrefour-anonymous-meta time{font-size:9px}}
