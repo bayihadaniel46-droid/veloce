@@ -6,6 +6,7 @@ import {
   verifyPost
 } from "../services/postService";
 
+import { playUiSound } from "../services/soundService";
 import { useAuth } from "../context/authContext";
 import { API_ORIGIN } from "../config";
 import "./PostCard.css";
@@ -269,6 +270,7 @@ function PostCard({
           ]
         );
 
+        playUiSound("comment");
 
         setCommentText("");
 
@@ -890,6 +892,7 @@ function PostCard({
         <button
           type="button"
           onClick={handleLike}
+          data-ui-sound="like"
           className={post.likedByCurrentUser ? "is-liked" : ""}
           aria-pressed={Boolean(post.likedByCurrentUser)}
         >
@@ -900,6 +903,7 @@ function PostCard({
         <button
           type="button"
           onClick={handleComments}
+          data-ui-sound="comment"
         >
           💬 {post.comments || 0}
         </button>
@@ -1068,6 +1072,7 @@ function PostCard({
               onClick={
                 handleCreateComment
               }
+              data-ui-sound="silent"
               disabled={
                 sendingComment ||
                 !commentText.trim()

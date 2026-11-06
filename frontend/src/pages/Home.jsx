@@ -77,7 +77,9 @@ function Home() {
     const playForInteractiveControl = (event) => {
       const control = event.target.closest?.("button, a, [role='button']");
       if (!control || control.disabled || control.getAttribute("aria-disabled") === "true") return;
-      playUiSound("click");
+      const sound = control.dataset.uiSound;
+      if (sound === "silent") return;
+      playUiSound(sound || "click");
     };
     document.addEventListener("click", playForInteractiveControl);
     return () => document.removeEventListener("click", playForInteractiveControl);

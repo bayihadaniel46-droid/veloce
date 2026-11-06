@@ -118,6 +118,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
     conversations,
     setConversations
   ] = useState([]);
+  const [contactSettingsRevision, setContactSettingsRevision] = useState(0);
 
   const [
     selectedUser,
@@ -206,6 +207,14 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
   const audioFrameRef = useRef({});
   const callPollingRef = useRef(false);
   const incomingCallRef = useRef(null);
+
+  useEffect(() => {
+    const handleContactSettingsChange = () => {
+      setContactSettingsRevision((revision) => revision + 1);
+    };
+    window.addEventListener("veloce:contact-settings", handleContactSettingsChange);
+    return () => window.removeEventListener("veloce:contact-settings", handleContactSettingsChange);
+  }, []);
 
   useEffect(() => {
     let active = true;
