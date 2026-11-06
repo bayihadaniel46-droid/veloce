@@ -543,7 +543,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
 
   const handlePullStart = (event) => {
     if (event.touches.length !== 1) return;
-    const scroller = event.target.closest?.(".message-list, .conversation-list, .messages-sidebar");
+    const scroller = event.target.closest?.(".message-list, .conversation-list, .clan-envelope-list, .messages-sidebar");
     const atTop = scroller ? scroller.scrollTop <= 0 : window.scrollY <= 0;
     pullStartY.current = atTop ? event.touches[0].clientY : null;
   };

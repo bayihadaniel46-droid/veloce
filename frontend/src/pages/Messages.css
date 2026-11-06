@@ -1093,14 +1093,15 @@
   min-height: 0;
   max-height: calc(100dvh - 150px);
   grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
   overflow: hidden;
 }
 
 .messages-page .messages-sidebar {
-  display: flex;
+  display: grid;
   height: 100%;
   min-height: 0;
-  flex-direction: column;
+  grid-template-rows: auto auto minmax(0, 1fr);
   overflow: hidden;
 }
 
@@ -1110,13 +1111,15 @@
 }
 
 .messages-page .conversation-list {
+  display: block;
+  width: 100%;
   min-height: 0;
   height: auto;
-  flex: 1 1 auto;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;
   scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
 
@@ -1125,6 +1128,7 @@
   height: 100%;
   min-width: 0;
   min-height: 0;
+  flex: 1 1 0;
   flex-direction: column;
   overflow: hidden;
 }
@@ -1136,26 +1140,46 @@
 
 .messages-page .message-list {
   min-height: 0;
-  flex: 1 1 auto;
+  height: 0;
+  flex: 1 1 0;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: scroll;
   overscroll-behavior-y: contain;
   scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
 
+.messages-page .message-list > * {
+  flex-shrink: 0;
+}
+
 .messages-page .clan-room {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
   min-height: 0;
+  height: 0;
+  flex: 1 1 0;
   overflow: hidden;
 }
 
 .messages-page .clan-envelope-list {
+  display: flex;
   min-height: 0;
-  flex: 1 1 auto;
+  height: auto;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+}
+
+.messages-page .clan-envelope-list > * {
+  flex-shrink: 0;
+}
+
+.messages-page .clan-composer {
+  flex: 0 0 auto;
 }
 
 @media (max-width: 760px) {
