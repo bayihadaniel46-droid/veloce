@@ -1080,3 +1080,91 @@
 @keyframes messages-refresh-spin {
   to { transform: rotate(360deg); }
 }
+
+/* Keep message panels bounded so their own lists can scroll on every screen. */
+.messages-page.messages-page {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.messages-page .messages-layout {
+  height: calc(100dvh - 150px);
+  min-height: 0;
+  max-height: calc(100dvh - 150px);
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.messages-page .messages-sidebar {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.messages-page .messages-title,
+.messages-page .messages-search {
+  flex: 0 0 auto;
+}
+
+.messages-page .conversation-list {
+  min-height: 0;
+  height: auto;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+  touch-action: pan-y;
+}
+
+.messages-page .messages-conversation {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.messages-page .conversation-header,
+.messages-page .message-input-area {
+  flex: 0 0 auto;
+}
+
+.messages-page .message-list {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+  touch-action: pan-y;
+}
+
+.messages-page .clan-room {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.messages-page .clan-envelope-list {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+
+@media (max-width: 760px) {
+  .messages-page .messages-layout {
+    height: 100%;
+    max-height: 100%;
+  }
+
+  .messages-page .messages-sidebar {
+    width: 100%;
+  }
+}

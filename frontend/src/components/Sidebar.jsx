@@ -1,4 +1,5 @@
 import ProfileCard from "./ProfileCard";
+import HomeIcon from "./HomeIcon";
 
 function Sidebar({
   setCurrentPage,
@@ -20,11 +21,13 @@ function Sidebar({
         <ul>
 
           <li
+            className="sidebar-home-item"
             onClick={() =>
               setCurrentPage("home")
             }
           >
-            🏠 Accueil
+            <HomeIcon className="sidebar-home-icon" />
+            <span>Accueil</span>
           </li>
 
 

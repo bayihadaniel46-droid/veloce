@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
+import HomeIcon from "./HomeIcon";
 
 const pages = [
   { id: "profile", label: "Profil", icon: "👤" },
   { id: "assistant", label: "Mon assistant IA", icon: "✦" },
   { id: "messages", label: "Messages", icon: "💬", badge: "messages" },
   { id: "explorer", label: "Explorer", icon: "🔎", badge: "notifications" },
-  { id: "home", label: "Accueil", icon: "🏠" }
+  { id: "home", label: "Accueil", icon: <HomeIcon className="mobile-home-icon" /> }
 ];
 
 function MobileNavigation({
