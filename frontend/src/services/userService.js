@@ -2,6 +2,64 @@ import { API_BASE_URL } from "../config";
 
 const API_URL = `${API_BASE_URL}/users`;
 
+export const getCommunityRulesStatus = async (token) => {
+  const response = await fetch(`${API_URL}/community-rules`, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Impossible de vérifier les règles.");
+  return data;
+};
+
+export const acceptCommunityRules = async (token) => {
+  const response = await fetch(`${API_URL}/community-rules/accept`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ accepted: true })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Impossible d’enregistrer ton acceptation.");
+  return data;
+};
+
+export const deleteMyVeloceAccount = async (token) => {
+  const response = await fetch(`${API_URL}/me`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ confirmation: "SUPPRIMER" })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Impossible de supprimer le compte.");
+  return data;
+};
+
+export const submitContentReport = async ({ token, contentType, contentId, category, details = "" }) => {
+  const response = await fetch(`${API_URL}/content-reports`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ contentType, contentId, category, details })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Impossible d’envoyer le signalement.");
+  return data;
+};
+
+export const getModerationQueue = async (token) => {
+  const response = await fetch(`${API_URL}/moderation/content-reports`, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Impossible de charger la modération.");
+  return data.reports || [];
+};
+
+export const reviewContentReport = async ({ token, reportId, status, action = "keep", moderationType = "content" }) => {
+  const response = await fetch(`${API_URL}/moderation/content-reports/${reportId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ status, action, moderationType })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Impossible d’enregistrer la décision.");
+  return data.report;
+};
+
 
 export const searchUsers = async ({
   q,

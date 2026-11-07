@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 
 const userReportSchema = new mongoose.Schema({
-  reporter: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
-  reportedUser: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  reporter: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
+  reportedUser: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
   category: { type: String, enum: ["harassment", "spam", "impersonation", "inappropriate", "other"], required: true },
   details: { type: String, default: "", maxlength: 800 },
   status: { type: String, enum: ["open", "reviewing", "resolved"], default: "open", index: true }

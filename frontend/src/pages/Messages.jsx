@@ -7,6 +7,7 @@ import {
 import "./MessagesClanHub.css";
 
 import { useAuth } from "../context/authContext";
+import { submitContentReport } from "../services/userService";
 
 import {
   getConversations,
@@ -945,6 +946,22 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
     const target = activeMessage;
     setActiveMessage(null);
     if (!target) return;
+    if (action === "report") {
+      const category = window.prompt("Motif : harassment, hate, sexual, violence, spam, fraud, privacy ou other", "harassment");
+      if (!category) return;
+      const normalizedCategory = category.trim().toLowerCase();
+      if (!["harassment", "hate", "sexual", "violence", "spam", "fraud", "privacy", "other"].includes(normalizedCategory)) {
+        setConversationError("Choisis un motif valide dans la liste proposée.");
+        return;
+      }
+      try {
+        await submitContentReport({ token, contentType: "message", contentId: target._id, category: normalizedCategory });
+        setConversationError("Signalement transmis à l’équipe de modération.");
+      } catch (error) {
+        setConversationError(error.message || "Impossible de signaler ce message.");
+      }
+      return;
+    }
     if (action === "delete") return handleDeleteMessage(target._id);
     if (action === "reply") {
       setReplyTarget(target);
@@ -1347,7 +1364,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
               </div>}
 
               {showChatProfile && <ChatProfileDialog person={selectedUser} wallpaper={chatWallpaper} onWallpaperChange={updateWallpaper} theme={chatTheme} onThemeChange={updateChatTheme} onClose={() => setShowChatProfile(false)} token={token} />}
-              {activeMessage && <MessageActionsSheet message={activeMessage} onSelect={performMessageAction} onClose={() => setActiveMessage(null)} />}
+              {activeMessage && <MessageActionsSheet message={activeMessage} canReport={String(activeMessage.sender?._id || activeMessage.sender) !== String(user?.id || user?._id)} onSelect={performMessageAction} onClose={() => setActiveMessage(null)} />}
               {forwardTarget && <ForwardMessageDialog conversations={conversations} onSelect={forwardMessageTo} onClose={() => setForwardTarget(null)} />}
 
             </>
@@ -1547,7 +1564,7 @@ function ChatProfileDialog({ person, wallpaper, onWallpaperChange, theme, onThem
   );
 }
 
-function MessageActionsSheet({ message, onSelect, onClose }) {
+function MessageActionsSheet({ message, canReport, onSelect, onClose }) {
   return (
     <div className="message-actions-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section className="message-actions-sheet" role="menu" aria-label="Actions du message">
@@ -1556,6 +1573,7 @@ function MessageActionsSheet({ message, onSelect, onClose }) {
         <button type="button" role="menuitem" onClick={() => onSelect("reply")}>↩ <span>Répondre</span></button>
         <button type="button" role="menuitem" onClick={() => onSelect("copy")} disabled={!message.content}>▢ <span>Copier</span></button>
         <button type="button" role="menuitem" onClick={() => onSelect("forward")}>➤ <span>Envoyer à une personne</span></button>
+        {canReport && <button type="button" role="menuitem" onClick={() => onSelect("report")}>⚑ <span>Signaler à la modération</span></button>}
         <button type="button" role="menuitem" className="message-action-delete" onClick={() => onSelect("delete")}>⌫ <span>Supprimer de ma boîte</span></button>
       </section>
     </div>

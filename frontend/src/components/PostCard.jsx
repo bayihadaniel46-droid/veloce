@@ -8,6 +8,7 @@ import {
 
 import { playUiSound } from "../services/soundService";
 import { useAuth } from "../context/authContext";
+import { submitContentReport } from "../services/userService";
 import { API_ORIGIN } from "../config";
 import "./PostCard.css";
 
@@ -59,6 +60,7 @@ function PostCard({
 
   const [postActionMessage, setPostActionMessage] = useState("");
   const [postActionBusy, setPostActionBusy] = useState(false);
+  const [reportBusy, setReportBusy] = useState(false);
 
   // ==========================================
   // TEMPS ÉCOULÉ
@@ -580,6 +582,26 @@ function PostCard({
     }
   };
 
+  const reportPost = async () => {
+    const category = window.prompt("Motif : harassment, hate, sexual, violence, spam, fraud, privacy ou other", "spam");
+    if (!category) return;
+    const normalizedCategory = category.trim().toLowerCase();
+    const categories = ["harassment", "hate", "sexual", "violence", "spam", "fraud", "privacy", "other"];
+    if (!categories.includes(normalizedCategory)) {
+      setPostActionMessage("Choisis un motif valide dans la liste proposée.");
+      return;
+    }
+    try {
+      setReportBusy(true);
+      await submitContentReport({ token, contentType: "post", contentId: post._id, category: normalizedCategory });
+      setPostActionMessage("Signalement transmis à l’équipe de modération.");
+    } catch (error) {
+      setPostActionMessage(error.message || "Impossible de signaler cette publication.");
+    } finally {
+      setReportBusy(false);
+    }
+  };
+
 
   return (
     <>
@@ -924,6 +946,8 @@ function PostCard({
         >
           📤
         </button>
+
+        {String(post.author?._id || post.author) !== String(user?._id || user?.id) && <button type="button" onClick={reportPost} disabled={reportBusy} aria-label="Signaler cette publication" title="Signaler cette publication">{reportBusy ? "…" : "⚑"}</button>}
 
       </div>
 

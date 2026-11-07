@@ -16,5 +16,5 @@ const request = async (path, token, options = {}) => {
 
 export const getCarrefour = (token) => request("/", token);
 export const publishStatus = ({ content, token }) => request("/status", token, { method: "POST", body: JSON.stringify({ content }) });
-export const publishAnonymousPost = ({ content, token }) => request("/anonymous", token, { method: "POST", body: JSON.stringify({ content }) });
+export const publishAnonymousPost = ({ content, allowIdentityReveal, token }) => request("/anonymous", token, { method: "POST", body: JSON.stringify({ content, allowIdentityReveal: Boolean(allowIdentityReveal) }) });
 export const revealCarrefourAuthor = ({ itemId, token }) => request("/anonymous/" + itemId + "/reveal", token, { method: "POST" });

@@ -18,6 +18,7 @@ const {
 
 const authMiddleware =
   require("../middleware/authMiddleware");
+const requireCommunityRules = require("../middleware/requireCommunityRules");
 
 
 // ========================================
@@ -86,6 +87,7 @@ router.get(
 router.post(
   "/",
   authMiddleware,
+  requireCommunityRules,
   upload.array(
     "files",
     10
@@ -126,6 +128,7 @@ router.get(
 router.post(
   "/:id/comments",
   authMiddleware,
+  requireCommunityRules,
   createComment
 );
 

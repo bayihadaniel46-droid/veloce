@@ -13,6 +13,7 @@ const authMiddleware =
   require("../middleware/authMiddleware");
 const { parseMessageFiles } = require("../middleware/messageUploads");
 const { getMessageFile } = require("../controllers/messageController");
+const requireCommunityRules = require("../middleware/requireCommunityRules");
 
 const router = express.Router();
 
@@ -52,6 +53,7 @@ router.delete(
 router.post(
   "/:userId",
   authMiddleware,
+  requireCommunityRules,
   parseMessageFiles,
   sendMessage
 );

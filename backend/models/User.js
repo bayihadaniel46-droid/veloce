@@ -18,6 +18,9 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true
     },
+    communityRulesAcceptedAt: { type: Date, default: null },
+    termsAcceptedAt: { type: Date, default: null },
+    privacyAcknowledgedAt: { type: Date, default: null },
 
     password: {
       type: String,

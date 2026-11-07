@@ -20,6 +20,7 @@ function Register({
   const [referralCode] = useState(() => new URLSearchParams(window.location.search).get("ref") || "");
 
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [acceptedCommunityRules, setAcceptedCommunityRules] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
@@ -59,6 +60,11 @@ function Register({
     }
 
 
+    if (!acceptedCommunityRules) {
+      setError("Tu dois lire et accepter les règles de la communauté.");
+      return;
+    }
+
     try {
 
       setLoading(true);
@@ -68,7 +74,9 @@ function Register({
         username,
         email,
         password
-        , referralCode
+        , referralCode,
+        acceptedCommunityRules,
+        acceptedLegalTerms: acceptedCommunityRules
       });
 
 
@@ -206,10 +214,15 @@ function Register({
           </div>
 
 
+          <label className="auth-community-consent" style={{ display: "flex", alignItems: "flex-start", gap: 10, margin: "12px 0 18px", fontSize: 12, lineHeight: 1.5 }}>
+            <input type="checkbox" checked={acceptedCommunityRules} onChange={(event) => setAcceptedCommunityRules(event.target.checked)} required style={{ marginTop: 3 }} />
+            <span>J’ai lu et j’accepte les <a href="/community-rules.html" target="_blank" rel="noreferrer">règles de la communauté</a> et les <a href="/terms.html" target="_blank" rel="noreferrer">conditions d’utilisation</a>, et j’ai pris connaissance de la <a href="/privacy.html" target="_blank" rel="noreferrer">politique de confidentialité</a>.</span>
+          </label>
+
           <button
             type="submit"
             className="auth-button"
-            disabled={loading}
+            disabled={loading || !acceptedCommunityRules}
           >
 
             {loading

@@ -30,6 +30,12 @@
 .carrefour-anonymous-composer textarea:focus{border-color:#c071e8}
 .carrefour-anonymous-composer>div{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:9px}
 .carrefour-anonymous-composer>div>small{color:#a8aabd;font-size:11px}
+.carrefour-identity-consent{display:flex!important;align-items:flex-start;gap:10px;margin:12px 0 4px!important;padding:12px;border:1px solid #c686ff38;border-radius:13px;background:#a65dff0b;cursor:pointer}
+.carrefour-identity-consent input{width:17px;height:17px;flex:0 0 17px;margin:2px 0 0;accent-color:#bd83ff}
+.carrefour-identity-consent span{display:grid;gap:4px}
+.carrefour-identity-consent strong{color:#eee6ff;font-size:12px}
+.carrefour-identity-consent small{color:#a8aabd;font-size:11px;line-height:1.45}
+.carrefour-clan-privacy{margin:11px 0 4px;padding:11px;border:1px solid #ffc66c35;border-radius:11px;background:#ffbd5c0b;color:#e8ce9d;font-size:11px;line-height:1.4}
 .carrefour-anonymous-feed{display:grid;gap:12px;margin-top:15px}
 .carrefour-anonymous-card{padding:17px;border:1px solid #ffffff14;border-radius:17px;background:linear-gradient(145deg,#202637,#161b27);box-shadow:0 9px 25px #080a1330}
 .carrefour-anonymous-meta{display:flex;align-items:center;gap:9px}
@@ -39,6 +45,9 @@
 .carrefour-anonymous-card>p{margin:14px 0;color:#e5e7ef;font-size:14px;line-height:1.65;overflow-wrap:anywhere;white-space:pre-wrap}
 .carrefour-reveal-button{padding:8px 11px;border:1px solid #e783b74f;border-radius:10px;background:#d95e9b17;color:#ffc3df;font-size:11px;font-weight:750;cursor:pointer}
 .carrefour-revealed-author{display:inline-flex;gap:5px;padding:8px 10px;border-radius:10px;background:#63d6a218;color:#a5e8c9;font-size:11px}
+.carrefour-card-footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.carrefour-report-button{padding:7px 10px;border:1px solid #ffffff1c;border-radius:9px;background:#ffffff08;color:#aeb5c8;font-size:11px;cursor:pointer}
+.carrefour-report-button:disabled{opacity:.5}
 .carrefour-empty{display:grid;justify-items:center;gap:8px;padding:30px 16px;border:1px dashed #605970;border-radius:17px;color:#a7aabd;text-align:center}
 .carrefour-empty>span{color:#cf9cff;font-size:28px}
 .carrefour-empty strong{color:#f3effa}

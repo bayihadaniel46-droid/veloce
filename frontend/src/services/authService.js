@@ -9,7 +9,9 @@ const API_URL = `${API_BASE_URL}/auth`;
 export const registerUser = async ({
   username,
   email,
-  password
+  password,
+  acceptedCommunityRules,
+  acceptedLegalTerms
 }) => {
 
   const response = await fetch(
@@ -24,7 +26,9 @@ export const registerUser = async ({
       body: JSON.stringify({
         username,
         email,
-        password
+        password,
+        acceptedCommunityRules,
+        acceptedLegalTerms
       })
     }
   );

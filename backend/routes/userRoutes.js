@@ -15,9 +15,18 @@ const authMiddleware =
   require("../middleware/authMiddleware");
 const { getMyPizTransactions } = require("../controllers/pizController");
 const { listBlockedUsers, setUserBlocked, removeUserBlock, reportUser } = require("../controllers/safetyController");
+const { deleteMyAccount } = require("../controllers/accountController");
+const { submitContentReport, listContentReports, reviewContentReport } = require("../controllers/contentModerationController");
+const { getCommunityRulesStatus, acceptCommunityRules } = require("../controllers/communityRulesController");
 
 const router = express.Router();
 
+router.delete("/me", authMiddleware, deleteMyAccount);
+router.get("/community-rules", authMiddleware, getCommunityRulesStatus);
+router.post("/community-rules/accept", authMiddleware, acceptCommunityRules);
+router.post("/content-reports", authMiddleware, submitContentReport);
+router.get("/moderation/content-reports", authMiddleware, listContentReports);
+router.patch("/moderation/content-reports/:reportId", authMiddleware, reviewContentReport);
 
 router.get(
   "/search",

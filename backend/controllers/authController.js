@@ -43,6 +43,9 @@ const formatUser = (user) => {
 // ============================================================
 
 const register = async (req, res) => {
+  if (req.body?.acceptedCommunityRules !== true || req.body?.acceptedLegalTerms !== true) {
+    return res.status(400).json({ message: "Tu dois lire et accepter les règles de la communauté et les conditions pour créer un compte." });
+  }
   try {
 
     const {
@@ -123,6 +126,9 @@ const register = async (req, res) => {
       username: cleanUsername,
       email: cleanEmail,
       password: hashedPassword,
+      communityRulesAcceptedAt: new Date(),
+      termsAcceptedAt: new Date(),
+      privacyAcknowledgedAt: new Date(),
       referralCode,
       referredBy: referrer?._id || null
     });
