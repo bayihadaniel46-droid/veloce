@@ -20,6 +20,8 @@ router.post("/:clanId/requests/:userId/review", clanHub.reviewMembershipRequest)
 router.post("/:clanId/rating", clanHub.rateClan);
 router.get("/:clanId/knowledge", clanHub.getKnowledge);
 router.post("/:clanId/knowledge", clanHub.createKnowledge);
+router.get("/:clanId/assistant-knowledge", clanHub.listAssistantKnowledge);
+router.post("/:clanId/assistant-knowledge", clanHub.publishAssistantKnowledge);
 router.post("/:clanId/contributions", clanHub.contributeToClan);
 router.post("/:clanId/distributions", clanHub.distributeClanRevenue);
 router.post("/:clanId/members", addClanMembers);

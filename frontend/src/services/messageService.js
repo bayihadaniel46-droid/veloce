@@ -82,6 +82,8 @@ export const reviewClanMembershipRequest = ({ clanId, userId, decision, token })
 export const rateClan = ({ clanId, rating, review, token }) => clanRequest(`/${clanId}/rating`, token, { method: "POST", body: JSON.stringify({ rating, review }) });
 export const getClanKnowledge = (token, clanId = "") => clanRequest(clanId ? `/${clanId}/knowledge` : "/knowledge", token);
 export const createClanKnowledge = ({ clanId, payload, token }) => clanRequest(`/${clanId}/knowledge`, token, { method: "POST", body: JSON.stringify(payload) });
+export const getClanAssistantKnowledge = ({ clanId, token }) => clanRequest(`/${clanId}/assistant-knowledge`, token);
+export const publishClanAssistantKnowledge = ({ clanId, payload, token }) => clanRequest(`/${clanId}/assistant-knowledge`, token, { method: "POST", body: JSON.stringify(payload) });
 export const purchaseClanKnowledge = ({ documentId, token }) => clanRequest(`/knowledge/${documentId}/purchase`, token, { method: "POST" });
 export const contributeToClan = ({ clanId, amount, operationId, token }) => clanRequest(`/${clanId}/contributions`, token, { method: "POST", body: JSON.stringify({ amount, operationId }) });
 export const distributeClanRevenue = ({ clanId, payouts, batchId, token }) => clanRequest(`/${clanId}/distributions`, token, { method: "POST", body: JSON.stringify({ payouts, batchId }) });

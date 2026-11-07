@@ -115,7 +115,8 @@ const transferPiz = async ({
   description,
   metadata = {},
   operationId = null,
-  platformShare = null
+  platformShare = null,
+  platformReserveKey = "platform-admin"
 }) => {
   const amountUnits = toUnits(amount);
   if (amountUnits <= 0) throw new Error("Le montant Piz doit être supérieur à zéro.");
@@ -127,6 +128,7 @@ const transferPiz = async ({
     ? (toUserId ? 0 : amountUnits)
     : Math.max(0, Math.min(amountUnits, toUnits(platformShare)));
   const recipientUnits = amountUnits - platformUnits;
+  const transactionMetadata = platformReserveKey === "platform-admin" ? metadata : { ...metadata, reserveKey: platformReserveKey };
 
   let transaction = null;
   if (operationId) {
@@ -140,7 +142,7 @@ const transferPiz = async ({
       existing.amountUnits = amountUnits;
       existing.platformUnits = platformUnits;
       existing.description = String(description || "Mouvement Piz").slice(0, 240);
-      existing.metadata = metadata;
+      existing.metadata = transactionMetadata;
       existing.status = "pending";
       transaction = await existing.save();
     }
@@ -155,7 +157,7 @@ const transferPiz = async ({
     platformUnits,
     description: String(description || "Mouvement Piz").slice(0, 240),
     status: "pending",
-    metadata
+    metadata: transactionMetadata
   });
 
   const debit = await User.updateOne(
@@ -177,7 +179,7 @@ const transferPiz = async ({
     }
     if (platformUnits) {
       await PizReserve.findOneAndUpdate(
-        { key: "platform-admin" },
+        { key: platformReserveKey },
         { $inc: { balanceUnits: platformUnits } },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
@@ -188,14 +190,14 @@ const transferPiz = async ({
   } catch (error) {
     await User.updateOne({ _id: fromUserId }, { $inc: { pizBalanceUnits: amountUnits } });
     if (recipientUnits && toUserId) await User.updateOne({ _id: toUserId }, { $inc: { pizBalanceUnits: -recipientUnits } });
-    if (platformUnits) await PizReserve.updateOne({ key: "platform-admin" }, { $inc: { balanceUnits: -platformUnits } });
+    if (platformUnits) await PizReserve.updateOne({ key: platformReserveKey }, { $inc: { balanceUnits: -platformUnits } });
     transaction.status = "failed";
     await transaction.save();
     throw error;
   }
 };
 
-const payFromReserve = async ({ toUserId, amountUnits, type, description, metadata = {}, operationId }) => {
+const payFromReserve = async ({ toUserId, amountUnits, type, description, metadata = {}, operationId, reserveKey = "platform-admin" }) => {
   const units = Math.max(0, Math.floor(Number(amountUnits) || 0));
   if (!toUserId || units <= 0) return null;
   await ensurePizWallet(toUserId);
@@ -223,7 +225,7 @@ const payFromReserve = async ({ toUserId, amountUnits, type, description, metada
     metadata
   });
   const reserve = await PizReserve.findOneAndUpdate(
-    { key: "platform-admin", balanceUnits: { $gte: units } },
+    { key: reserveKey, balanceUnits: { $gte: units } },
     { $inc: { balanceUnits: -units } },
     { new: true }
   );
@@ -239,7 +241,40 @@ const payFromReserve = async ({ toUserId, amountUnits, type, description, metada
     await transaction.save();
     return transaction;
   } catch (error) {
-    await PizReserve.updateOne({ key: "platform-admin" }, { $inc: { balanceUnits: units } });
+    await PizReserve.updateOne({ key: reserveKey }, { $inc: { balanceUnits: units } });
+    transaction.status = "failed";
+    await transaction.save();
+    throw error;
+  }
+};
+
+const payClanFromReserve = async ({ clanId, amountUnits, type, description, metadata = {}, operationId, reserveKey = "assistant-knowledge" }) => {
+  const units = Math.max(0, Math.floor(Number(amountUnits) || 0));
+  if (!clanId || units <= 0) return null;
+  const { transaction, alreadyCompleted } = await beginClanTransaction({ operationId, type, amountUnits: units, toClan: clanId, description, metadata: { ...metadata, reserveKey } });
+  if (alreadyCompleted) return transaction;
+  const reserve = await PizReserve.findOneAndUpdate(
+    { key: reserveKey, balanceUnits: { $gte: units } },
+    { $inc: { balanceUnits: -units } },
+    { new: true }
+  );
+  if (!reserve) {
+    transaction.status = "failed";
+    transaction.description = "Réserve de rémunération des connaissances insuffisante";
+    await transaction.save();
+    const error = new Error("La réserve des recherches d’idées est insuffisante.");
+    error.code = "ASSISTANT_REWARD_POOL_LOW";
+    throw error;
+  }
+  try {
+    const Clan = require("../models/Clan");
+    const credit = await Clan.updateOne({ _id: clanId }, { $inc: { treasuryUnits: units } });
+    if (!credit.matchedCount) throw new Error("Clan introuvable pour la rémunération.");
+    transaction.status = "completed";
+    await transaction.save();
+    return transaction;
+  } catch (error) {
+    await PizReserve.updateOne({ key: reserveKey }, { $inc: { balanceUnits: units } });
     transaction.status = "failed";
     await transaction.save();
     throw error;
@@ -351,5 +386,6 @@ module.exports = {
   transferPiz,
   payFromReserve,
   transferPizToClan,
-  transferPizFromClan
+  transferPizFromClan,
+  payClanFromReserve
 };

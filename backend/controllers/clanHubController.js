@@ -4,6 +4,7 @@ const ClanMessage = require("../models/ClanMessage");
 const ClanRating = require("../models/ClanRating");
 const ClanKnowledgeDocument = require("../models/ClanKnowledgeDocument");
 const ClanKnowledgePurchase = require("../models/ClanKnowledgePurchase");
+const ClanAssistantKnowledge = require("../models/ClanAssistantKnowledge");
 const User = require("../models/User");
 const { fromUnits, toUnits, transferPizToClan, transferPizFromClan } = require("../services/pizEconomy");
 
@@ -20,6 +21,7 @@ const publicDocument = (doc, unlocked, clan) => ({
   author: doc.author,
   title: doc.title,
   summary: doc.summary,
+  topics: doc.topics || [],
   price: fromUnits(doc.priceUnits),
   purchaseCount: doc.purchaseCount,
   createdAt: doc.createdAt,
@@ -31,20 +33,25 @@ const discoverClans = async (req, res) => {
   try {
     const clans = await Clan.find({}).select("name description owner members membershipPolicy strategy createdAt updatedAt").sort({ createdAt: -1 }).limit(200).lean();
     const ids = clans.map((clan) => clan._id);
-    const [ratings, documents, activity] = await Promise.all([
+    const [ratings, documents, assistantInfo, activity] = await Promise.all([
       ClanRating.aggregate([{ $match: { clan: { $in: ids } } }, { $group: { _id: "$clan", average: { $avg: "$rating" }, count: { $sum: 1 } } }]),
       ClanKnowledgeDocument.aggregate([{ $match: { clan: { $in: ids }, published: true } }, { $group: { _id: "$clan", count: { $sum: 1 }, purchases: { $sum: "$purchaseCount" } } }]),
+      ClanAssistantKnowledge.aggregate([{ $match: { clan: { $in: ids }, published: true } }, { $group: { _id: "$clan", count: { $sum: 1 }, uses: { $sum: "$usageCount" } } }]),
       ClanMessage.aggregate([{ $match: { clan: { $in: ids }, createdAt: { $gte: new Date(Date.now() - 30 * 86400000) } } }, { $group: { _id: "$clan", count: { $sum: 1 } } }])
     ]);
     const ratingMap = new Map(ratings.map((item) => [String(item._id), item]));
     const docMap = new Map(documents.map((item) => [String(item._id), item]));
+    const assistantMap = new Map(assistantInfo.map((item) => [String(item._id), item]));
     const activityMap = new Map(activity.map((item) => [String(item._id), item.count]));
     const result = clans.map((clan) => {
       const rating = ratingMap.get(String(clan._id));
       const knowledge = docMap.get(String(clan._id));
+      const assistantKnowledge = assistantMap.get(String(clan._id));
       const messages = activityMap.get(String(clan._id)) || 0;
       const members = clan.members || [];
-      const score = (rating?.average || 0) * 10 + Math.min(20, members.length / 5) + Math.min(20, messages / 10) + Math.min(20, (knowledge?.purchases || 0) / 2);
+      const knowledgeCount = (knowledge?.count || 0) + (assistantKnowledge?.count || 0);
+      const knowledgeUseCount = (knowledge?.purchases || 0) + (assistantKnowledge?.uses || 0);
+      const score = (rating?.average || 0) * 10 + Math.min(20, members.length / 5) + Math.min(20, messages / 10) + Math.min(20, knowledgeUseCount / 2);
       return {
         _id: clan._id,
         name: clan.name,
@@ -53,8 +60,8 @@ const discoverClans = async (req, res) => {
         memberCount: members.length,
         rating: rating ? Number(rating.average.toFixed(1)) : 0,
         ratingCount: rating?.count || 0,
-        knowledgeCount: knowledge?.count || 0,
-        knowledgePurchases: knowledge?.purchases || 0,
+        knowledgeCount,
+        knowledgePurchases: knowledgeUseCount,
         activity30Days: messages,
         recommendationScore: Number(score.toFixed(1)),
         isMember: memberOf(clan, req.user.userId),
@@ -216,6 +223,38 @@ const getKnowledge = async (req, res) => {
   }
 };
 
+const listAssistantKnowledge = async (req, res) => {
+  try {
+    const clan = await Clan.findById(req.params.clanId).select("members");
+    if (!clan) return res.status(404).json({ message: "Clan introuvable." });
+    if (!memberOf(clan, req.user.userId)) return res.status(403).json({ message: "Cet espace est réservé aux membres du clan." });
+    const items = await ClanAssistantKnowledge.find({ clan: clan._id, published: true }).populate("author", "username avatar").sort({ createdAt: -1 }).limit(200);
+    return res.json(items);
+  } catch (error) {
+    console.error("Erreur chargement du savoir assistant :", error);
+    return res.status(500).json({ message: "Impossible de charger l’espace de l’assistant." });
+  }
+};
+
+const publishAssistantKnowledge = async (req, res) => {
+  try {
+    const clan = await Clan.findById(req.params.clanId);
+    if (!clan) return res.status(404).json({ message: "Clan introuvable." });
+    if (!memberOf(clan, req.user.userId) || !canPublish(clan, req.user.userId)) return res.status(403).json({ message: "Le chef, son sous-chef et le secrétaire peuvent publier dans cet espace." });
+    const topic = String(req.body.topic || "").trim().slice(0, 80);
+    const title = String(req.body.title || "").trim();
+    const summary = String(req.body.summary || "").trim();
+    const content = String(req.body.content || "").trim();
+    if (!topic || !title || title.length > 160 || !summary || summary.length > 500 || !content || content.length > 12000) return res.status(400).json({ message: "Ajoute un thème, un titre, un résumé et un contenu (12 000 caractères maximum)." });
+    const item = await ClanAssistantKnowledge.create({ clan: clan._id, author: req.user.userId, topic, title, summary, content });
+    await item.populate("author", "username avatar");
+    return res.status(201).json(item);
+  } catch (error) {
+    console.error("Erreur publication dans l’espace de l’assistant :", error);
+    return res.status(500).json({ message: "Impossible de publier ce savoir." });
+  }
+};
+
 const createKnowledge = async (req, res) => {
   try {
     const clan = await Clan.findById(req.params.clanId);
@@ -226,7 +265,7 @@ const createKnowledge = async (req, res) => {
     const content = String(req.body.content || "").trim();
     const price = Number(req.body.price);
     const priceUnits = toUnits(price);
-    if (!title || title.length > 120 || !summary || summary.length > 500 || !content || content.length > 20000 || !Number.isFinite(price) || price < 0.01 || price > 100000 || priceUnits < 1) return res.status(400).json({ message: "Vérifie le titre, le résumé, le contenu et le prix (0,01 à 100 000 Piz)." });
+    if (!title || title.length > 120 || !summary || summary.length > 500 || !content || content.length > 20000 || !Number.isFinite(price) || price < 0.01 || price > 100000 || priceUnits < 1) return res.status(400).json({ message: "Vérifie le titre, le résumé, le contenu et le prix entre 0,01 et 100 000 Piz." });
     const doc = await ClanKnowledgeDocument.create({ clan: clan._id, author: req.user.userId, title, summary, content, priceUnits });
     return res.status(201).json(publicDocument(doc, true, clan));
   } catch (error) {
@@ -307,4 +346,4 @@ const distributeClanRevenue = async (req, res) => {
   }
 };
 
-module.exports = { discoverClans, requestToJoin, listMembershipRequests, reviewMembershipRequest, updateClanSettings, assignClanRole, rateClan, getKnowledge, createKnowledge, purchaseKnowledge, contributeToClan, distributeClanRevenue };
+module.exports = { discoverClans, requestToJoin, listMembershipRequests, reviewMembershipRequest, updateClanSettings, assignClanRole, rateClan, getKnowledge, createKnowledge, purchaseKnowledge, listAssistantKnowledge, publishAssistantKnowledge, contributeToClan, distributeClanRevenue };

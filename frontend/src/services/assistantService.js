@@ -13,6 +13,7 @@ const request = async (path, token, options = {}) => {
 export const getAssistant = (token) => request("/profile", token);
 export const updateAssistant = (token, profile) => request("/profile", token, { method: "PUT", body: JSON.stringify(profile) });
 export const getAssistantDrafts = (token) => request("/drafts", token);
-export const generateAssistantDrafts = (token) => request("/generate", token, { method: "POST", body: JSON.stringify({}) });
+export const subscribeAssistant = (token, operationId) => request("/subscribe", token, { method: "POST", body: JSON.stringify({ operationId }) });
+export const generateAssistantDrafts = (token, { query = "", requestId }) => request("/generate", token, { method: "POST", body: JSON.stringify({ query, requestId }) });
 export const publishAssistantDraft = (token, id) => request(`/drafts/${id}/publish`, token, { method: "POST", body: JSON.stringify({}) });
 export const dismissAssistantDraft = (token, id) => request(`/drafts/${id}`, token, { method: "DELETE" });

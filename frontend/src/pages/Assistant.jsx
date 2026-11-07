@@ -1,21 +1,26 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/authContext";
 import {
-  getAssistant, updateAssistant, getAssistantDrafts, generateAssistantDrafts,
+  getAssistant, updateAssistant, getAssistantDrafts, generateAssistantDrafts, subscribeAssistant,
   publishAssistantDraft, dismissAssistantDraft
 } from "../services/assistantService";
 import "./Assistant.css";
+import "./AssistantSubscriptions.css";
 
 const splitList = (value) => value.split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
 
 function Assistant() {
   const { token } = useAuth();
+  const searchRequestRef = useRef(""); const searchQueryRef = useRef(""); const subscriptionOperationRef = useRef("");
   const [profile, setProfile] = useState({ topics: [], preferredSources: [], language: "fr", tone: "accessible et informatif" });
+  const [subscription, setSubscription] = useState({ active: false, creditsRemaining: 0, price: 5, days: 30 });
   const [topicsText, setTopicsText] = useState("");
   const [sourcesText, setSourcesText] = useState("");
+  const [queryText, setQueryText] = useState("");
   const [drafts, setDrafts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState("");
   const [notice, setNotice] = useState("");
@@ -27,6 +32,8 @@ function Assistant() {
       const [profileData, draftData] = await Promise.all([getAssistant(token), getAssistantDrafts(token)]);
       const next = profileData.profile;
       setProfile(next);
+      setSubscription(profileData.subscription || { active: false, creditsRemaining: 0, price: 5, days: 30 });
+      if (profileData.subscription?.operationId) subscriptionOperationRef.current = profileData.subscription.operationId;
       setTopicsText((next.topics || []).join(", "));
       setSourcesText((next.preferredSources || []).join(", "));
       setDrafts(draftData.drafts || []);
@@ -55,13 +62,33 @@ function Assistant() {
   };
 
   const generate = async () => {
+    if (!subscription.active) return;
+    if (!searchRequestRef.current || searchQueryRef.current !== queryText) {
+      searchRequestRef.current = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      searchQueryRef.current = queryText;
+    }
     setGenerating(true); setError(""); setNotice("");
     try {
-      const data = await generateAssistantDrafts(token);
+      const data = await generateAssistantDrafts(token, { query: queryText, requestId: searchRequestRef.current });
       setDrafts((current) => [...data.drafts, ...current]);
-      setNotice("Tes nouveaux brouillons sont prêts. Consulte les sources avant de les partager.");
+      if (data.subscription) setSubscription(data.subscription);
+      searchRequestRef.current = "";
+      searchQueryRef.current = "";
+      setNotice(data.message || "Les idées issues des clans sont prêtes dans ton espace privé.");
     } catch (e) { setError(e.message); }
     finally { setGenerating(false); }
+  };
+
+  const subscribe = async () => {
+    if (!subscriptionOperationRef.current) subscriptionOperationRef.current = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    setSubscribing(true); setError(""); setNotice("");
+    try {
+      const data = await subscribeAssistant(token, subscriptionOperationRef.current);
+      setSubscription(data.subscription);
+      subscriptionOperationRef.current = "";
+      setNotice(data.message || "Abonnement activé.");
+    } catch (e) { setError(e.message); }
+    finally { setSubscribing(false); }
   };
 
   const handleDraft = async (draft, action) => {
@@ -85,13 +112,13 @@ function Assistant() {
     <section className="assistant-page">
       <header className="assistant-header">
         <div><span className="assistant-eyebrow">TON ESPACE PRIVÉ</span><h1>✨ Mon assistant IA</h1>
-          <p>Des idées d’actualité adaptées à tes intérêts, avec leurs sources. Tu choisis ce qui paraît sur ton profil.</p></div>
-        <button className="assistant-generate" onClick={generate} disabled={generating || saving}>
-          {generating ? "Recherche en cours…" : "🔎 Rechercher des idées"}
-        </button>
+          <p>Les clans partagent leurs connaissances par thème. Veloce te propose en privé celles qui correspondent à tes intérêts.</p></div>
       </header>
 
-      <p className="assistant-provider-note">Les sujets enregistrés et ta demande sont transmis à Gemini pour rechercher des sources et préparer des brouillons. Les préférences et brouillons restent rattachés à ton compte Veloce. Évite les informations sensibles ; les conditions de traitement dépendent de l’offre Google utilisée.</p>
+      <section className="assistant-subscription-card"><div><span>RECHERCHES D’IDÉES PAR LES CLANS</span><strong>{subscription.active ? `${subscription.creditsRemaining} recherche${subscription.creditsRemaining === 1 ? "" : "s"} restante${subscription.creditsRemaining === 1 ? "" : "s"}` : "Accès privé à l’assistant"}</strong><small>{subscription.active ? `Actif jusqu’au ${new Date(subscription.expiresAt).toLocaleDateString("fr-FR")}. Chaque recherche rémunère les clans qui fournissent les informations.` : "5 Piz pour 30 jours · 5 recherches incluses. Une recherche réussie verse 1 Piz aux clans sources."}</small></div>{!subscription.active && <button type="button" onClick={() => void subscribe()} disabled={subscribing || saving}>{subscribing ? "Activation…" : "S’abonner · 5 Piz"}</button>}</section>
+
+      <div className="assistant-research-entry"><input aria-label="Sujet de recherche" value={queryText} onChange={(event) => setQueryText(event.target.value)} placeholder="Quel sujet veux-tu explorer ? (facultatif)" disabled={!subscription.active || generating || Boolean(searchRequestRef.current)} /><button className="assistant-generate" onClick={generate} disabled={!subscription.active || generating || saving || subscription.creditsRemaining <= 0}>{generating ? "Recherche en cours…" : "🔎 Rechercher des idées"}</button></div>
+      <p className="assistant-provider-note">La recherche s’appuie sur les informations thématiques déposées par les clans dans Veloce. Tes intérêts et les résultats restent privés dans ton compte. Aucune clé Gemini n’est nécessaire.</p>
 
       {notice && <div className="assistant-notice">{notice}</div>}
       {error && <div className="assistant-error">{error}</div>}

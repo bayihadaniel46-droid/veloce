@@ -17,8 +17,6 @@ function VideoFeed({ posts = [], onLike, viewerId = "guest" }) {
   const favoritesKey = `veloce_video_favorites_${viewerId || "guest"}`;
   const [favoriteIds, setFavoriteIds] = useState(() => loadFavorites(favoritesKey));
   const [showFavorites, setShowFavorites] = useState(false);
-  const [muted, setMuted] = useState(true);
-  const [shareMessage, setShareMessage] = useState("");
 
   useEffect(() => setFavoriteIds(loadFavorites(favoritesKey)), [favoritesKey]);
   useEffect(() => {
@@ -37,7 +35,6 @@ function VideoFeed({ posts = [], onLike, viewerId = "guest" }) {
         const video = entry.target;
         if (entry.isIntersecting && entry.intersectionRatio >= 0.65) {
           video.muted = true;
-          setMuted(true);
           video.play().catch(() => {});
         } else {
           video.pause();
@@ -63,35 +60,6 @@ function VideoFeed({ posts = [], onLike, viewerId = "guest" }) {
       : [...current, id]);
   };
 
-  const toggleSound = (item) => {
-    const nextMuted = !muted;
-    item.querySelectorAll("video").forEach((video) => { video.muted = nextMuted; });
-    setMuted(nextMuted);
-  };
-
-  const sharePost = async (post) => {
-    const author = post.author?.username || post.username || "un membre Veloce";
-    const text = `${author} partage une vidéo sur Veloce${post.content ? ` : ${post.content}` : "."}`;
-    const shareUrl = new URL(window.location.href);
-    shareUrl.searchParams.set("post", String(post._id));
-    try {
-      if (navigator.share) await navigator.share({ title: "Vidéo Veloce", text, url: shareUrl.toString() });
-      else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(`${text} ${shareUrl.toString()}`);
-        setShareMessage("Lien copié pour le partager.");
-        window.setTimeout(() => setShareMessage(""), 2200);
-      } else {
-        setShareMessage("Le partage n’est pas disponible dans ce navigateur.");
-        window.setTimeout(() => setShareMessage(""), 2600);
-      }
-    } catch (error) {
-      if (error.name !== "AbortError") {
-        setShareMessage("Impossible de partager cette vidéo.");
-        window.setTimeout(() => setShareMessage(""), 2600);
-      }
-    }
-  };
-
   if (!posts.length) return null;
 
   return (
@@ -103,15 +71,9 @@ function VideoFeed({ posts = [], onLike, viewerId = "guest" }) {
           <button type="button" className={showFavorites ? "active" : ""} aria-pressed={showFavorites} onClick={() => setShowFavorites(true)}>★ Favoris {favoriteIds.length || ""}</button>
         </div>
       </div>
-      {shareMessage && <p className="video-feed-status" role="status">{shareMessage}</p>}
       {visiblePosts.length === 0 ? <div className="video-feed-empty"><span>☆</span><strong>Aucune vidéo favorite pour le moment</strong><small>Appuie sur l’étoile d’un clip pour le retrouver ici.</small></div> : visiblePosts.map((post) => (
         <article className="video-feed-item" id={`video-post-${post._id}`} key={post._id}>
-          <PostCard post={post} onLike={onLike} />
-          <div className="video-feed-actions">
-            <button type="button" className={favoriteIds.includes(String(post._id)) ? "is-favorite" : ""} aria-pressed={favoriteIds.includes(String(post._id))} onClick={() => toggleFavorite(post._id)}>{favoriteIds.includes(String(post._id)) ? "★ Enregistrée" : "☆ Ajouter aux favoris"}</button>
-            <button type="button" onClick={(event) => toggleSound(event.currentTarget.closest(".video-feed-item"))}>{muted ? "🔇 Activer le son" : "🔊 Couper le son"}</button>
-            <button type="button" onClick={() => void sharePost(post)}>↗ Partager</button>
-          </div>
+          <PostCard post={post} onLike={onLike} videoOverlay={<button type="button" className={`video-favorite-overlay${favoriteIds.includes(String(post._id)) ? " is-favorite" : ""}`} aria-pressed={favoriteIds.includes(String(post._id))} aria-label={favoriteIds.includes(String(post._id)) ? "Retirer des favoris" : "Ajouter aux favoris"} title={favoriteIds.includes(String(post._id)) ? "Retirer des favoris" : "Ajouter aux favoris"} onClick={() => toggleFavorite(post._id)}>{favoriteIds.includes(String(post._id)) ? "★" : "☆"}</button>} />
         </article>
       ))}
     </section>

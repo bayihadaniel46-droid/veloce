@@ -14,7 +14,8 @@ import "./PostCard.css";
 
 function PostCard({
   post,
-  onLike
+  onLike,
+  videoOverlay = null
 }) {
 
   const [verification, setVerification] = useState(null);
@@ -818,6 +819,7 @@ function PostCard({
                 </button>
               )}
               {videoErrors[videoId] && <p className="post-video-error" role="alert">{videoErrors[videoId]}</p>}
+              {videoOverlay && <div className="post-video-overlay-actions">{videoOverlay}</div>}
             </div>
           );
         })}
