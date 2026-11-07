@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const CarrefourItem = require("../models/CarrefourItem");
 const UserStatus = require("../models/UserStatus");
 const User = require("../models/User");
+const Clan = require("../models/Clan");
 const { transferPiz } = require("../services/pizEconomy");
 
 const getCarrefour = async (req, res) => {
@@ -11,9 +12,16 @@ const getCarrefour = async (req, res) => {
       UserStatus.find({ expiresAt: { $gt: now } }).populate("author", "username avatar").sort({ createdAt: -1 }).limit(100),
       CarrefourItem.find().sort({ createdAt: -1 }).limit(100)
     ]);
+    const authorIds = [...new Set(anonymousPosts.map((post) => String(post.author)))];
+    const protectedAuthors = new Set((await Clan.find({ members: { $in: authorIds } }).distinct("members")).map(String));
+    const newlyProtectedIds = anonymousPosts.filter((post) => !post.clanProtected && protectedAuthors.has(String(post.author))).map((post) => post._id);
+    if (newlyProtectedIds.length) await CarrefourItem.updateMany({ _id: { $in: newlyProtectedIds } }, { $set: { clanProtected: true } });
     return res.json({
       statuses: statuses.map((status) => ({ _id: status._id, content: status.content, createdAt: status.createdAt, expiresAt: status.expiresAt, author: status.author })),
-      anonymousPosts: anonymousPosts.map((post) => ({ _id: post._id, content: post.content, createdAt: post.createdAt, identityRevealed: post.revealedBy.some((id) => String(id) === String(req.user.userId)) }))
+      anonymousPosts: anonymousPosts.map((post) => {
+        const clanProtected = Boolean(post.clanProtected || protectedAuthors.has(String(post.author)));
+        return { _id: post._id, content: post.content, createdAt: post.createdAt, clanProtected, identityRevealed: !clanProtected && post.revealedBy.some((id) => String(id) === String(req.user.userId)) };
+      })
     });
   } catch (error) {
     console.error("Erreur chargement du Carrefour :", error.message);
@@ -45,7 +53,8 @@ const createAnonymousPost = async (req, res) => {
   const content = String(req.body.content || "").trim();
   if (!content || content.length > 3000) return res.status(400).json({ message: "Le message anonyme doit contenir de 1 à 3 000 caractères." });
   try {
-    const item = await CarrefourItem.create({ author: req.user.userId, content });
+    const memberOfClan = await Clan.exists({ members: req.user.userId });
+    const item = await CarrefourItem.create({ author: req.user.userId, content, clanProtected: Boolean(memberOfClan) });
     try {
       await transferPiz({ fromUserId: req.user.userId, amount: 1, type: "anonymous-post", description: "Publication anonyme au Carrefour", metadata: { postId: String(item._id) } });
     } catch (error) {
@@ -66,6 +75,10 @@ const revealAnonymousAuthor = async (req, res) => {
     const item = await CarrefourItem.findById(req.params.itemId);
     if (!item) return res.status(404).json({ message: "Publication introuvable." });
     const userId = String(req.user.userId);
+    if (item.clanProtected || await Clan.exists({ members: item.author })) {
+      if (!item.clanProtected) await CarrefourItem.updateOne({ _id: item._id }, { $set: { clanProtected: true } });
+      return res.status(403).json({ message: "L’identité de cet auteur est protégée par son appartenance à un clan. Aucune somme n’a été débitée.", clanProtected: true });
+    }
     if (!item.revealedBy.some((id) => String(id) === userId)) {
       const authorId = String(item.author);
       if (authorId === userId) return res.status(400).json({ message: "Tu connais déjà l’auteur de ta publication." });

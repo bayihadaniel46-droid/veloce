@@ -73,6 +73,18 @@ const clanRequest = async (path, token, options = {}) => {
 };
 
 export const getClans = (token) => clanRequest("/", token);
+export const discoverClans = (token) => clanRequest("/discover", token);
+export const requestToJoinClan = ({ clanId, token }) => clanRequest(`/${clanId}/join`, token, { method: "POST" });
+export const updateClanSettings = ({ clanId, payload, token }) => clanRequest(`/${clanId}/settings`, token, { method: "PATCH", body: JSON.stringify(payload) });
+export const assignClanRole = ({ clanId, userId, role, token }) => clanRequest(`/${clanId}/roles`, token, { method: "PUT", body: JSON.stringify({ userId, role }) });
+export const getClanMembershipRequests = ({ clanId, token }) => clanRequest(`/${clanId}/requests`, token);
+export const reviewClanMembershipRequest = ({ clanId, userId, decision, token }) => clanRequest(`/${clanId}/requests/${userId}/review`, token, { method: "POST", body: JSON.stringify({ decision }) });
+export const rateClan = ({ clanId, rating, review, token }) => clanRequest(`/${clanId}/rating`, token, { method: "POST", body: JSON.stringify({ rating, review }) });
+export const getClanKnowledge = (token, clanId = "") => clanRequest(clanId ? `/${clanId}/knowledge` : "/knowledge", token);
+export const createClanKnowledge = ({ clanId, payload, token }) => clanRequest(`/${clanId}/knowledge`, token, { method: "POST", body: JSON.stringify(payload) });
+export const purchaseClanKnowledge = ({ documentId, token }) => clanRequest(`/knowledge/${documentId}/purchase`, token, { method: "POST" });
+export const contributeToClan = ({ clanId, amount, operationId, token }) => clanRequest(`/${clanId}/contributions`, token, { method: "POST", body: JSON.stringify({ amount, operationId }) });
+export const distributeClanRevenue = ({ clanId, payouts, batchId, token }) => clanRequest(`/${clanId}/distributions`, token, { method: "POST", body: JSON.stringify({ payouts, batchId }) });
 export const createClan = ({ name, description, memberIds, token }) => clanRequest("/", token, {
   method: "POST", body: JSON.stringify({ name, description, memberIds })
 });

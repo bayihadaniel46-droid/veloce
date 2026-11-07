@@ -246,6 +246,91 @@ const payFromReserve = async ({ toUserId, amountUnits, type, description, metada
   }
 };
 
+const beginClanTransaction = async ({ operationId, type, amountUnits, fromUser = null, toUser = null, fromClan = null, toClan = null, description, metadata }) => {
+  if (operationId) {
+    const existing = await PizTransaction.findOne({ operationId });
+    if (existing?.status === "completed") return { transaction: existing, alreadyCompleted: true };
+    if (existing?.status === "pending") throw new Error("Cette opération Piz est déjà en cours.");
+    if (existing) {
+      Object.assign(existing, { type, amountUnits, fromUser, toUser, fromClan, toClan, platformUnits: 0, description: String(description || "Mouvement de trésorerie de clan").slice(0, 240), metadata, status: "pending" });
+      return { transaction: await existing.save(), alreadyCompleted: false };
+    }
+  }
+  return {
+    transaction: await PizTransaction.create({ operationId: operationId || undefined, type, amountUnits, fromUser, toUser, fromClan, toClan, platformUnits: 0, description: String(description || "Mouvement de trésorerie de clan").slice(0, 240), metadata, status: "pending" }),
+    alreadyCompleted: false
+  };
+};
+
+const transferPizToClan = async ({ fromUserId, clanId, amount, type, description, metadata = {}, operationId }) => {
+  const amountUnits = toUnits(amount);
+  if (!fromUserId || !clanId || amountUnits <= 0) throw new Error("Débiteur, clan ou montant Piz invalide.");
+  await ensurePizWallet(fromUserId);
+  const { transaction, alreadyCompleted } = await beginClanTransaction({ operationId, type, amountUnits, fromUser: fromUserId, toClan: clanId, description, metadata });
+  if (alreadyCompleted) return transaction;
+  const debit = await User.updateOne({ _id: fromUserId, pizBalanceUnits: { $gte: amountUnits } }, { $inc: { pizBalanceUnits: -amountUnits } });
+  if (!debit.modifiedCount) {
+    transaction.status = "failed";
+    transaction.description = "Solde Piz insuffisant";
+    await transaction.save();
+    const error = new Error("Solde Piz insuffisant pour cette action.");
+    error.code = "PIZ_INSUFFICIENT_FUNDS";
+    throw error;
+  }
+  let credited = false;
+  try {
+    const Clan = require("../models/Clan");
+    const credit = await Clan.updateOne({ _id: clanId }, { $inc: { treasuryUnits: amountUnits } });
+    if (!credit.matchedCount) throw new Error("Clan introuvable pour créditer la trésorerie.");
+    credited = true;
+    transaction.status = "completed";
+    await transaction.save();
+    return transaction;
+  } catch (error) {
+    await User.updateOne({ _id: fromUserId }, { $inc: { pizBalanceUnits: amountUnits } });
+    if (credited) {
+      const Clan = require("../models/Clan");
+      await Clan.updateOne({ _id: clanId, treasuryUnits: { $gte: amountUnits } }, { $inc: { treasuryUnits: -amountUnits } });
+    }
+    transaction.status = "failed";
+    await transaction.save();
+    throw error;
+  }
+};
+
+const transferPizFromClan = async ({ clanId, toUserId, amount, type, description, metadata = {}, operationId }) => {
+  const amountUnits = toUnits(amount);
+  if (!clanId || !toUserId || amountUnits <= 0) throw new Error("Clan, bénéficiaire ou montant Piz invalide.");
+  await ensurePizWallet(toUserId);
+  const { transaction, alreadyCompleted } = await beginClanTransaction({ operationId, type, amountUnits, toUser: toUserId, fromClan: clanId, description, metadata });
+  if (alreadyCompleted) return transaction;
+  const Clan = require("../models/Clan");
+  const debit = await Clan.updateOne({ _id: clanId, treasuryUnits: { $gte: amountUnits } }, { $inc: { treasuryUnits: -amountUnits } });
+  if (!debit.modifiedCount) {
+    transaction.status = "failed";
+    transaction.description = "Trésorerie du clan insuffisante";
+    await transaction.save();
+    const error = new Error("La trésorerie du clan ne contient pas assez de Piz.");
+    error.code = "CLAN_INSUFFICIENT_FUNDS";
+    throw error;
+  }
+  let credited = false;
+  try {
+    const credit = await User.updateOne({ _id: toUserId }, { $inc: { pizBalanceUnits: amountUnits } });
+    if (!credit.matchedCount) throw new Error("Bénéficiaire introuvable pour le versement de clan.");
+    credited = true;
+    transaction.status = "completed";
+    await transaction.save();
+    return transaction;
+  } catch (error) {
+    if (credited) await User.updateOne({ _id: toUserId }, { $inc: { pizBalanceUnits: -amountUnits } });
+    await Clan.updateOne({ _id: clanId }, { $inc: { treasuryUnits: amountUnits } });
+    transaction.status = "failed";
+    await transaction.save();
+    throw error;
+  }
+};
+
 const ensureAllPizWallets = async () => {
   const cursor = User.find({ pizWalletInitializedAt: null }).select("_id").lean().cursor();
   for await (const user of cursor) {
@@ -264,5 +349,7 @@ module.exports = {
   ensurePizWallet,
   ensureAllPizWallets,
   transferPiz,
-  payFromReserve
+  payFromReserve,
+  transferPizToClan,
+  transferPizFromClan
 };

@@ -17,6 +17,7 @@ const listClans = async (req, res) => {
       .populate("members", "username avatar")
       .populate("administrators", "username avatar")
       .populate("moderators", "username avatar")
+      .populate("rankAssignments.user", "username avatar")
       .sort({ updatedAt: -1 });
     const result = await Promise.all(clans.map(async (clan) => {
       const latest = await ClanMessage.findOne({ clan: clan._id }).sort({ createdAt: -1 }).select("createdAt signed recipients");
@@ -28,6 +29,12 @@ const listClans = async (req, res) => {
         members: clan.members,
         administrators: clan.administrators,
         moderators: clan.moderators,
+        rankAssignments: clan.rankAssignments,
+        membershipPolicy: clan.membershipPolicy,
+        strategy: clan.strategy,
+        policyText: clan.policyText,
+        contributionCaps: clan.contributionCaps,
+        treasuryPiz: (Number(clan.treasuryUnits) || 0) / 1000000,
         updatedAt: clan.updatedAt,
         lastActivity: latest?.createdAt || clan.updatedAt,
         memberCount: clan.members.length
@@ -79,7 +86,7 @@ const addClanMembers = async (req, res) => {
     const clan = await Clan.findById(req.params.clanId);
     if (!clan) return res.status(404).json({ message: "Clan introuvable." });
     const inviterId = String(req.user.userId);
-    const canInvite = idOf(clan.owner) === inviterId || clan.administrators.some((id) => idOf(id) === inviterId) || clan.moderators.some((id) => idOf(id) === inviterId);
+    const canInvite = idOf(clan.owner) === inviterId || clan.administrators.some((id) => idOf(id) === inviterId) || clan.moderators.some((id) => idOf(id) === inviterId) || (clan.rankAssignments || []).some((item) => idOf(item.user) === inviterId && ["subchief", "envoy"].includes(item.role));
     if (!canInvite) return res.status(403).json({ message: "Seuls le chef, les administrateurs et les modérateurs peuvent inviter des membres." });
     const memberIds = [...new Set((Array.isArray(req.body.memberIds) ? req.body.memberIds : []).map(String))]
       .filter((id) => !isMember(clan, id));
