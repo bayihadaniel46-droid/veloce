@@ -643,35 +643,29 @@ function PostCard({
         {/* ================================= */}
         {/* CERCLE POUR LES POSTS DES AUTRES */}
         {/* ================================= */}
-        {!isOwnPost && (
-
-          <button
-            type="button"
-            className={`post-more-circle ${getVerificationClass()}`}
-            aria-label="Vérifier cette publication"
-            title={
-              verifying
-                ? "Vérification en cours..."
-                : verification?.status === "true"
-                  ? "Information confirmée"
-                  : verification?.status === "false"
-                    ? "Information contredite"
-                    : verification?.status === "unverified"
-                      ? "Information non vérifiable"
-                      : "Vérifier cette publication"
-            }
-            onClick={handleVerifyPost}
-          >
-
-            {verifying ? (
-              <span className="verification-spinner" />
-            ) : (
-              getVerificationIcon()
-            )}
-
-          </button>
-
-        )}
+        <button
+          type="button"
+          className={`post-more-circle ${getVerificationClass()}`}
+          aria-label="Vérifier cette publication"
+          title={
+            verifying
+              ? "Vérification en cours..."
+              : verification?.status === "true"
+                ? "Information confirmée"
+                : verification?.status === "false"
+                  ? "Information contredite"
+                  : verification?.status === "unverified"
+                    ? "Information non vérifiable"
+                    : "Vérifier cette publication"
+          }
+          onClick={handleVerifyPost}
+        >
+          {verifying ? (
+            <span className="verification-spinner" />
+          ) : (
+            getVerificationIcon()
+          )}
+        </button>
 
       </div>
       {/* ==================================== */}
