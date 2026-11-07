@@ -7,7 +7,7 @@
 .video-feed-tool-actions button.active{border-color:#656ddb;background:#eff0ff;color:#525bc8}
 .video-feed-status{position:sticky;top:63px;z-index:2;width:max-content;max-width:100%;margin:8px auto;padding:8px 12px;border-radius:999px;background:#202638;color:#fff;font-size:11px}
 .video-feed-item{flex-direction:column;justify-content:center;gap:10px}
-.post-video-overlay-actions{position:absolute;top:12px;right:12px;z-index:5}
+.post-video-overlay-actions{position:absolute;top:12px;left:12px;right:auto;z-index:5}
 .video-favorite-overlay{display:grid;place-items:center;width:42px;height:42px;border:1px solid #ffffffb8;border-radius:50%;background:#141927b8;color:#fff;font-size:25px;line-height:1;backdrop-filter:blur(10px);cursor:pointer;box-shadow:0 5px 18px #0005}
 .video-favorite-overlay.is-favorite{border-color:#ffe29a;background:#fffcf0e8;color:#a87509}
 .video-feed-empty{display:grid;justify-items:center;gap:8px;margin:20px 0;padding:30px 16px;border:1px dashed #dfe3ee;border-radius:19px;background:#fbfbff;color:#515c76;text-align:center}
