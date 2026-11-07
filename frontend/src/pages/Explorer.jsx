@@ -14,7 +14,7 @@ import {
 } from "../services/userService";
 
 
-function Explorer({ unreadNotifications = 0, onUnreadCountChange }) {
+function Explorer({ unreadNotifications = 0, onUnreadCountChange, onOpenGames }) {
   const { token } =
     useAuth();
 
@@ -170,8 +170,8 @@ function Explorer({ unreadNotifications = 0, onUnreadCountChange }) {
           </p>
         </div>
 
-        <button type="button" className="explorer-games-button" disabled aria-label="Jeux, bientôt disponible" title="Bientôt disponible">
-          <span aria-hidden="true">🎮</span><strong>Jeux</strong><small>À venir</small>
+        <button type="button" className="explorer-games-button" onClick={onOpenGames} aria-label="Ouvrir l’espace Jeux" title="Ouvrir l’espace Jeux">
+          <span aria-hidden="true">🎮</span><strong>Jeux</strong><small>Découvrir</small>
         </button>
 
         <button type="button" className="explorer-notification-button" onClick={() => setShowNotifications((visible) => !visible)} aria-label={unreadNotifications ? `Notifications, ${unreadNotifications} non lues` : "Notifications"} aria-pressed={showNotifications}>

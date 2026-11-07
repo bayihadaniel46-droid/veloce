@@ -17,6 +17,8 @@ import PublicProfile from "./PublicProfile";
 import Assistant from "./Assistant";
 import Market from "./Market";
 import Carrefour from "./Carrefour";
+import Games from "./Games";
+import "./MessagesEmojiFavorites.css";
 import "../home-enhancements.css";
 
 import FloatingButton from "../components/FloatingButton";
@@ -49,6 +51,7 @@ function Home() {
       const params = new URLSearchParams(window.location.search);
       if (params.has("profile")) return "user-profile";
       if (params.has("contact") || params.get("page") === "messages") return "messages";
+      if (params.has("post")) return "home";
       try {
         const userId = user?._id || user?.id || "account";
         const saved = JSON.parse(localStorage.getItem(`veloce_settings_${userId}`) || "{}");
@@ -68,7 +71,7 @@ function Home() {
   const [messageComposerActive, setMessageComposerActive] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
-  const [feedType, setFeedType] = useState("posts");
+  const [feedType, setFeedType] = useState(() => new URLSearchParams(window.location.search).has("post") ? "videos" : "posts");
   const [refreshingFeed, setRefreshingFeed] = useState(false);
   const feedTouchStart = useRef(null);
   const lastUnreadMessageCount = useRef(null);
@@ -151,6 +154,13 @@ function Home() {
   useEffect(() => {
     loadPosts();
   }, [loadPosts]);
+
+  useEffect(() => {
+    const postId = new URLSearchParams(window.location.search).get("post");
+    if (!postId || !posts.some((post) => String(post._id) === postId && post.attachments?.some((file) => file.mimetype?.startsWith("video/")))) return;
+    const frame = window.requestAnimationFrame(() => document.getElementById(`video-post-${postId}`)?.scrollIntoView({ block: "start", behavior: "smooth" }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [posts]);
 
   useEffect(() => {
     try {
@@ -469,7 +479,7 @@ function Home() {
 
 
         return feedType === "videos" ? (
-          <VideoFeed posts={visiblePosts} onLike={handleLike} />
+          <VideoFeed posts={visiblePosts} onLike={handleLike} viewerId={user?._id || user?.id || "guest"} />
         ) : (
           <section className="home-feed">
             {[...authorStacks.values()].map((stack) => (
@@ -496,7 +506,10 @@ function Home() {
 
 
       case "explorer":
-        return <Explorer unreadNotifications={unreadNotifications} onUnreadCountChange={setUnreadNotifications} />;
+        return <Explorer unreadNotifications={unreadNotifications} onUnreadCountChange={setUnreadNotifications} onOpenGames={() => setCurrentPage("games")} />;
+
+      case "games":
+        return <Games onBack={() => setCurrentPage("explorer")} />;
 
 
       case "messages":

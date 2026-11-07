@@ -27,6 +27,7 @@ import { playUiSound } from "../services/soundService";
 import CommunityRoom from "../components/CommunityRoom";
 import "./Messages.css";
 import "./MessagesGroups.css";
+import "./Messages.css";
 
 const coreEmojiLibrary = [
   { words: ["amour", "aimer", "je t'aime", "jtm"], emoji: "❤️", label: "Amour" },
@@ -75,7 +76,7 @@ const EMOJI_LIBRARY = [
     ["📱", "Téléphone", "portable", "appeler", "mobile"], ["💻", "Ordinateur", "pc", "ordinateur", "travail"], ["⌚", "Montre", "heure", "temps"], ["🔋", "Batterie", "charge", "énergie"], ["💡", "Idée", "ampoule", "solution", "inspiration"], ["🔑", "Clé", "clé", "ouvrir"], ["🔒", "Verrouillé", "secret", "sécurité"], ["🛠️", "Réparer", "outil", "travaux"], ["⚙️", "Réglages", "paramètres", "configuration"], ["📦", "Colis", "paquet", "livraison"], ["🎁", "Cadeau", "surprise", "offrir"], ["🛍️", "Shopping", "acheter", "magasin"], ["💳", "Paiement", "carte bancaire", "payer"], ["💸", "Dépense", "argent qui part", "coût"], ["💎", "Précieux", "diamant", "valeur"], ["🪙", "Pièce", "monnaie", "rune"], ["📈", "En hausse", "progrès", "croissance"], ["📉", "En baisse", "chute", "diminution"], ["📅", "Calendrier", "date", "rendez-vous"], ["⏰", "Réveil", "alarme", "bientôt"], ["📝", "Note", "liste", "écrire"], ["📍", "Position", "localisation", "lieu"], ["🔔", "Notification", "alerte", "sonnerie"], ["🔕", "Silence", "pas de notification", "muet"], ["❤️", "Cœur rouge", "amour", "passion"], ["💚", "Cœur vert", "nature", "amitié"], ["💙", "Cœur bleu", "confiance", "paix"], ["💜", "Cœur violet", "tendresse", "affection"], ["🖤", "Cœur noir", "tristesse", "style"], ["💯", "Cent pour cent", "totalement", "parfait"], ["♾️", "Infini", "toujours", "sans limite"], ["❓", "Question", "pourquoi", "comment"], ["❗", "Important", "attention", "urgent"], ["✅", "Validé", "fait", "terminé", "oui"], ["❌", "Annulé", "non", "erreur"], ["♻️", "Recycler", "écologie", "réutiliser"], ["☮️", "Paix", "calme", "sans conflit"], ["🆘", "Aide", "urgence", "au secours"],
   ]),
 ];
-const EMOJI_CATEGORIES = ["Tout", "Essentiels", "Émotions", "Personnes", "Animaux & nature", "Repas & boissons", "Voyages & lieux", "Activités & loisirs", "Objets & symboles"];
+const EMOJI_CATEGORIES = ["Tout", "Favoris", "Essentiels", "Émotions", "Personnes", "Animaux & nature", "Repas & boissons", "Voyages & lieux", "Activités & loisirs", "Objets & symboles"];
 function contactSettingsFor(person) {
   try { return JSON.parse(localStorage.getItem(`veloce_contact_settings_${person?._id || person?.id}`) || "{}"); }
   catch { return {}; }
@@ -136,6 +137,11 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
   const [showEmojiLibrary, setShowEmojiLibrary] = useState(false);
   const [emojiSearch, setEmojiSearch] = useState("");
   const [emojiCategory, setEmojiCategory] = useState("Tout");
+  const emojiFavoritesKey = `veloce_emoji_favorites_${user?.id || user?._id || "guest"}`;
+  const [favoriteEmojis, setFavoriteEmojis] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(emojiFavoritesKey) || "[]"); }
+    catch { return []; }
+  });
   const [showEmojiKeyboard, setShowEmojiKeyboard] = useState(false);
   const [emojiKeyboardMode, setEmojiKeyboardMode] = useState("emoji");
   const [fullKeyboardUntil, setFullKeyboardUntil] = useState(null);
@@ -247,10 +253,16 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
 
   const matchingEmojis = EMOJI_LIBRARY.filter((entry) => {
     const query = emojiSearch.trim().toLocaleLowerCase("fr");
-    const matchesCategory = emojiCategory === "Tout" || entry.category === emojiCategory;
+    const matchesCategory = emojiCategory === "Tout"
+      || (emojiCategory === "Favoris" ? favoriteEmojis.includes(entry.emoji) : entry.category === emojiCategory);
     const matchesSearch = !query || entry.words.some((word) => word.toLocaleLowerCase("fr").includes(query)) || entry.label.toLocaleLowerCase("fr").includes(query);
     return matchesCategory && matchesSearch;
   });
+
+  useEffect(() => {
+    try { localStorage.setItem(emojiFavoritesKey, JSON.stringify(favoriteEmojis)); }
+    catch { /* Les favoris de la bibliothèque restent utilisables si le stockage local est indisponible. */ }
+  }, [emojiFavoritesKey, favoriteEmojis]);
 
   const openEmojiLibrary = () => {
     setEmojiSearch("");
@@ -1343,7 +1355,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
       {incomingCall && !audioCall && <IncomingCallStage call={incomingCall} self={user} error={callError} onAccept={() => void acceptCall()} onDecline={() => void declineCall()} />}
       {!audioCall && !incomingCall && callError && <div className="call-error-toast" role="alert"><span>{callError}</span><button type="button" onClick={() => setCallError("")}>×</button></div>}
       {showCreateClan && <ClanCreateDialog token={token} onClose={() => setShowCreateClan(false)} onCreated={handleClanCreated} />}
-      {showEmojiLibrary && <div className="veloce-emoji-library-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowEmojiLibrary(false); }}><section className="veloce-emoji-library" role="dialog" aria-modal="true" aria-labelledby="emoji-library-title"><header><div><span>PLUS DE 200 IDÉES À EXPLORER</span><h2 id="emoji-library-title">Bibliothèque d’emojis</h2></div><button type="button" onClick={() => setShowEmojiLibrary(false)} aria-label="Fermer">×</button></header><label className="veloce-emoji-search">Trouver une idée<input autoFocus value={emojiSearch} onChange={(event) => setEmojiSearch(event.target.value)} placeholder="Écris un mot : amour, merci, rire…" /></label><div className="emoji-library-categories" role="tablist" aria-label="Catégories d’emojis">{EMOJI_CATEGORIES.map((category) => <button key={category} type="button" role="tab" aria-selected={emojiCategory === category} className={emojiCategory === category ? "active" : ""} onClick={() => setEmojiCategory(category)}>{category}</button>)}</div><div className="veloce-emoji-library-results">{matchingEmojis.map((entry) => <button type="button" key={`${entry.category}-${entry.label}`} onClick={() => { addComposerText(entry.emoji); setShowEmojiLibrary(false); }}><span>{entry.emoji}</span><strong>{entry.label}</strong><small>{entry.words.slice(0, 3).join(" · ")}</small></button>)}{matchingEmojis.length === 0 && <p>Aucun emoji trouvé. Essaie un autre mot.</p>}</div></section></div>}
+      {showEmojiLibrary && <div className="veloce-emoji-library-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowEmojiLibrary(false); }}><section className="veloce-emoji-library" role="dialog" aria-modal="true" aria-labelledby="emoji-library-title"><header><div><span>PLUS DE 200 IDÉES À EXPLORER</span><h2 id="emoji-library-title">Bibliothèque d’emojis</h2></div><button type="button" onClick={() => setShowEmojiLibrary(false)} aria-label="Fermer">×</button></header><label className="veloce-emoji-search">Trouver une idée<input autoFocus value={emojiSearch} onChange={(event) => setEmojiSearch(event.target.value)} placeholder="Écris un mot : amour, merci, rire…" /></label><div className="emoji-library-categories" role="tablist" aria-label="Catégories d’emojis">{EMOJI_CATEGORIES.map((category) => <button key={category} type="button" role="tab" aria-selected={emojiCategory === category} className={emojiCategory === category ? "active" : ""} onClick={() => setEmojiCategory(category)}>{category}</button>)}</div><div className="veloce-emoji-library-results">{matchingEmojis.map((entry) => <article className="emoji-library-result" key={`${entry.category}-${entry.label}`}><button type="button" className="emoji-library-insert" aria-label={`Insérer ${entry.label}`} onClick={() => { addComposerText(entry.emoji); setShowEmojiLibrary(false); }}><span>{entry.emoji}</span><strong>{entry.label}</strong><small>{entry.words.slice(0, 3).join(" · ")}</small></button><button type="button" className={`emoji-library-favorite${favoriteEmojis.includes(entry.emoji) ? " active" : ""}`} aria-label={favoriteEmojis.includes(entry.emoji) ? `Retirer ${entry.label} des favoris` : `Ajouter ${entry.label} aux favoris`} aria-pressed={favoriteEmojis.includes(entry.emoji)} onClick={() => setFavoriteEmojis((current) => current.includes(entry.emoji) ? current.filter((emoji) => emoji !== entry.emoji) : [...current, entry.emoji])}>★</button></article>)}{matchingEmojis.length === 0 && <p>Aucun emoji trouvé. Essaie un autre mot.</p>}</div></section></div>}
 
     </section>
   );

@@ -1,0 +1,9 @@
+.veloce-emoji-library-results>.emoji-library-result{display:grid;grid-template-columns:minmax(0,1fr) 34px;align-items:stretch;gap:5px;min-width:0;padding:5px;border:1px solid #e8eaf3;border-radius:14px;background:linear-gradient(145deg,#fff,#f8f8ff)}
+.emoji-library-insert{display:grid;grid-template-columns:42px minmax(0,1fr);grid-template-rows:auto auto;gap:2px 7px;align-content:center;min-width:0;padding:7px;border:0;border-radius:10px;background:transparent;color:#333b52;text-align:left;cursor:pointer}
+.emoji-library-insert:hover{background:#f0f1ff}
+.emoji-library-insert>span{grid-row:1/3;align-self:center;font-size:26px;text-align:center}
+.emoji-library-insert>strong{overflow:hidden;font-size:11px;text-overflow:ellipsis;white-space:nowrap}
+.emoji-library-insert>small{overflow:hidden;color:#8991a3;font-size:9px;text-overflow:ellipsis;white-space:nowrap}
+.emoji-library-favorite{align-self:center;width:31px;height:31px;border:1px solid #e5e7ef;border-radius:10px;background:#fff;color:#a5aaba;font-size:15px;cursor:pointer}
+.emoji-library-favorite.active{border-color:#f0d47e;background:#fff8e4;color:#d29a0b}
+@media(max-width:600px){.veloce-emoji-library-results>.emoji-library-result{grid-template-columns:minmax(0,1fr) 31px;padding:3px}.emoji-library-insert{grid-template-columns:34px minmax(0,1fr);gap:2px 5px;padding:6px}.emoji-library-insert>span{font-size:22px}.emoji-library-insert>strong{font-size:10px}.emoji-library-favorite{width:29px;height:29px}}

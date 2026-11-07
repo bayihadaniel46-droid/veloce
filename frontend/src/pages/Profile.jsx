@@ -7,6 +7,8 @@ import {
   useAuth
 } from "../context/authContext";
 import { API_BASE_URL, API_ORIGIN } from "../config";
+import { getPizTransactions } from "../services/userService";
+import "./PizWallet.css";
 import "../piz-link.css";
 
 
@@ -423,6 +425,7 @@ function Profile({ onOpenSettings }) {
         <form className="piz-link-code-panel" onSubmit={connectPizAccount}><div className="piz-link-code-heading"><span className="piz-code-lock">◈</span><div><strong>Connecter le portefeuille PIZ</strong><small>Saisis l’ID personnel et le mot de passe de ton compte PIZ.</small></div></div><div className="piz-link-code-value"><input aria-label="ID personnel PIZ" value={pizAccountId} onChange={(event) => setPizAccountId(event.target.value)} placeholder="ID PIZ à 24 caractères" maxLength={24} autoComplete="off" required/><input aria-label="Mot de passe PIZ" type="password" value={pizPassword} onChange={(event) => setPizPassword(event.target.value)} placeholder="Mot de passe PIZ" autoComplete="current-password" required/><button type="submit" disabled={pizLinkLoading}>{pizLinkLoading ? "Synchronisation…" : "Connecter et synchroniser"}</button></div><p className="piz-link-code-hint">Le mot de passe confirme que tu contrôles ce portefeuille. Veloce ne l’enregistre pas; PIZ vérifie la liaison côté serveur.</p></form>
       </header>
       <div className="piz-actions"><article><span>↙</span><div><strong>Dépôt</strong><small>Fonction bientôt disponible</small></div><button disabled title="Cette fonction sera ajoutée ultérieurement">Bientôt</button></article><article><span>↗</span><div><strong>Retrait</strong><small>Fonction bientôt disponible</small></div><button disabled title="Cette fonction sera ajoutée ultérieurement">Bientôt</button></article></div>
+      <PizTransactionHistory token={token} />
       <section className="piz-section"><div className="piz-section-title"><div><span>COMMENT LES POINTS ÉVOLUENT</span><h2>Ta participation</h2></div><span className="piz-live">● Mise à jour régulière</span></div><div className="piz-stats-grid"><article><span>⏱</span><strong>{hours} h {minutes} min</strong><small>Temps actif dans Veloce · 0,005 PIZ / heure</small></article><article><span>✍</span><strong>{stats.postsCount || 0}</strong><small>Publications · 0,01 PIZ chacune</small></article><article><span>♡</span><strong>{stats.likesCount || 0} · {stats.commentsCount || 0}</strong><small>J’aime · 0,0002 PIZ · commentaires · 0,002 PIZ</small></article><article><span>✉</span><strong>{stats.messagesCount || 0}</strong><small>Messages envoyés · 0,0002 PIZ chacun</small></article><article><span>♧</span><strong>{stats.clansManagedCount || 0}</strong><small>Clan créé · 1 PIZ gagné, après paiement de 0,80 PIZ</small></article><article><span>＋</span><strong>{stats.referralsCount || 0}</strong><small>Inscription par ton lien · 0,1 PIZ chacun</small></article></div><p className="piz-rules-note">Les points sont calculés selon l’activité et les clans coûtent 0,80 PIZ à créer. La synchronisation PIZ garde le solde déjà enregistré si tu relies à nouveau ton compte.</p></section>
       <section className="piz-section piz-invite"><div><span>FAIS GRANDIR VELOCE</span><h2>Invite tes proches</h2><p>Le lien ouvre directement la création d’un nouveau compte. Le nouvel utilisateur choisit son nom, son adresse e-mail et son mot de passe; son compte reste indépendant du tien.</p></div><div className="piz-link-row"><input readOnly value={inviteLink} aria-label="Lien d’invitation personnel" /><button onClick={copyInvite}>{inviteCopied ? "Lien copié ✓" : "Copier le lien"}</button></div><small>Code personnel : {stats.referralCode || "Préparation…"} · récompense à l’inscription : 0,1 PIZ</small></section>
     </section>;
@@ -931,5 +934,56 @@ function Profile({ onOpenSettings }) {
   );
 }
 
+
+function PizTransactionHistory({ token }) {
+  const [entries, setEntries] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [filter, setFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true); setError("");
+    getPizTransactions({ token, page })
+      .then((data) => {
+        if (!active) return;
+        setEntries((current) => page === 1 ? data.entries || [] : [...current, ...(data.entries || [])]);
+        setHasMore(Boolean(data.hasMore));
+      })
+      .catch((requestError) => { if (active) setError(requestError.message || "Impossible de charger l’historique Piz."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [token, page]);
+
+  const visibleEntries = entries.filter((entry) => filter === "all" || entry.direction === filter);
+  const typeLabel = (type) => ({
+    "opening-grant": "Dotation initiale",
+    "piz-purchase": "Achat de Piz",
+    "full-keyboard": "Clavier complet",
+    "follow": "Abonnement",
+    "message": "Action de messagerie",
+    "community-guide": "Guide du clan serveur",
+    "carrefour-reveal": "Révélation Carrefour",
+  }[type] || String(type || "Mouvement").replaceAll("-", " "));
+
+  return <section className="piz-section piz-transaction-history">
+    <div className="piz-section-title"><div><span>TRANSPARENCE DU PORTEFEUILLE</span><h2>Historique des mouvements</h2></div><span className="piz-history-count">{entries.length} affiché{entries.length === 1 ? "" : "s"}</span></div>
+    <p className="piz-history-intro">Les achats, transferts et dépenses enregistrés apparaissent ici. Les récompenses calculées depuis ton activité restent visibles dans les compteurs de participation.</p>
+    <div className="piz-history-filters" role="group" aria-label="Filtrer les mouvements Piz">
+      {[ ["all", "Tout"], ["incoming", "Entrées"], ["outgoing", "Sorties"] ].map(([value, label]) => <button type="button" key={value} className={filter === value ? "active" : ""} aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}
+    </div>
+    {error && <p className="piz-history-error" role="alert">{error}</p>}
+    {loading && entries.length === 0 ? <p className="piz-history-empty">Chargement de tes mouvements…</p> : visibleEntries.length === 0 ? <p className="piz-history-empty">{entries.length ? "Aucun mouvement dans ce filtre." : "Aucun mouvement enregistré pour le moment."}</p> : <div className="piz-history-list">
+      {visibleEntries.map((entry) => <article className="piz-history-row" key={entry.id}>
+        <span className={`piz-history-direction ${entry.direction}`}>{entry.direction === "incoming" ? "↓" : entry.direction === "outgoing" ? "↑" : "·"}</span>
+        <div className="piz-history-copy"><strong>{entry.description || typeLabel(entry.type)}</strong><small>{typeLabel(entry.type)}{entry.counterparty ? ` · ${entry.direction === "outgoing" ? "À" : "De"} ${entry.counterparty}` : ""}</small><time>{entry.createdAt ? new Date(entry.createdAt).toLocaleString("fr-FR") : "Date indisponible"}</time>{entry.fee > 0 && <small>Commission : {entry.fee.toLocaleString("fr-FR", { maximumFractionDigits: 4 })} Piz</small>}</div>
+        <div className="piz-history-amount"><strong className={entry.direction}>{entry.direction === "incoming" ? "+" : entry.direction === "outgoing" ? "−" : ""}{Number(entry.amount || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</strong><small>Piz · {entry.status === "completed" ? "Confirmé" : "Échoué"}</small></div>
+      </article>)}
+    </div>}
+    {hasMore && <button type="button" className="piz-history-more" onClick={() => setPage((current) => current + 1)} disabled={loading}>{loading ? "Chargement…" : "Charger les mouvements suivants"}</button>}
+  </section>;
+}
 
 export default Profile;

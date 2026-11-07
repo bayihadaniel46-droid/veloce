@@ -13,6 +13,8 @@ const {
 
 const authMiddleware =
   require("../middleware/authMiddleware");
+const { getMyPizTransactions } = require("../controllers/pizController");
+const { listBlockedUsers, setUserBlocked, removeUserBlock, reportUser } = require("../controllers/safetyController");
 
 const router = express.Router();
 
@@ -36,6 +38,12 @@ router.get(
   authMiddleware,
   getUserStats
 );
+
+router.get("/piz-transactions", authMiddleware, getMyPizTransactions);
+router.get("/blocked", authMiddleware, listBlockedUsers);
+router.post("/:userId/block", authMiddleware, setUserBlocked);
+router.delete("/:userId/block", authMiddleware, removeUserBlock);
+router.post("/:userId/report", authMiddleware, reportUser);
 
 router.post("/heartbeat", authMiddleware, recordActivityHeartbeat);
 

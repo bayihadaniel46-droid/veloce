@@ -5,10 +5,12 @@ const ClanMessage = require("../models/ClanMessage");
 const Clan = require("../models/Clan");
 const { uploadMessageFiles, PRIVATE_BUCKET_NAME } = require("../utils/messageAttachments");
 const { sendPushToUser } = require("../utils/webPush");
+const { getBlockedContactIds, isContactBlocked } = require("../utils/contactPolicy");
 
 const getUnreadCount = async (req, res) => {
   try {
-    const count = await Message.countDocuments({ recipient: req.user.userId, read: false, deletedFor: { $ne: req.user.userId } });
+    const blockedContactIds = await getBlockedContactIds(req.user.userId);
+    const count = await Message.countDocuments({ recipient: req.user.userId, sender: { $nin: [...blockedContactIds] }, read: false, deletedFor: { $ne: req.user.userId } });
     return res.json({ count });
   } catch (error) {
     console.error("Erreur compteur messages :", error);
@@ -54,6 +56,7 @@ const getConversations = async (
         });
 
     const conversations = new Map();
+    const blockedContactIds = await getBlockedContactIds(userId);
 
     for (const message of messages) {
       // A populated reference is null when a participant account was deleted.
@@ -68,6 +71,8 @@ const getConversations = async (
 
       const otherId =
         otherUser._id.toString();
+
+      if (blockedContactIds.has(otherId)) continue;
 
       if (!conversations.has(otherId)) {
         conversations.set(
@@ -127,6 +132,10 @@ const getMessages = async (
 
     const otherUserId =
       req.params.userId;
+
+    if (await isContactBlocked(userId, otherUserId)) {
+      return res.status(403).json({ message: "Cette conversation est indisponible à cause d’un blocage." });
+    }
 
     const messages =
       await Message.find({
@@ -238,6 +247,10 @@ const sendMessage = async (
         message:
           "Tu ne peux pas t'envoyer un message."
       });
+    }
+
+    if (await isContactBlocked(sender, recipient)) {
+      return res.status(403).json({ message: "Ce message ne peut pas être envoyé à cause d’un blocage." });
     }
 
     const attachments = req.files?.length ? await uploadMessageFiles(req.files, sender) : [];

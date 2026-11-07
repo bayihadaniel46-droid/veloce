@@ -1,0 +1,23 @@
+.piz-history-intro{margin:9px 0 13px;color:#8d96aa;font-size:11px;line-height:1.55}
+.piz-history-count{color:#8c93a5;font-size:10px;white-space:nowrap}
+.piz-history-filters{display:flex;gap:6px;margin:0 0 10px}
+.piz-history-filters button{min-height:32px;padding:0 11px;border:1px solid #e1e4ed;border-radius:99px;background:#fff;color:#6d778b;font-size:10px;font-weight:750;cursor:pointer}
+.piz-history-filters button.active{border-color:#666bd3;background:#666bd3;color:#fff}
+.piz-history-list{display:grid;gap:7px}
+.piz-history-row{display:flex;align-items:center;gap:11px;min-width:0;padding:12px;border:1px solid #e8eaf1;border-radius:13px;background:linear-gradient(120deg,#fff,#fafaff)}
+.piz-history-direction{width:34px;height:34px;display:grid;place-items:center;flex:0 0 34px;border-radius:11px;background:#f1f2f8;color:#6f7890;font-size:18px;font-weight:800}
+.piz-history-direction.incoming{background:#e9f8f1;color:#23866a}
+.piz-history-direction.outgoing{background:#fff0f1;color:#bd5363}
+.piz-history-copy{display:grid;gap:3px;min-width:0;flex:1}
+.piz-history-copy strong{overflow:hidden;color:#2b3448;font-size:12px;text-overflow:ellipsis;white-space:nowrap}
+.piz-history-copy small,.piz-history-copy time{color:#8790a2;font-size:9px;line-height:1.4}
+.piz-history-amount{display:grid;justify-items:end;gap:4px;flex:0 0 auto}
+.piz-history-amount strong{color:#434d62;font-size:13px;white-space:nowrap}
+.piz-history-amount strong.incoming{color:#208668}
+.piz-history-amount strong.outgoing{color:#bd5363}
+.piz-history-amount small{color:#8b93a3;font-size:8px;white-space:nowrap}
+.piz-history-empty,.piz-history-error{margin:0;padding:16px;border:1px dashed #e0e3ed;border-radius:12px;color:#7f889a;font-size:11px;text-align:center}
+.piz-history-error{border-color:#eeced2;background:#fff7f8;color:#a74252}
+.piz-history-more{width:100%;min-height:39px;margin-top:10px;border:1px solid #dedff2;border-radius:11px;background:#f7f7ff;color:#625fc1;font-size:11px;font-weight:750;cursor:pointer}
+.piz-history-more:disabled{opacity:.55;cursor:wait}
+@media(max-width:600px){.piz-history-row{align-items:flex-start;gap:8px;padding:10px}.piz-history-direction{width:30px;height:30px;flex-basis:30px}.piz-history-copy strong{font-size:11px}.piz-history-amount strong{font-size:11px}.piz-history-copy small,.piz-history-copy time{font-size:8px}}

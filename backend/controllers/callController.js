@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const CallSession = require("../models/CallSession");
 const User = require("../models/User");
+const { isContactBlocked } = require("../utils/contactPolicy");
 
 const participantProjection = "username avatar bio";
 
@@ -40,6 +41,7 @@ const startCall = async (req, res) => {
     }
     const recipient = await User.findById(recipientId).select("_id");
     if (!recipient) return res.status(404).json({ message: "Ce compte n’existe plus." });
+    if (await isContactBlocked(req.user.userId, recipientId)) return res.status(403).json({ message: "Cet appel est indisponible à cause d’un blocage." });
 
     const active = await CallSession.findOne({
       status: { $in: ["ringing", "active"] },

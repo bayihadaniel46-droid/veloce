@@ -33,6 +33,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: ""
     },
+    blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", default: [] }],
     referralCode: { type: String, unique: true, sparse: true, index: true },
     referredBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
     activeSeconds: { type: Number, default: 0, min: 0 },
