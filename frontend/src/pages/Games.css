@@ -1,23 +1,36 @@
-.games-page{width:min(100%,1020px);margin:0 auto;padding:28px 24px 60px;color:#222a3b}
-.games-back{min-height:40px;padding:0 13px;border:1px solid #e2e5ef;border-radius:11px;background:#fff;color:#555f78;font-weight:700;cursor:pointer}
-.games-hero{display:flex;align-items:center;gap:20px;margin:20px 0;padding:28px;border:1px solid #dedff8;border-radius:24px;background:radial-gradient(circle at 90% 0,#f2bce733,transparent 32%),linear-gradient(125deg,#f1f0ff,#eef9f7 60%,#fff5fb);box-shadow:0 16px 40px #333b6610}
-.games-hero-icon{width:74px;height:74px;display:grid;place-items:center;flex:0 0 74px;border:1px solid #ded8f9;border-radius:23px;background:#ffffffc9;font-size:38px;box-shadow:0 10px 24px #7262bd20}
-.games-eyebrow,.games-section-heading>div>span{color:#7268ce;font-size:10px;font-weight:850;letter-spacing:.14em}
-.games-hero h1{margin:5px 0;font-size:34px;letter-spacing:-.04em}
+.games-page{width:min(100%,1060px);margin:0 auto;padding:28px 24px 60px;color:#222a3b}
+.games-back{min-height:40px;padding:0 13px;border:1px solid #e2e5ef;border-radius:11px;background:#fff;color:#555f78;font-weight:700;cursor:pointer;transition:transform .18s ease,border-color .18s ease}
+.games-back:hover{transform:translateX(-2px);border-color:#aaa9ee}
+.games-hero{display:flex;align-items:center;gap:20px;margin:20px 0;padding:27px;border:1px solid #dedff8;border-radius:24px;background:radial-gradient(circle at 90% 0,#f2bce733,transparent 32%),linear-gradient(125deg,#f1f0ff,#eef9f7 60%,#fff5fb);box-shadow:0 16px 40px #333b6610}
+.games-hero-icon{display:grid;width:70px;height:70px;place-items:center;flex:0 0 70px;border:1px solid #ded8f9;border-radius:22px;background:#ffffffc9;font-size:36px;box-shadow:0 10px 24px #7262bd20}
+.games-eyebrow{color:#7268ce;font-size:10px;font-weight:850;letter-spacing:.14em}
+.games-hero h1{margin:5px 0;font-size:33px;letter-spacing:-.04em}
 .games-hero p{margin:0;color:#69748a;font-size:14px;line-height:1.55}
-.games-library{padding:22px;border:1px solid #e5e8f0;border-radius:21px;background:#fff;box-shadow:0 10px 28px #2029440a}
-.games-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.games-section-heading h2{margin:5px 0 0;font-size:20px}
-.games-count{padding:6px 10px;border:1px solid #e6e6f7;border-radius:99px;background:#f5f4ff;color:#7770c9;font-size:11px;font-weight:750}
-.games-empty-state{min-height:245px;display:grid;justify-items:center;align-content:center;gap:9px;margin-top:17px;padding:24px;border:1px dashed #d9dcec;border-radius:17px;background:linear-gradient(145deg,#fafaff,#f6fbfb);text-align:center}
-.games-empty-state>span{width:60px;height:60px;display:grid;place-items:center;border:1px solid #e4e2fa;border-radius:20px;background:#fff;font-size:29px}
-.games-empty-state h3{margin:3px 0 0;font-size:18px}
-.games-empty-state p{max-width:490px;margin:0;color:#7c8598;font-size:13px;line-height:1.6}
-.games-future-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
-.games-future-grid article{display:flex;align-items:center;gap:11px;min-width:0;padding:15px;border:1px solid #e5e8ef;border-radius:15px;background:#fff}
-.games-future-grid article>span{width:39px;height:39px;display:grid;place-items:center;flex:0 0 39px;border-radius:13px;background:#f0efff;font-size:19px}
-.games-future-grid article>div{display:grid;gap:4px;min-width:0;flex:1}
-.games-future-grid article strong{font-size:12px}
-.games-future-grid article small{color:#858da0;font-size:10px;line-height:1.4}
-.games-future-grid article>b{padding:5px 7px;border-radius:99px;background:#f1f2f6;color:#8d94a4;font-size:8px;text-transform:uppercase;white-space:nowrap}
-@media(max-width:600px){.games-page{padding:20px 13px calc(115px + env(safe-area-inset-bottom))}.games-hero{align-items:flex-start;gap:13px;padding:19px;border-radius:19px}.games-hero-icon{width:54px;height:54px;flex-basis:54px;border-radius:17px;font-size:28px}.games-hero h1{font-size:27px}.games-hero p{font-size:12px}.games-library{padding:16px}.games-empty-state{min-height:210px;padding:19px}.games-future-grid{grid-template-columns:1fr}.games-section-heading h2{font-size:18px}}
+.emoji-rush-card{overflow:hidden;padding:22px;border:1px solid #e3e5f1;border-radius:23px;background:#fff;box-shadow:0 16px 42px #26274b12}
+.emoji-rush-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:17px}
+.emoji-rush-heading h2{margin:5px 0 4px;color:#242843;font-size:24px;letter-spacing:-.035em}
+.emoji-rush-heading p{margin:0;color:#7a8297;font-size:12px;line-height:1.55}
+.emoji-rush-scores{display:flex;gap:9px;flex:0 0 auto}
+.emoji-rush-scores>div{display:grid;min-width:82px;gap:4px;padding:10px 13px;border:1px solid #ececf7;border-radius:14px;background:linear-gradient(145deg,#fafaff,#f5f8ff);text-align:center}
+.emoji-rush-scores small{color:#8c91a4;font-size:8px;font-weight:850;letter-spacing:.12em}
+.emoji-rush-scores strong{color:#555cc3;font-size:20px;line-height:1}
+.emoji-rush-arena{position:relative;overflow:hidden;border:1px solid #7775bf;border-radius:19px;background:#181b3c;box-shadow:0 14px 34px #17172d2b}
+.emoji-rush-canvas{display:block;width:100%;height:clamp(310px,52vw,540px);touch-action:none;cursor:crosshair}
+.emoji-rush-overlay{position:absolute;inset:0;display:grid;align-content:center;justify-items:center;gap:11px;padding:24px;background:linear-gradient(135deg,#10162bbd,#241834c9);color:#fff;text-align:center;backdrop-filter:blur(4px)}
+.emoji-rush-overlay-icon{display:grid;width:64px;height:64px;place-items:center;border:1px solid #ffffff35;border-radius:22px;background:#ffffff18;font-size:35px;box-shadow:0 10px 35px #1115}
+.emoji-rush-overlay>strong{font-size:24px;letter-spacing:-.03em}
+.emoji-rush-overlay>p{max-width:430px;margin:0;color:#e0e2f4;font-size:13px;line-height:1.6}
+.emoji-rush-overlay>button{min-height:46px;margin-top:4px;padding:0 19px;border:1px solid #ffffff55;border-radius:14px;background:linear-gradient(135deg,#8d71f3,#dd67c4);color:#fff;font-size:13px;font-weight:850;box-shadow:0 9px 24px #9a54d34a;cursor:pointer;transition:transform .18s ease,filter .18s ease}
+.emoji-rush-overlay>button:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.emoji-rush-overlay>button span{margin-left:7px}
+.emoji-rush-live-score{position:absolute;top:14px;right:15px;color:#fff;font-size:13px;font-weight:850;text-shadow:0 2px 8px #0009;pointer-events:none}
+.emoji-rush-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:15px 2px 0;color:#737b91;font-size:10px;font-weight:700}
+.emoji-rush-footer>span{display:flex;align-items:center;gap:7px}
+.emoji-rush-key-pointer{width:11px;height:15px;border:1.5px solid #8984d9;border-radius:7px;position:relative}
+.emoji-rush-key-pointer:after{position:absolute;top:2px;left:4px;width:1px;height:4px;background:#8984d9;content:""}
+.emoji-rush-keyboard{display:grid;width:20px;height:20px;place-items:center;border:1px solid #deddf3;border-radius:6px;color:#7770c9;font-size:12px;font-style:normal}
+.emoji-rush-footer .emoji-rush-growth{color:#8a6dc7}
+.games-community-note{display:flex;align-items:center;gap:9px;margin:14px 2px 0;padding:12px 14px;border:1px solid #e6e6f3;border-radius:13px;background:#fafaff;color:#747d93;font-size:11px;line-height:1.5}
+.games-community-note span{font-size:17px}
+@media(max-width:700px){.games-page{padding:19px 13px calc(112px + env(safe-area-inset-bottom))}.games-hero{align-items:flex-start;gap:13px;margin:15px 0;padding:18px;border-radius:19px}.games-hero-icon{width:54px;height:54px;flex-basis:54px;border-radius:17px;font-size:28px}.games-hero h1{font-size:27px}.games-hero p{font-size:12px}.emoji-rush-card{padding:15px;border-radius:19px}.emoji-rush-heading{align-items:flex-start;flex-direction:column;gap:13px}.emoji-rush-heading h2{font-size:21px}.emoji-rush-scores{width:100%}.emoji-rush-scores>div{flex:1}.emoji-rush-canvas{height:clamp(300px,105vw,470px)}.emoji-rush-arena{border-radius:15px}.emoji-rush-overlay{gap:9px;padding:16px}.emoji-rush-overlay-icon{width:55px;height:55px;font-size:30px}.emoji-rush-overlay>strong{font-size:21px}.emoji-rush-overlay>p{font-size:12px}.emoji-rush-footer{justify-content:flex-start;gap:10px 16px;padding-top:12px}.emoji-rush-footer .emoji-rush-growth{width:100%}}
+@media(max-width:380px){.games-page{padding-right:10px;padding-left:10px}.emoji-rush-card{padding:12px}.emoji-rush-scores>div{min-width:0;padding:9px}.emoji-rush-overlay>strong{font-size:19px}.emoji-rush-overlay>p{font-size:11px}}
