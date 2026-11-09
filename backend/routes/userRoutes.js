@@ -18,9 +18,12 @@ const { listBlockedUsers, setUserBlocked, removeUserBlock, reportUser } = requir
 const { deleteMyAccount } = require("../controllers/accountController");
 const { submitContentReport, listContentReports, reviewContentReport } = require("../controllers/contentModerationController");
 const { getCommunityRulesStatus, acceptCommunityRules } = require("../controllers/communityRulesController");
+const { getMyAccountAppeals, submitAccountAppeal } = require("../controllers/accountAppealController");
 
 const router = express.Router();
 
+router.get("/account-appeals/me", authMiddleware, getMyAccountAppeals);
+router.post("/account-appeals", authMiddleware, submitAccountAppeal);
 router.delete("/me", authMiddleware, deleteMyAccount);
 router.get("/community-rules", authMiddleware, getCommunityRulesStatus);
 router.post("/community-rules/accept", authMiddleware, acceptCommunityRules);

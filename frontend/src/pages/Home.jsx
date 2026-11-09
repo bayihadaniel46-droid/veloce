@@ -44,7 +44,8 @@ function Home() {
   const {
     token,
     user,
-    logout
+    logout,
+    updateUser
   } = useAuth();
 
   const [currentPage, setCurrentPage] =
@@ -106,11 +107,15 @@ function Home() {
 
   useEffect(() => {
     if (!token) return undefined;
-    const heartbeat = () => fetch(`${API_BASE_URL}/users/heartbeat`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+    const heartbeat = () => fetch(`${API_BASE_URL}/users/heartbeat`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }).then(async (response) => {
+      if (response.status !== 403) return;
+      const result = await response.json().catch(() => ({}));
+      if (result.code === "ACCOUNT_SUSPENDED" && result.account) updateUser({ ...user, ...result.account });
+    }).catch(() => {});
     heartbeat();
     const timer = window.setInterval(heartbeat, 60000);
     return () => window.clearInterval(timer);
-  }, [token]);
+  }, [token, user, updateUser]);
 
 
   // ==========================================================

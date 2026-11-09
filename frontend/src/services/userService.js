@@ -27,6 +27,41 @@ export const getAdminMembers = (token, params) => getAdminCollection(token, "mem
 export const getAdminPosts = (token, params) => getAdminCollection(token, "posts", params);
 export const getAdminClans = (token, params) => getAdminCollection(token, "clans", params);
 export const getAdminPizTransactions = (token, params) => getAdminCollection(token, "piz-transactions", params);
+export const getAdminAppeals = (token, params) => getAdminCollection(token, "appeals", params);
+export const getAdminAuditLog = (token, params) => getAdminCollection(token, "audit-log", params);
+
+const sendAdminAction = async (token, path, method = "POST", body = {}) => {
+  const response = await fetch(`${API_BASE_URL}/admin/${path}`, {
+    method,
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Impossible d’enregistrer cette action administrative.");
+  return data;
+};
+
+export const suspendAdminMember = ({ token, userId, duration, reason }) => sendAdminAction(token, `members/${encodeURIComponent(userId)}/suspension`, "POST", { duration, reason });
+export const restoreAdminMember = ({ token, userId }) => sendAdminAction(token, `members/${encodeURIComponent(userId)}/restore`);
+export const reviewAdminAppeal = ({ token, appealId, decision, decisionNote }) => sendAdminAction(token, `appeals/${encodeURIComponent(appealId)}`, "PATCH", { decision, decisionNote });
+
+export const getMyAccountAppeals = async (token) => {
+  const response = await fetch(`${API_URL}/account-appeals/me`, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Impossible de charger le recours.");
+  return data;
+};
+
+export const submitAccountAppeal = async ({ token, reason }) => {
+  const response = await fetch(`${API_URL}/account-appeals`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ reason })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Impossible d’envoyer le recours.");
+  return data;
+};
 
 export const getCommunityRulesStatus = async (token) => {
   const response = await fetch(`${API_URL}/community-rules`, { headers: { Authorization: `Bearer ${token}` } });

@@ -33,7 +33,11 @@ const formatUser = (user) => {
     avatar: user.avatar || "",
     bio: user.bio || "",
     createdAt: user.createdAt,
-    referralCode: user.referralCode || ""
+    referralCode: user.referralCode || "",
+    accountStatus: user.accountStatus || "active",
+    suspensionReason: user.accountStatus === "suspended" ? user.suspensionReason || "" : "",
+    suspendedAt: user.accountStatus === "suspended" ? user.suspendedAt || null : null,
+    suspendedUntil: user.accountStatus === "suspended" ? user.suspendedUntil || null : null
   };
 };
 

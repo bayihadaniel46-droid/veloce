@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/authContext";
 import {
+  getAdminAppeals,
+  getAdminAuditLog,
   getAdminClans,
   getAdminMembers,
   getAdminOverview,
   getAdminPizTransactions,
   getAdminPosts,
   getModerationQueue,
-  reviewContentReport
+  restoreAdminMember,
+  reviewAdminAppeal,
+  reviewContentReport,
+  suspendAdminMember
 } from "../services/userService";
 import "./AdminPanel.css";
 
@@ -19,7 +24,9 @@ const resourceLoaders = {
   posts: (token, params) => getAdminPosts(token, params),
   clans: (token, params) => getAdminClans(token, params),
   transactions: (token, params) => getAdminPizTransactions(token, { ...params, status: "completed" }),
-  failedTransactions: (token, params) => getAdminPizTransactions(token, { ...params, status: "failed" })
+  failedTransactions: (token, params) => getAdminPizTransactions(token, { ...params, status: "failed" }),
+  appeals: (token, params) => getAdminAppeals(token, params),
+  auditLog: (token, params) => getAdminAuditLog(token, params)
 };
 
 const formatDate = (value) => value ? dateFormat.format(new Date(value)) : "Date inconnue";
@@ -45,6 +52,13 @@ function AdminPanel({ onBack, onOpenUserProfile }) {
   const [resourcePagination, setResourcePagination] = useState(null);
   const [resourceLoading, setResourceLoading] = useState(false);
   const [resourceError, setResourceError] = useState("");
+  const [resourceStatus, setResourceStatus] = useState("");
+  const [suspensionFormFor, setSuspensionFormFor] = useState("");
+  const [suspensionReason, setSuspensionReason] = useState("");
+  const [suspensionDuration, setSuspensionDuration] = useState("24h");
+  const [appealForm, setAppealForm] = useState(null);
+  const [appealNote, setAppealNote] = useState("");
+  const [actionBusyId, setActionBusyId] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -71,7 +85,7 @@ function AdminPanel({ onBack, onOpenUserProfile }) {
     const timer = window.setTimeout(() => {
       setResourceLoading(true);
       setResourceError("");
-      resourceLoaders[activeResource](token, { page: resourcePage, q: resourceSearch })
+      resourceLoaders[activeResource](token, { page: resourcePage, q: resourceSearch, status: resourceStatus })
         .then((data) => {
           if (!active) return;
           setResourceItems(data.items || []);
@@ -88,7 +102,7 @@ function AdminPanel({ onBack, onOpenUserProfile }) {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [token, activeResource, resourcePage, resourceSearch, refreshKey]);
+  }, [token, activeResource, resourcePage, resourceSearch, resourceStatus, refreshKey]);
 
   useEffect(() => {
     if (activeResource) document.getElementById("admin-records")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -102,6 +116,9 @@ function AdminPanel({ onBack, onOpenUserProfile }) {
     setActiveResource(resource);
     setResourceSearch("");
     setResourcePage(1);
+    setResourceStatus("");
+    setSuspensionFormFor("");
+    setAppealForm(null);
   };
 
   const decideReport = async (report, action, status = "resolved") => {
@@ -127,6 +144,54 @@ function AdminPanel({ onBack, onOpenUserProfile }) {
     }
   };
 
+  const submitSuspension = async (member) => {
+    setActionBusyId(String(member._id));
+    setError("");
+    try {
+      await suspendAdminMember({ token, userId: member._id, duration: suspensionDuration, reason: suspensionReason });
+      setSuspensionFormFor("");
+      setSuspensionReason("");
+      setNotice(`Le compte @${member.username} est suspendu.`);
+      setRefreshKey((value) => value + 1);
+    } catch (requestError) {
+      setError(requestError.message || "Impossible de suspendre ce compte.");
+    } finally {
+      setActionBusyId("");
+    }
+  };
+
+  const restoreMemberAccount = async (member) => {
+    if (!window.confirm(`Rétablir le compte @${member.username} ?`)) return;
+    setActionBusyId(String(member._id));
+    setError("");
+    try {
+      await restoreAdminMember({ token, userId: member._id });
+      setNotice(`Le compte @${member.username} est rétabli.`);
+      setRefreshKey((value) => value + 1);
+    } catch (requestError) {
+      setError(requestError.message || "Impossible de rétablir ce compte.");
+    } finally {
+      setActionBusyId("");
+    }
+  };
+
+  const decideAppeal = async (appeal) => {
+    if (!appealForm || appealNote.trim().length < 10) return;
+    setActionBusyId(String(appeal._id));
+    setError("");
+    try {
+      await reviewAdminAppeal({ token, appealId: appeal._id, decision: appealForm.decision, decisionNote: appealNote.trim() });
+      setAppealForm(null);
+      setAppealNote("");
+      setNotice(appealForm.decision === "accepted" ? "Recours accepté et compte rétabli." : "Recours rejeté avec justification.");
+      setRefreshKey((value) => value + 1);
+    } catch (requestError) {
+      setError(requestError.message || "Impossible de traiter ce recours.");
+    } finally {
+      setActionBusyId("");
+    }
+  };
+
   const stats = overview?.stats || {};
   const metricCards = [
     { resource: "members", icon: "♙", label: "Membres", value: stats.members, note: `+${numberFormat.format(stats.newMembers30d || 0)} ces 30 derniers jours`, tone: "violet" },
@@ -134,22 +199,39 @@ function AdminPanel({ onBack, onOpenUserProfile }) {
     { resource: "clans", icon: "♧", label: "Clans", value: stats.clans, note: "Ouvrir les clans enregistrés", tone: "teal" },
     { resource: "reports", icon: "⚑", label: "Signalements", value: (stats.contentReports || 0) + (stats.accountReports || 0), note: `${numberFormat.format(stats.contentReports || 0)} contenus · ${numberFormat.format(stats.accountReports || 0)} comptes`, tone: "amber" },
     { resource: "transactions", icon: "◈", label: "Mouvements Piz", value: stats.pizMovements30d, note: "Mouvements confirmés · 30 jours", tone: "pink" },
-    { resource: "failedTransactions", icon: "!", label: "Échecs Piz", value: stats.failedPizMovements7d, note: "Mouvements échoués · 7 jours", tone: "red" }
+    { resource: "failedTransactions", icon: "!", label: "Échecs Piz", value: stats.failedPizMovements7d, note: "Mouvements échoués · 7 jours", tone: "red" },
+    { resource: "appeals", icon: "↗", label: "Recours", value: stats.pendingAppeals, note: "Demandes de réexamen à traiter", tone: "amber" },
+    { resource: "auditLog", icon: "⌁", label: "Journal admin", value: stats.adminActions30d, note: "Actions administratives · 30 jours", tone: "violet" }
   ];
   const resourceTitles = {
     members: "Membres de Veloce",
     posts: "Publications récentes",
     clans: "Clans enregistrés",
     transactions: "Mouvements Piz confirmés",
-    failedTransactions: "Mouvements Piz échoués"
+    failedTransactions: "Mouvements Piz échoués",
+    appeals: "Recours de compte à examiner",
+    auditLog: "Journal des actions administratives"
   };
 
   const renderResourceItem = (item) => {
     if (activeResource === "members") return (
       <article className="admin-record admin-member-record" key={item._id}>
         <div className="admin-record-avatar">{item.avatar ? <img src={item.avatar} alt="" /> : (item.username || "V").charAt(0).toUpperCase()}</div>
-        <div className="admin-record-main"><strong>@{item.username || "membre"}</strong><p>{item.bio || "Aucune biographie renseignée."}</p><small>Inscrit le {formatDate(item.createdAt)} · {formatDuration(item.activeSeconds)}</small></div>
-        {onOpenUserProfile && <button type="button" className="admin-record-action" onClick={() => onOpenUserProfile(String(item._id))}>Voir le profil</button>}
+        <div className="admin-record-main"><div className="admin-record-title"><strong>@{item.username || "membre"}</strong><span className={`admin-record-pill ${item.accountStatus === "suspended" ? "suspended" : "active"}`}>{item.isAdmin ? "Admin" : item.accountStatus === "suspended" ? "Suspendu" : "Actif"}</span></div>
+          <p>{item.bio || "Aucune biographie renseignée."}</p><small>Inscrit le {formatDate(item.createdAt)} · {formatDuration(item.activeSeconds)}{item.accountStatus === "suspended" ? ` · ${item.suspendedUntil ? `jusqu’au ${formatDateTime(item.suspendedUntil)}` : "sans date de fin"}` : ""}</small>
+          {item.accountStatus === "suspended" && item.suspensionReason && <small>Motif : {item.suspensionReason}</small>}
+        </div>
+        <div className="admin-record-controls">
+          {onOpenUserProfile && <button type="button" className="admin-record-action" onClick={() => onOpenUserProfile(String(item._id))}>Profil</button>}
+          {!item.isAdmin && (item.accountStatus === "suspended"
+            ? <button type="button" className="admin-record-action restore" disabled={actionBusyId === String(item._id)} onClick={() => restoreMemberAccount(item)}>{actionBusyId === String(item._id) ? "…" : "Rétablir"}</button>
+            : <button type="button" className="admin-record-action suspend" onClick={() => { setSuspensionFormFor(suspensionFormFor === String(item._id) ? "" : String(item._id)); setSuspensionReason(""); }}>Suspendre</button>)}
+        </div>
+        {suspensionFormFor === String(item._id) && <div className="admin-inline-action">
+          <label>Durée<select value={suspensionDuration} onChange={(event) => setSuspensionDuration(event.target.value)}><option value="24h">24 heures</option><option value="7d">7 jours</option><option value="30d">30 jours</option><option value="permanent">Sans date de fin</option></select></label>
+          <label>Motif obligatoire<textarea value={suspensionReason} onChange={(event) => setSuspensionReason(event.target.value)} maxLength={1000} placeholder="Explique la règle enfreinte (10 caractères minimum)." /></label>
+          <div><button type="button" disabled={actionBusyId === String(item._id) || suspensionReason.trim().length < 10} onClick={() => submitSuspension(item)}>{actionBusyId === String(item._id) ? "Application…" : "Confirmer la suspension"}</button><button type="button" className="quiet" onClick={() => setSuspensionFormFor("")}>Annuler</button></div>
+        </div>}
       </article>
     );
 
@@ -169,6 +251,22 @@ function AdminPanel({ onBack, onOpenUserProfile }) {
           <p>{item.description || "Aucune description."}</p><small>Chef : @{item.owner?.username || "compte indisponible"} · {numberFormat.format(item.memberCount || 0)} membre(s) · créé le {formatDate(item.createdAt)}</small>
         </div>
         {item.owner?._id && onOpenUserProfile && <button type="button" className="admin-record-action" onClick={() => onOpenUserProfile(String(item.owner._id))}>Voir le chef</button>}
+      </article>
+    );
+
+    if (activeResource === "appeals") return (
+      <article className="admin-record admin-appeal-record" key={item._id}>
+        <div className="admin-record-main"><div className="admin-record-title"><strong>@{item.user?.username || "compte supprimé"}</strong><span className="admin-record-pill">{item.status === "pending" ? "À traiter" : item.status === "accepted" ? "Accepté" : "Rejeté"}</span><time>{formatDateTime(item.submittedAt)}</time></div>
+          <p>{item.reason}</p><small>Motif de suspension : {item.user?.suspensionReason || "Non renseigné"}{item.user?.suspendedUntil ? ` · fin prévue ${formatDateTime(item.user.suspendedUntil)}` : ""}</small>
+        </div>
+        {item.status === "pending" && <div className="admin-appeal-actions"><button type="button" className="admin-record-action restore" onClick={() => { setAppealForm({ id: String(item._id), decision: "accepted" }); setAppealNote(""); }}>Accepter</button><button type="button" className="admin-record-action suspend" onClick={() => { setAppealForm({ id: String(item._id), decision: "rejected" }); setAppealNote(""); }}>Rejeter</button></div>}
+        {appealForm?.id === String(item._id) && <div className="admin-inline-action"><label>Justification de la décision<textarea value={appealNote} onChange={(event) => setAppealNote(event.target.value)} maxLength={1000} placeholder="Au moins 10 caractères." /></label><div><button type="button" disabled={actionBusyId === String(item._id) || appealNote.trim().length < 10} onClick={() => decideAppeal(item)}>{actionBusyId === String(item._id) ? "Enregistrement…" : appealForm.decision === "accepted" ? "Accepter et rétablir" : "Confirmer le rejet"}</button><button type="button" className="quiet" onClick={() => setAppealForm(null)}>Annuler</button></div></div>}
+      </article>
+    );
+
+    if (activeResource === "auditLog") return (
+      <article className="admin-record admin-audit-record" key={item._id}>
+        <span className="admin-audit-mark" aria-hidden="true">⌁</span><div className="admin-record-main"><div className="admin-record-title"><strong>{String(item.action || "Action").replace(/[._-]/g, " · ")}</strong><time>{formatDateTime(item.createdAt)}</time></div><p>{item.targetLabel || item.targetType}{item.reason ? ` — ${item.reason}` : ""}</p><small>Par @{item.actor?.username || item.actorUsername || "administrateur"}{item.targetId ? ` · Référence ${item.targetId}` : ""}</small></div>
       </article>
     );
 
@@ -223,7 +321,8 @@ function AdminPanel({ onBack, onOpenUserProfile }) {
           <div className="admin-section-heading"><div><span>DONNÉES DU SERVICE</span><h2>{resourceTitles[activeResource]}</h2></div>
             <button type="button" className="admin-close-list" onClick={() => setActiveResource("")}>Fermer</button>
           </div>
-          <div className="admin-list-tools"><label><span className="sr-only">Rechercher dans cette liste</span><input value={resourceSearch} onChange={(event) => { setResourceSearch(event.target.value); setResourcePage(1); }} placeholder={activeResource === "members" ? "Rechercher un nom d’utilisateur" : activeResource === "clans" ? "Rechercher un clan" : activeResource === "posts" ? "Rechercher une publication ou un auteur" : "Rechercher un type ou une description"} /></label>
+          <div className="admin-list-tools"><label><span className="sr-only">Rechercher dans cette liste</span><input value={resourceSearch} onChange={(event) => { setResourceSearch(event.target.value); setResourcePage(1); }} placeholder={activeResource === "members" ? "Rechercher un nom d’utilisateur" : activeResource === "clans" ? "Rechercher un clan" : activeResource === "posts" ? "Rechercher une publication ou un auteur" : activeResource === "appeals" ? "Rechercher un recours ou un membre" : activeResource === "auditLog" ? "Rechercher une action, un compte ou un motif" : "Rechercher un type ou une description"} /></label>
+            {activeResource === "members" && <label className="admin-member-filter"><span className="sr-only">Filtrer par état du compte</span><select value={resourceStatus} onChange={(event) => { setResourceStatus(event.target.value); setResourcePage(1); }}><option value="">Tous les comptes</option><option value="active">Actifs</option><option value="suspended">Suspendus</option></select></label>}
             {resourcePagination && <small>{numberFormat.format(resourcePagination.total)} résultat(s)</small>}
           </div>
           {resourceError && <p className="admin-feedback error" role="alert">{resourceError}</p>}

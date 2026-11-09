@@ -10,6 +10,7 @@ const CommunityMessage = require("../models/CommunityMessage");
 const Clan = require("../models/Clan");
 const { PRIVATE_BUCKET_NAME } = require("../utils/messageAttachments");
 const { isVeloceModerator } = require("../utils/adminAccess");
+const { recordAdminAction } = require("../utils/adminAudit");
 
 const reportableModels = {
   post: { Model: Post, ownerField: "author" },
@@ -111,6 +112,7 @@ const reviewContentReport = async (req, res) => {
       if (!accountReport) return res.status(404).json({ message: "Signalement introuvable." });
       accountReport.status = status;
       await accountReport.save();
+      await recordAdminAction({ actorId: req.user.userId, action: status === "reviewing" ? "account-report.reviewing" : "account-report.closed", targetType: "account-report", targetId: accountReport._id, targetLabel: accountReport.category, details: { reportedUserId: String(accountReport.reportedUser || "") } });
       return res.json({ report: accountReport, moderationType: "account" });
     }
     if (moderationType !== "content") return res.status(400).json({ message: "Type de signalement invalide." });
@@ -132,6 +134,7 @@ const reviewContentReport = async (req, res) => {
     }
     report.status = status;
     await report.save();
+    await recordAdminAction({ actorId: req.user.userId, action: action === "remove" ? "content.removed" : status === "reviewing" ? "content-report.reviewing" : "content-report.closed", targetType: report.contentType, targetId: report.contentId, targetLabel: report.contentType, reason: report.category, details: { reportId: String(report._id), decision: action || "keep" } });
     return res.json({ report });
   } catch (error) {
     console.error("Traitement d’un signalement impossible :", error.message);

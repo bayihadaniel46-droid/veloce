@@ -4,6 +4,7 @@ import "./App.css";
 import Home from "./pages/Home";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
+import SuspendedAccount from "./pages/SuspendedAccount";
 
 import {
   AuthProvider,
@@ -19,7 +20,8 @@ function AppContent() {
 
   const {
     isAuthenticated,
-    loading
+    loading,
+    user
   } = useAuth();
 
   // A signed-out visitor follows the invitation to registration. Once signup
@@ -58,6 +60,10 @@ function AppContent() {
 
   if (inviteRegistration && !isAuthenticated) {
     return <AuthPages />;
+  }
+
+  if (isAuthenticated && user?.accountStatus === "suspended") {
+    return <SuspendedAccount />;
   }
 
 

@@ -49,6 +49,25 @@
 .admin-record-action{flex:0 0 auto;min-height:32px;padding:0 10px;border:1px solid #deddf4;border-radius:9px;background:#f8f7ff;color:#625db7;font-size:9px;font-weight:800;cursor:pointer}
 .admin-record-action:hover{background:#efedff}
 .admin-record-pill{padding:4px 8px;border-radius:99px;background:#f0efff;color:#635dbb;font-size:8px;font-weight:800}
+.admin-record-pill.active{background:#eaf8f0;color:#387a5c}
+.admin-record-pill.suspended{background:#fff0f0;color:#a54f57}
+.admin-record-controls,.admin-appeal-actions{display:flex;flex:0 0 auto;align-items:center;gap:6px;flex-wrap:wrap}
+.admin-record-action.suspend{border-color:#f0d8d9;background:#fff6f6;color:#a75059}
+.admin-record-action.restore{border-color:#d4eadf;background:#f3fcf7;color:#397a5c}
+.admin-record-action:disabled{opacity:.5;cursor:wait}
+.admin-inline-action{display:grid;flex:0 0 100%;gap:9px;padding:12px;border:1px solid #ece8fa;border-radius:12px;background:#fbfaff}
+.admin-inline-action label{display:grid;gap:5px;color:#687187;font-size:9px;font-weight:800}
+.admin-inline-action select,.admin-inline-action textarea{width:100%;min-height:35px;padding:8px 10px;border:1px solid #dfe2ed;border-radius:9px;background:#fff;color:#333a51;font:inherit;font-size:10px}
+.admin-inline-action textarea{min-height:76px;resize:vertical;line-height:1.45}
+.admin-inline-action>div{display:flex;justify-content:flex-end;gap:7px}
+.admin-inline-action button{min-height:32px;padding:0 10px;border:1px solid #deddf4;border-radius:9px;background:#f2f0ff;color:#5d58ae;font-size:9px;font-weight:800;cursor:pointer}
+.admin-inline-action button.quiet{border-color:#e3e5ed;background:#fff;color:#737b8c}
+.admin-inline-action button:disabled{opacity:.45;cursor:not-allowed}
+.admin-member-filter{flex:0 0 145px}
+.admin-member-filter select{width:100%;min-height:39px;padding:0 9px;border:1px solid #e5e7ef;border-radius:10px;background:#fff;color:#505b72;font:inherit;font-size:9px}
+.admin-audit-record{align-items:flex-start}
+.admin-audit-mark{display:grid;flex:0 0 30px;width:30px;height:30px;place-items:center;border-radius:10px;background:#f1efff;color:#7069c5;font-size:17px}
+.admin-appeal-record{align-items:flex-start}
 .admin-transaction-record{display:block;padding:0;overflow:hidden}
 .admin-transaction-record summary{display:flex;align-items:center;gap:10px;padding:12px;cursor:pointer;list-style:none}
 .admin-transaction-record summary::-webkit-details-marker{display:none}
@@ -92,5 +111,5 @@
 .admin-feedback.success{border-color:#cfeadd;background:#f3fcf7;color:#307653}
 .admin-loading{padding:24px;border:1px solid #e9eaf2;border-radius:14px;background:#fff;color:#747d91;font-size:11px;text-align:center}
 .admin-footnote{margin:11px 3px 0;color:#959bad;font-size:9px;line-height:1.5}
-@media(max-width:650px){.admin-page{padding:16px 12px calc(110px + env(safe-area-inset-bottom))}.admin-title-row{align-items:flex-start;flex-direction:column;padding:17px;border-radius:17px}.admin-title-row h1{font-size:25px}.admin-refresh{align-self:flex-end}.admin-metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.admin-metric{min-height:117px;padding:12px}.admin-metric>strong{font-size:22px}.admin-reports-section,.admin-records-section{padding:13px;border-radius:16px}.admin-report-topline time{width:100%;margin-left:0}.admin-report-actions{justify-content:stretch}.admin-report-actions button{flex:1;min-width:0;padding:0 8px}.admin-record{align-items:flex-start;flex-wrap:wrap}.admin-record-main{flex-basis:calc(100% - 52px)}.admin-record-action{margin-left:auto}.admin-transaction-record summary{flex-wrap:wrap}.admin-transaction-copy{flex-basis:calc(100% - 130px)}.admin-transaction-record summary time{margin-left:auto}.admin-transaction-detail{flex-direction:column}.admin-transaction-detail small{white-space:normal}}
+@media(max-width:650px){.admin-page{padding:16px 12px calc(110px + env(safe-area-inset-bottom))}.admin-title-row{align-items:flex-start;flex-direction:column;padding:17px;border-radius:17px}.admin-title-row h1{font-size:25px}.admin-refresh{align-self:flex-end}.admin-metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.admin-metric{min-height:117px;padding:12px}.admin-metric>strong{font-size:22px}.admin-reports-section,.admin-records-section{padding:13px;border-radius:16px}.admin-report-topline time{width:100%;margin-left:0}.admin-report-actions{justify-content:stretch}.admin-report-actions button{flex:1;min-width:0;padding:0 8px}.admin-record{align-items:flex-start;flex-wrap:wrap}.admin-record-main{flex-basis:calc(100% - 52px)}.admin-record:not(.admin-member-record):not(.admin-audit-record) .admin-record-main{flex-basis:100%}.admin-record-action{margin-left:auto}.admin-record-controls{margin-left:auto}.admin-inline-action{flex-basis:100%}.admin-list-tools{flex-wrap:wrap}.admin-list-tools label{flex-basis:100%}.admin-member-filter{flex:1 1 150px}.admin-transaction-record summary{flex-wrap:wrap}.admin-transaction-copy{flex-basis:calc(100% - 130px)}.admin-transaction-record summary time{margin-left:auto}.admin-transaction-detail{flex-direction:column}.admin-transaction-detail small{white-space:normal}}
 @media(max-width:360px){.admin-metrics-grid{grid-template-columns:1fr}.admin-metric{min-height:104px}.admin-report-actions{flex-direction:column}.admin-report-actions button{width:100%}}
