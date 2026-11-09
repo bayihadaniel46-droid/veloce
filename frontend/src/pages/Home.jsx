@@ -18,6 +18,7 @@ import Assistant from "./Assistant";
 import Market from "./Market";
 import Carrefour from "./Carrefour";
 import Games from "./Games";
+import AdminPanel from "./AdminPanel";
 import "./MessagesEmojiFavorites.css";
 import "../home-enhancements.css";
 
@@ -529,7 +530,10 @@ function Home() {
         return <Profile onOpenSettings={() => setCurrentPage("settings")} />;
 
       case "settings":
-        return <Settings onBack={() => setCurrentPage("profile")} onOpenProfile={() => setCurrentPage("profile")} onLogout={logout} />;
+        return <Settings onBack={() => setCurrentPage("profile")} onOpenProfile={() => setCurrentPage("profile")} onOpenAdministration={() => setCurrentPage("admin")} onLogout={logout} />;
+
+      case "admin":
+        return <AdminPanel onBack={() => setCurrentPage("settings")} />;
 
       case "user-profile":
         return <PublicProfile userId={viewedUserId} onBack={() => { setCurrentPage("explorer"); const url = new URL(window.location.href); url.searchParams.delete("profile"); window.history.replaceState({}, "", url); }} onMessage={(person) => { setMessageRecipient(person); setCurrentPage("messages"); }} />;

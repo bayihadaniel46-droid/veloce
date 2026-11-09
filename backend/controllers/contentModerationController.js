@@ -9,6 +9,7 @@ const ClanMessage = require("../models/ClanMessage");
 const CommunityMessage = require("../models/CommunityMessage");
 const Clan = require("../models/Clan");
 const { PRIVATE_BUCKET_NAME } = require("../utils/messageAttachments");
+const { isVeloceModerator } = require("../utils/adminAccess");
 
 const reportableModels = {
   post: { Model: Post, ownerField: "author" },
@@ -18,9 +19,6 @@ const reportableModels = {
   "clan-message": { Model: ClanMessage, ownerField: "sender" },
   "community-message": { Model: CommunityMessage, ownerField: "sender" }
 };
-
-const isModerator = (userId) => (process.env.VELOCE_MODERATOR_IDS || "")
-  .split(",").map((id) => id.trim()).filter(Boolean).includes(String(userId));
 
 const deleteGridFsAttachments = async (bucketName, attachments = []) => {
   const fileIds = [...new Map(attachments.map((item) => [String(item.fileId), item.fileId]).filter(([id, value]) => id && value)).values()];
@@ -67,7 +65,7 @@ const submitContentReport = async (req, res) => {
 };
 
 const listContentReports = async (req, res) => {
-  if (!isModerator(req.user.userId)) return res.status(403).json({ message: "Accès réservé à l’équipe de modération." });
+  if (!isVeloceModerator(req.user.userId)) return res.status(403).json({ message: "Accès réservé à l’équipe de modération." });
   try {
     const [rawReports, accountReports] = await Promise.all([
       ContentReport.find({ status: { $in: ["open", "reviewing"] } })
@@ -100,7 +98,7 @@ const listContentReports = async (req, res) => {
 };
 
 const reviewContentReport = async (req, res) => {
-  if (!isModerator(req.user.userId)) return res.status(403).json({ message: "Accès réservé à l’équipe de modération." });
+  if (!isVeloceModerator(req.user.userId)) return res.status(403).json({ message: "Accès réservé à l’équipe de modération." });
   if (!mongoose.isValidObjectId(req.params.reportId)) return res.status(404).json({ message: "Signalement introuvable." });
   const { status, action, moderationType = "content" } = req.body || {};
   if (!["reviewing", "resolved"].includes(status) || ![undefined, "keep", "remove"].includes(action)) {

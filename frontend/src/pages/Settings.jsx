@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/authContext";
 import { disablePushNotifications, enablePushNotifications, getPushStatus } from "../services/pushService";
-import { acceptCommunityRules, deleteMyVeloceAccount, getCommunityRulesStatus, getModerationQueue, reviewContentReport } from "../services/userService";
+import { acceptCommunityRules, deleteMyVeloceAccount, getAdminOverview, getCommunityRulesStatus, getModerationQueue, reviewContentReport } from "../services/userService";
 import "./Settings.css";
 
 const getStorageKey = (user) => `veloce_settings_${user?._id || user?.id || "account"}`;
@@ -22,7 +22,7 @@ function applySettings(settings) {
   root.dataset.veloceBadges = settings.showBadges ? "visible" : "hidden";
 }
 
-function Settings({ onBack, onLogout, onOpenProfile }) {
+function Settings({ onBack, onLogout, onOpenProfile, onOpenAdministration }) {
   const { user, token } = useAuth();
   const [settings, setSettings] = useState(() => readSettings(user));
   const [pushStatus, setPushStatus] = useState({ supported: true, permission: "checking", subscribed: false });
@@ -33,9 +33,18 @@ function Settings({ onBack, onLogout, onOpenProfile }) {
   const [moderationReports, setModerationReports] = useState(null);
   const [moderationBusyId, setModerationBusyId] = useState("");
   const [moderationError, setModerationError] = useState("");
+  const [adminAvailable, setAdminAvailable] = useState(false);
   const [rulesAccepted, setRulesAccepted] = useState(true);
   const [rulesBusy, setRulesBusy] = useState(false);
   const [rulesError, setRulesError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    getAdminOverview(token)
+      .then(() => { if (active) setAdminAvailable(true); })
+      .catch(() => { if (active) setAdminAvailable(false); });
+    return () => { active = false; };
+  }, [token]);
 
   useEffect(() => {
     applySettings(settings);
@@ -185,7 +194,11 @@ function Settings({ onBack, onLogout, onOpenProfile }) {
             <div className="settings-card-heading"><span className="settings-card-icon">⇥</span><div><h2>Session</h2><p>Déconnectez-vous de cet appareil.</p></div></div>
             <button type="button" className="settings-logout-button" onClick={onLogout}>Se déconnecter</button>
           </section>
-          {moderationReports !== null && <section className="settings-card settings-moderation-card">
+          {adminAvailable && <section className="settings-card settings-admin-entry">
+            <div className="settings-card-heading"><span className="settings-card-icon">✦</span><div><h2>Administration</h2><p>Consulte l’activité globale et traite les signalements.</p></div></div>
+            <button type="button" onClick={onOpenAdministration}>Ouvrir le panneau d’administration <span aria-hidden="true">→</span></button>
+          </section>}
+          {moderationReports !== null && !adminAvailable && <section className="settings-card settings-moderation-card">
             <div className="settings-card-heading"><span className="settings-card-icon">⚑</span><div><h2>Modération</h2><p>{moderationReports.length} signalement(s) à examiner.</p></div></div>
             {moderationReports.length === 0 ? <p className="settings-moderation-empty">Aucun contenu en attente.</p> : moderationReports.map((report) => <article className="settings-report-row" key={report._id}>
               <div><strong>{report.category} · {report.contentType === "account" ? `compte @${report.contentOwner?.username || "supprimé"}` : report.contentType}</strong><p>{report.preview || "Contenu indisponible"}</p><small>Signalé par {report.reporter?.username || "un compte supprimé"} · {new Date(report.createdAt).toLocaleString("fr-FR")}</small></div>

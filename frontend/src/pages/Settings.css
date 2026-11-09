@@ -49,3 +49,7 @@
 .settings-rules-accept p{margin:0;color:#e2d6b7;font-size:12px}
 .settings-rules-accept button{justify-self:start;padding:9px 12px;border:0;border-radius:9px;background:#8f66df;color:white;font-size:12px;font-weight:750;cursor:pointer}
 .settings-rules-accept small{color:#ffb5b5}
+.settings-admin-entry{border-color:#8980f066;background:radial-gradient(circle at 100% 0,#b27aed22,transparent 48%),linear-gradient(130deg,#7773f214,#36cfc90b)}
+.settings-admin-entry>button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:43px;padding:0 14px;border:1px solid #aaa1ff55;border-radius:12px;background:linear-gradient(110deg,#7168ed,#9a69ee);color:#fff;font-size:12px;font-weight:800;cursor:pointer}
+.settings-admin-entry>button span{font-size:17px;transition:transform .16s ease}
+.settings-admin-entry>button:hover span{transform:translateX(3px)}

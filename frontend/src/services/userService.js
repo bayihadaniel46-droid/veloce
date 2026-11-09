@@ -2,6 +2,15 @@ import { API_BASE_URL } from "../config";
 
 const API_URL = `${API_BASE_URL}/users`;
 
+export const getAdminOverview = async (token) => {
+  const response = await fetch(`${API_BASE_URL}/admin/overview`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Accès au panneau administratif impossible.");
+  return data;
+};
+
 export const getCommunityRulesStatus = async (token) => {
   const response = await fetch(`${API_URL}/community-rules`, { headers: { Authorization: `Bearer ${token}` } });
   const data = await response.json();
