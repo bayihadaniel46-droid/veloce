@@ -22,9 +22,9 @@ function AppContent() {
     loading
   } = useAuth();
 
-  // Referral links deliberately open the registration screen even in a
-  // browser that currently has another Veloce account signed in. This lets
-  // the invitee create their own credentials without inheriting that session.
+  // A signed-out visitor follows the invitation to registration. Once signup
+  // creates an authenticated session, the invite URL must no longer trap them
+  // on the auth screen and the normal Veloce home can open.
   const inviteRegistration = new URLSearchParams(window.location.search).get("join") === "1";
 
 
@@ -56,7 +56,7 @@ function AppContent() {
 
   }
 
-  if (inviteRegistration) {
+  if (inviteRegistration && !isAuthenticated) {
     return <AuthPages />;
   }
 

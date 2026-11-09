@@ -133,7 +133,7 @@ function MemoryFlash({ onShareScore }) {
   );
 }
 
-function Games({ onBack, onShareScore }) {
+function EmojiRushGame({ onShareScore }) {
   const { token } = useAuth();
   const canvasRef = useRef(null);
   const gameRef = useRef({
@@ -479,17 +479,7 @@ function Games({ onBack, onShareScore }) {
   const shareRushScore = () => onShareScore?.(`🎮 J’ai marqué ${score} points dans Émoji Rush sur Veloce. Qui peut battre mon score ?`);
 
   return (
-    <section className="games-page">
-      <button type="button" className="games-back" onClick={onBack}>← Retour à Explorer</button>
-      <header className="games-hero">
-        <span className="games-hero-icon" aria-hidden="true">🎮</span>
-        <div>
-          <span className="games-eyebrow">L’ESPACE LUDIQUE DE VELOCE</span>
-          <h1>Jeux</h1>
-          <p>Joue, bats tes records et partage tes scores avec la communauté.</p>
-        </div>
-      </header>
-
+    <div className="games-detail">
       <section className="emoji-rush-card" aria-labelledby="emoji-rush-title">
         <div className="emoji-rush-heading">
           <div>
@@ -547,9 +537,63 @@ function Games({ onBack, onShareScore }) {
           <span className="emoji-rush-growth">Plus tu avances, plus ton émoji grandit</span>
         </div>
       </section>
+    </div>
+  );
+}
 
-      <MemoryFlash onShareScore={onShareScore} />
-      <p className="games-community-note"><span aria-hidden="true">🌐</span> Les records sont conservés sur cet appareil. Les surprises Piz sont distribuées par le serveur, avec une limite de 5 Piz par jour et par compte.</p>
+function Games({ onBack, onShareScore }) {
+  const [selectedGame, setSelectedGame] = useState(null);
+  const isEmojiRush = selectedGame === "emoji-rush";
+
+  return (
+    <section className="games-page">
+      <button
+        type="button"
+        className="games-back"
+        onClick={() => selectedGame ? setSelectedGame(null) : onBack?.()}
+      >
+        {selectedGame ? "← Tous les jeux" : "← Retour à Explorer"}
+      </button>
+
+      {selectedGame ? <>
+        <header className="games-detail-title">
+          <span className="games-eyebrow">JEU VELOCE · {isEmojiRush ? "RÉFLEXES" : "MÉMOIRE"}</span>
+          <h1>{isEmojiRush ? "Émoji Rush" : "Mémoire Flash"}</h1>
+          <p>{isEmojiRush ? "Esquive les dangers et ramasse des boucliers." : "Retourne les cartes et retrouve les six paires."}</p>
+        </header>
+        {isEmojiRush
+          ? <EmojiRushGame onShareScore={onShareScore} />
+          : <MemoryFlash onShareScore={onShareScore} />}
+        {isEmojiRush && <p className="games-community-note"><span aria-hidden="true">🌐</span> Les records sont conservés sur cet appareil. Les surprises Piz sont distribuées par le serveur, avec une limite de 5 Piz par jour et par compte.</p>}
+      </> : <>
+        <header className="games-hero">
+          <span className="games-hero-icon" aria-hidden="true">🎮</span>
+          <div>
+            <span className="games-eyebrow">L’ESPACE LUDIQUE DE VELOCE</span>
+            <h1>Jeux</h1>
+            <p>Choisis un jeu, bats tes records et partage tes scores.</p>
+          </div>
+        </header>
+
+        <div className="games-catalog" aria-label="Catalogue des jeux">
+          <button type="button" className="games-catalog-card" onClick={() => setSelectedGame("emoji-rush")}>
+            <span className="games-catalog-icon rush" aria-hidden="true">😎</span>
+            <span className="games-catalog-category">RÉFLEXES · ACTION</span>
+            <strong>Émoji Rush</strong>
+            <span className="games-catalog-description">Esquive les obstacles, grandis et collecte des surprises.</span>
+            <span className="games-catalog-play"><span>Jouer</span><span aria-hidden="true">→</span></span>
+          </button>
+          <button type="button" className="games-catalog-card" onClick={() => setSelectedGame("memory-flash")}>
+            <span className="games-catalog-icon memory" aria-hidden="true">🧠</span>
+            <span className="games-catalog-category">MÉMOIRE · RÉFLEXION</span>
+            <strong>Mémoire Flash</strong>
+            <span className="games-catalog-description">Retrouve les paires avec le moins de coups possible.</span>
+            <span className="games-catalog-play"><span>Jouer</span><span aria-hidden="true">→</span></span>
+          </button>
+        </div>
+
+        <p className="games-community-note"><span aria-hidden="true">🌐</span> Les jeux seront ajoutés ici sous forme de vignettes compactes. Tes records sont conservés sur cet appareil.</p>
+      </>}
     </section>
   );
 }
