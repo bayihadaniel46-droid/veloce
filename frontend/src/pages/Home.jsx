@@ -63,6 +63,7 @@ function Home() {
     });
 
   const [viewedUserId, setViewedUserId] = useState(() => new URLSearchParams(window.location.search).get("profile") || "");
+  const [profileReturnPage, setProfileReturnPage] = useState("explorer");
   const [messageRecipient, setMessageRecipient] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const contact = params.get("contact");
@@ -224,6 +225,7 @@ function Home() {
     const openUserProfile = (event) => {
       const id = event.detail?.userId;
       if (!id) return;
+      setProfileReturnPage("explorer");
       setViewedUserId(id);
       setCurrentPage("user-profile");
     };
@@ -249,6 +251,13 @@ function Home() {
       setCurrentPage(page);
 
     }, []);
+
+  const openAdminUserProfile = useCallback((userId) => {
+    if (!userId) return;
+    setProfileReturnPage("admin");
+    setViewedUserId(userId);
+    setCurrentPage("user-profile");
+  }, []);
 
   const startFeedTouch = (event) => {
     const main = event.currentTarget;
@@ -533,10 +542,10 @@ function Home() {
         return <Settings onBack={() => setCurrentPage("profile")} onOpenProfile={() => setCurrentPage("profile")} onOpenAdministration={() => setCurrentPage("admin")} onLogout={logout} />;
 
       case "admin":
-        return <AdminPanel onBack={() => setCurrentPage("settings")} />;
+        return <AdminPanel onBack={() => setCurrentPage("settings")} onOpenUserProfile={openAdminUserProfile} />;
 
       case "user-profile":
-        return <PublicProfile userId={viewedUserId} onBack={() => { setCurrentPage("explorer"); const url = new URL(window.location.href); url.searchParams.delete("profile"); window.history.replaceState({}, "", url); }} onMessage={(person) => { setMessageRecipient(person); setCurrentPage("messages"); }} />;
+        return <PublicProfile userId={viewedUserId} onBack={() => { setCurrentPage(profileReturnPage); setProfileReturnPage("explorer"); const url = new URL(window.location.href); url.searchParams.delete("profile"); window.history.replaceState({}, "", url); }} onMessage={(person) => { setMessageRecipient(person); setCurrentPage("messages"); }} />;
 
       case "assistant":
         return <Assistant />;

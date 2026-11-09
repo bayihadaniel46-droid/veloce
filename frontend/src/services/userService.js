@@ -11,6 +11,23 @@ export const getAdminOverview = async (token) => {
   return data;
 };
 
+const getAdminCollection = async (token, path, { page = 1, q = "", status = "" } = {}) => {
+  const params = new URLSearchParams({ page: String(page), limit: "20" });
+  if (q.trim()) params.set("q", q.trim());
+  if (status) params.set("status", status);
+  const response = await fetch(`${API_BASE_URL}/admin/${path}?${params}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Impossible de charger ces données d’administration.");
+  return data;
+};
+
+export const getAdminMembers = (token, params) => getAdminCollection(token, "members", params);
+export const getAdminPosts = (token, params) => getAdminCollection(token, "posts", params);
+export const getAdminClans = (token, params) => getAdminCollection(token, "clans", params);
+export const getAdminPizTransactions = (token, params) => getAdminCollection(token, "piz-transactions", params);
+
 export const getCommunityRulesStatus = async (token) => {
   const response = await fetch(`${API_URL}/community-rules`, { headers: { Authorization: `Bearer ${token}` } });
   const data = await response.json();
