@@ -7,6 +7,7 @@ const pizTransactionSchema = new mongoose.Schema({
   toUser: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
   fromClan: { type: mongoose.Schema.Types.ObjectId, ref: "Clan", default: null, index: true },
   toClan: { type: mongoose.Schema.Types.ObjectId, ref: "Clan", default: null, index: true },
+  hiddenForUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   amountUnits: { type: Number, required: true, min: 1 },
   platformUnits: { type: Number, default: 0, min: 0 },
   description: { type: String, default: "", maxlength: 240 },

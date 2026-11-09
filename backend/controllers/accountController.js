@@ -159,7 +159,8 @@ const deleteMyAccount = async (req, res) => {
       User.updateMany({ referredBy: userId }, { $set: { referredBy: null } }),
       User.updateMany({ blockedUsers: userId }, { $pull: { blockedUsers: userId } }),
       PizTransaction.updateMany({ $or: [{ fromUser: userId }, { toUser: userId }] }, {
-        $set: { fromUser: null, toUser: null }
+        $set: { fromUser: null, toUser: null },
+        $pull: { hiddenForUsers: userId }
       }),
       UserReport.updateMany({ $or: [{ reporter: userId }, { reportedUser: userId }] }, {
         $set: { reporter: null, reportedUser: null, details: "" }

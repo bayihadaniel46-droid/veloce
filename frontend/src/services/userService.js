@@ -185,3 +185,13 @@ export const getPizTransactions = async ({ token, page = 1, limit = 25 }) => {
   if (!response.ok) throw new Error(data.message || "Impossible de charger l’historique Piz.");
   return data;
 };
+
+export const deletePizReceipt = async ({ token, transactionId }) => {
+  const response = await fetch(`${API_URL}/piz-transactions/${encodeURIComponent(transactionId)}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Impossible de supprimer ce reçu.");
+  return data;
+};

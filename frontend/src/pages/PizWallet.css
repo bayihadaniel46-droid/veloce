@@ -4,7 +4,10 @@
 .piz-history-filters button{min-height:32px;padding:0 11px;border:1px solid #e1e4ed;border-radius:99px;background:#fff;color:#6d778b;font-size:10px;font-weight:750;cursor:pointer}
 .piz-history-filters button.active{border-color:#666bd3;background:#666bd3;color:#fff}
 .piz-history-list{display:grid;gap:7px}
-.piz-history-row{display:flex;align-items:center;gap:11px;min-width:0;padding:12px;border:1px solid #e8eaf1;border-radius:13px;background:linear-gradient(120deg,#fff,#fafaff)}
+.piz-history-row{display:block;min-width:0;padding:0;overflow:hidden;border:1px solid #e8eaf1;border-radius:13px;background:linear-gradient(120deg,#fff,#fafaff);transition:border-color .18s ease,box-shadow .18s ease}
+.piz-history-row:focus-visible{outline:3px solid #aaa8ff;outline-offset:2px}
+.piz-history-row.is-actions-open{border-color:#b9b8f3;box-shadow:0 8px 24px #4044a014}
+.piz-history-row-main{display:flex;align-items:center;gap:11px;min-width:0;padding:12px;touch-action:pan-y}
 .piz-history-direction{width:34px;height:34px;display:grid;place-items:center;flex:0 0 34px;border-radius:11px;background:#f1f2f8;color:#6f7890;font-size:18px;font-weight:800}
 .piz-history-direction.incoming{background:#e9f8f1;color:#23866a}
 .piz-history-direction.outgoing{background:#fff0f1;color:#bd5363}
@@ -18,6 +21,15 @@
 .piz-history-amount small{color:#8b93a3;font-size:8px;white-space:nowrap}
 .piz-history-empty,.piz-history-error{margin:0;padding:16px;border:1px dashed #e0e3ed;border-radius:12px;color:#7f889a;font-size:11px;text-align:center}
 .piz-history-error{border-color:#eeced2;background:#fff7f8;color:#a74252}
+.piz-history-notice{margin:8px 0;padding:10px 12px;border:1px solid #ccebdd;border-radius:10px;background:#f1fbf5;color:#287452;font-size:10px}
+.piz-receipt-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 12px;border-top:1px solid #ececf5;background:linear-gradient(100deg,#f7f7ff,#fff)}
+.piz-receipt-actions>span{margin-right:auto;color:#727b90;font-size:10px;font-weight:750}
+.piz-receipt-actions button,.piz-receipt-confirm button{min-height:34px;padding:0 12px;border:1px solid #dedff0;border-radius:10px;background:#fff;color:#565f75;font-size:10px;font-weight:750;cursor:pointer}
+.piz-receipt-actions button.danger,.piz-receipt-confirm button.danger{border-color:#f0c6cc;background:#fff4f5;color:#ad4052}
+.piz-receipt-actions button:disabled,.piz-receipt-confirm button:disabled{opacity:.6;cursor:wait}
+.piz-receipt-confirm{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;width:100%}
+.piz-receipt-confirm p{margin:0;color:#6f7789;font-size:10px;line-height:1.5}
+.piz-receipt-confirm>div{display:flex;gap:7px}
 .piz-history-more{width:100%;min-height:39px;margin-top:10px;border:1px solid #dedff2;border-radius:11px;background:#f7f7ff;color:#625fc1;font-size:11px;font-weight:750;cursor:pointer}
 .piz-history-more:disabled{opacity:.55;cursor:wait}
-@media(max-width:600px){.piz-history-row{align-items:flex-start;gap:8px;padding:10px}.piz-history-direction{width:30px;height:30px;flex-basis:30px}.piz-history-copy strong{font-size:11px}.piz-history-amount strong{font-size:11px}.piz-history-copy small,.piz-history-copy time{font-size:8px}}
+@media(max-width:600px){.piz-history-row-main{align-items:flex-start;gap:8px;padding:10px}.piz-history-direction{width:30px;height:30px;flex-basis:30px}.piz-history-copy strong{font-size:11px}.piz-history-amount strong{font-size:11px}.piz-history-copy small,.piz-history-copy time{font-size:8px}.piz-receipt-confirm{grid-template-columns:1fr}.piz-receipt-confirm>div{justify-content:flex-end}.piz-receipt-actions button,.piz-receipt-confirm button{min-height:38px}}

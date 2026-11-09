@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState
 } from "react";
 
@@ -7,7 +8,7 @@ import {
   useAuth
 } from "../context/authContext";
 import { API_BASE_URL, API_ORIGIN } from "../config";
-import { getPizTransactions } from "../services/userService";
+import { deletePizReceipt, getPizTransactions } from "../services/userService";
 import "./PizWallet.css";
 import "../piz-link.css";
 
@@ -939,9 +940,24 @@ function PizTransactionHistory({ token }) {
   const [entries, setEntries] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+  const [historyRevision, setHistoryRevision] = useState(0);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [openActionsId, setOpenActionsId] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState("");
+  const [deletingId, setDeletingId] = useState("");
+  const longPressTimer = useRef(null);
+
+  const clearLongPressTimer = () => {
+    if (longPressTimer.current) {
+      window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  useEffect(() => () => clearLongPressTimer(), []);
 
   useEffect(() => {
     let active = true;
@@ -955,9 +971,43 @@ function PizTransactionHistory({ token }) {
       .catch((requestError) => { if (active) setError(requestError.message || "Impossible de charger l’historique Piz."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [token, page]);
+  }, [token, page, historyRevision]);
 
   const visibleEntries = entries.filter((entry) => filter === "all" || entry.direction === filter);
+  const startLongPress = (event, entryId) => {
+    if (event.button !== 0 || event.target.closest("button")) return;
+    clearLongPressTimer();
+    longPressTimer.current = window.setTimeout(() => {
+      setOpenActionsId(entryId);
+      setConfirmDeleteId("");
+      longPressTimer.current = null;
+    }, 600);
+  };
+  const openReceiptActions = (event, entryId) => {
+    event.preventDefault();
+    clearLongPressTimer();
+    setOpenActionsId(entryId);
+    setConfirmDeleteId("");
+  };
+  const deleteReceipt = async (entryId) => {
+    if (!token || deletingId) return;
+    setDeletingId(entryId);
+    setError("");
+    setNotice("");
+    try {
+      await deletePizReceipt({ token, transactionId: entryId });
+      setEntries((current) => current.filter((entry) => entry.id !== entryId));
+      setPage(1);
+      setHistoryRevision((current) => current + 1);
+      setOpenActionsId("");
+      setConfirmDeleteId("");
+      setNotice("Reçu retiré de ton historique personnel.");
+    } catch (requestError) {
+      setError(requestError.message || "Impossible de supprimer ce reçu.");
+    } finally {
+      setDeletingId("");
+    }
+  };
   const typeLabel = (type) => ({
     "opening-grant": "Dotation initiale",
     "piz-purchase": "Achat de Piz",
@@ -970,16 +1020,46 @@ function PizTransactionHistory({ token }) {
 
   return <section className="piz-section piz-transaction-history">
     <div className="piz-section-title"><div><span>TRANSPARENCE DU PORTEFEUILLE</span><h2>Historique des mouvements</h2></div><span className="piz-history-count">{entries.length} affiché{entries.length === 1 ? "" : "s"}</span></div>
-    <p className="piz-history-intro">Les achats, transferts et dépenses enregistrés apparaissent ici. Les récompenses calculées depuis ton activité restent visibles dans les compteurs de participation.</p>
+    <p className="piz-history-intro">Les achats, transferts et dépenses enregistrés apparaissent ici. Maintiens un reçu appuyé pour ouvrir ses actions. Les récompenses d’activité restent visibles dans les compteurs de participation.</p>
     <div className="piz-history-filters" role="group" aria-label="Filtrer les mouvements Piz">
       {[ ["all", "Tout"], ["incoming", "Entrées"], ["outgoing", "Sorties"] ].map(([value, label]) => <button type="button" key={value} className={filter === value ? "active" : ""} aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}
     </div>
     {error && <p className="piz-history-error" role="alert">{error}</p>}
+    {notice && <p className="piz-history-notice" role="status">{notice}</p>}
     {loading && entries.length === 0 ? <p className="piz-history-empty">Chargement de tes mouvements…</p> : visibleEntries.length === 0 ? <p className="piz-history-empty">{entries.length ? "Aucun mouvement dans ce filtre." : "Aucun mouvement enregistré pour le moment."}</p> : <div className="piz-history-list">
-      {visibleEntries.map((entry) => <article className="piz-history-row" key={entry.id}>
-        <span className={`piz-history-direction ${entry.direction}`}>{entry.direction === "incoming" ? "↓" : entry.direction === "outgoing" ? "↑" : "·"}</span>
-        <div className="piz-history-copy"><strong>{entry.description || typeLabel(entry.type)}</strong><small>{typeLabel(entry.type)}{entry.counterparty ? ` · ${entry.direction === "outgoing" ? "À" : "De"} ${entry.counterparty}` : ""}</small><time>{entry.createdAt ? new Date(entry.createdAt).toLocaleString("fr-FR") : "Date indisponible"}</time>{entry.fee > 0 && <small>Commission : {entry.fee.toLocaleString("fr-FR", { maximumFractionDigits: 4 })} Piz</small>}</div>
-        <div className="piz-history-amount"><strong className={entry.direction}>{entry.direction === "incoming" ? "+" : entry.direction === "outgoing" ? "−" : ""}{Number(entry.amount || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</strong><small>Piz · {entry.status === "completed" ? "Confirmé" : "Échoué"}</small></div>
+      {visibleEntries.map((entry) => <article
+        className={`piz-history-row${openActionsId === entry.id ? " is-actions-open" : ""}`}
+        key={entry.id}
+        tabIndex={0}
+        aria-label={`${entry.description || typeLabel(entry.type)}. Maintiens appuyé pour les actions du reçu.`}
+        onPointerDown={(event) => startLongPress(event, entry.id)}
+        onPointerUp={clearLongPressTimer}
+        onPointerLeave={clearLongPressTimer}
+        onPointerCancel={clearLongPressTimer}
+        onContextMenu={(event) => openReceiptActions(event, entry.id)}
+        onKeyDown={(event) => {
+          if (event.shiftKey && (event.key === "F10" || event.key === "ContextMenu")) openReceiptActions(event, entry.id);
+          if (event.key === "Escape" && openActionsId === entry.id) {
+            setOpenActionsId("");
+            setConfirmDeleteId("");
+          }
+        }}
+      >
+        <div className="piz-history-row-main">
+          <span className={`piz-history-direction ${entry.direction}`}>{entry.direction === "incoming" ? "↓" : entry.direction === "outgoing" ? "↑" : "·"}</span>
+          <div className="piz-history-copy"><strong>{entry.description || typeLabel(entry.type)}</strong><small>{typeLabel(entry.type)}{entry.counterparty ? ` · ${entry.direction === "outgoing" ? "À" : "De"} ${entry.counterparty}` : ""}</small><time>{entry.createdAt ? new Date(entry.createdAt).toLocaleString("fr-FR") : "Date indisponible"}</time>{entry.fee > 0 && <small>Commission : {entry.fee.toLocaleString("fr-FR", { maximumFractionDigits: 4 })} Piz</small>}</div>
+          <div className="piz-history-amount"><strong className={entry.direction}>{entry.direction === "incoming" ? "+" : entry.direction === "outgoing" ? "−" : ""}{Number(entry.amount || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</strong><small>Piz · {entry.status === "completed" ? "Confirmé" : "Échoué"}</small></div>
+        </div>
+        {openActionsId === entry.id && <div className="piz-receipt-actions" onPointerDown={(event) => event.stopPropagation()}>
+          {confirmDeleteId === entry.id ? <div className="piz-receipt-confirm" role="group" aria-label="Confirmer la suppression du reçu">
+            <p>Retirer ce reçu de ton historique ? Le mouvement reste conservé dans le registre Piz.</p>
+            <div><button type="button" className="danger" onClick={() => deleteReceipt(entry.id)} disabled={deletingId === entry.id}>{deletingId === entry.id ? "Suppression…" : "Confirmer"}</button><button type="button" onClick={() => setConfirmDeleteId("")}>Garder le reçu</button></div>
+          </div> : <>
+            <span>Actions du reçu</span>
+            <button type="button" className="danger" onClick={() => setConfirmDeleteId(entry.id)}>Supprimer le reçu</button>
+            <button type="button" onClick={() => setOpenActionsId("")}>Fermer</button>
+          </>}
+        </div>}
       </article>)}
     </div>}
     {hasMore && <button type="button" className="piz-history-more" onClick={() => setPage((current) => current + 1)} disabled={loading}>{loading ? "Chargement…" : "Charger les mouvements suivants"}</button>}

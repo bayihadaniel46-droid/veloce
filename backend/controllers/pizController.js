@@ -1,4 +1,5 @@
 const PizTransaction = require("../models/PizTransaction");
+const mongoose = require("mongoose");
 
 const UNITS_PER_PIZ = 1_000_000;
 
@@ -9,7 +10,8 @@ const getMyPizTransactions = async (req, res) => {
     const limit = Math.min(50, Math.max(1, Number.parseInt(req.query.limit || "25", 10) || 25));
     const query = {
       status: { $in: ["completed", "failed"] },
-      $or: [{ fromUser: userId }, { toUser: userId }]
+      $or: [{ fromUser: userId }, { toUser: userId }],
+      hiddenForUsers: { $ne: userId }
     };
     const [transactions, total] = await Promise.all([
       PizTransaction.find(query)
@@ -49,4 +51,33 @@ const getMyPizTransactions = async (req, res) => {
   }
 };
 
-module.exports = { getMyPizTransactions };
+const hideMyPizReceipt = async (req, res) => {
+  try {
+    const userId = String(req.user.userId);
+    const { transactionId } = req.params;
+    if (!mongoose.isValidObjectId(transactionId)) {
+      return res.status(400).json({ message: "Identifiant de reçu invalide." });
+    }
+
+    const transaction = await PizTransaction.findOneAndUpdate(
+      {
+        _id: transactionId,
+        status: { $in: ["completed", "failed"] },
+        $or: [{ fromUser: userId }, { toUser: userId }],
+        hiddenForUsers: { $ne: userId }
+      },
+      { $addToSet: { hiddenForUsers: userId } },
+      { new: true, projection: { _id: 1 } }
+    );
+
+    if (!transaction) {
+      return res.status(404).json({ message: "Reçu introuvable dans ton historique." });
+    }
+    return res.json({ success: true, receiptId: String(transaction._id) });
+  } catch (error) {
+    console.error("Masquage du reçu Piz :", error.message);
+    return res.status(500).json({ message: "Impossible de retirer ce reçu de ton historique." });
+  }
+};
+
+module.exports = { getMyPizTransactions, hideMyPizReceipt };
