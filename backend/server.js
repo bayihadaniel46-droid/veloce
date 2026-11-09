@@ -30,6 +30,7 @@ const callRoutes = require("./routes/callRoutes");
 const communityRoutes = require("./routes/communityRoutes");
 const pushRoutes = require("./routes/pushRoutes");
 const carrefourRoutes = require("./routes/carrefourRoutes");
+const gameRoutes = require("./routes/gameRoutes");
 const { settleExpiredVotes } = require("./controllers/clanVoteController");
 const { ensureAllPizWallets } = require("./services/pizEconomy");
 
@@ -86,6 +87,7 @@ app.use("/api/calls", callRoutes);
 app.use("/api/community", communityRoutes);
 app.use("/api/push", pushRoutes);
 app.use("/api/carrefour", carrefourRoutes);
+app.use("/api/games", gameRoutes);
 
 app.get("/health", (req, res) => {
   res.json({

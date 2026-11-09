@@ -5,7 +5,8 @@ import { createPost } from "../services/postService";
 function CreatePostModal({
   isOpen,
   onClose,
-  onAddPost
+  onAddPost,
+  initialContent = ""
 }) {
   const { token, user } = useAuth();
 
@@ -24,6 +25,10 @@ function CreatePostModal({
   useEffect(() => {
     selectedFilesRef.current = selectedFiles;
   }, [selectedFiles]);
+
+  useEffect(() => {
+    if (isOpen) setContent(initialContent);
+  }, [isOpen, initialContent]);
 
   useEffect(() => {
     return () => {

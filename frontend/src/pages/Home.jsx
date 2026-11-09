@@ -100,6 +100,7 @@ function Home() {
 
   const [showModal, setShowModal] =
     useState(false);
+  const [postDraft, setPostDraft] = useState("");
 
   useEffect(() => {
     if (!token) return undefined;
@@ -278,16 +279,24 @@ function Home() {
 
   const openCreatePost =
     useCallback(() => {
-
+      setPostDraft("");
       setShowModal(true);
 
     }, []);
+
+  const shareGameScore = useCallback((content) => {
+    setPostDraft(content);
+    setCurrentPage("home");
+    setFeedType("posts");
+    setShowModal(true);
+  }, []);
 
 
   const closeCreatePost =
     useCallback(() => {
 
       setShowModal(false);
+      setPostDraft("");
 
     }, []);
 
@@ -509,7 +518,7 @@ function Home() {
         return <Explorer unreadNotifications={unreadNotifications} onUnreadCountChange={setUnreadNotifications} onOpenGames={() => setCurrentPage("games")} />;
 
       case "games":
-        return <Games onBack={() => setCurrentPage("explorer")} />;
+        return <Games onBack={() => setCurrentPage("explorer")} onShareScore={shareGameScore} />;
 
 
       case "messages":
@@ -598,6 +607,7 @@ function Home() {
         isOpen={showModal}
         onClose={closeCreatePost}
         onAddPost={addPost}
+        initialContent={postDraft}
       />
 
     </div>
