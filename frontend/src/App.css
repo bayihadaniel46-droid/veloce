@@ -43,13 +43,20 @@ textarea {
 ============================================================ */
 
 .auth-page {
+  height: 100vh;
+  height: 100dvh;
   min-height: 100vh;
+  min-height: 100dvh;
 
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
 
   padding: 30px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
 
   background: #121212;
 }
@@ -57,6 +64,8 @@ textarea {
 .auth-card {
   width: 100%;
   max-width: 460px;
+  flex: 0 0 auto;
+  margin: auto;
 
   background: #1e1e1e;
 
