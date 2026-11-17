@@ -1227,3 +1227,91 @@
     width: 100%;
   }
 }
+
+/* Keep the expanded contact profile full-screen after the generic dialog rules. */
+.chat-profile-overlay.chat-profile-overlay-page {
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+}
+
+.chat-profile-dialog.chat-profile-page {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: clamp(18px, 4vw, 42px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 0;
+  border-radius: 0;
+  background: linear-gradient(145deg, #fbfbff, #f4f5ff 55%, #f7f1ff);
+  color: #252b42;
+}
+
+.chat-profile-page > header,
+.chat-profile-page .chat-profile-tabs,
+.chat-profile-quick-actions {
+  flex: 0 0 auto;
+}
+
+.chat-profile-page .chat-profile-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  flex-wrap: wrap;
+  padding-top: 5px;
+  background: #f7f7ff;
+}
+
+.chat-profile-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: min(100%, 760px);
+  margin: 16px auto 0;
+}
+
+.chat-profile-quick-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 43px;
+  padding: 9px 14px;
+  border: 1px solid #dfe2f2;
+  border-radius: 14px;
+  background: linear-gradient(140deg, #fff, #f1f2ff);
+  color: #535fc4;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.chat-profile-quick-actions button:last-child {
+  border-color: #d9d1f2;
+  background: linear-gradient(140deg, #f4f1ff, #fff);
+  color: #7257b4;
+}
+
+@media (max-width: 600px) {
+  .chat-profile-dialog.chat-profile-page {
+    padding: 18px 14px calc(20px + env(safe-area-inset-bottom));
+  }
+
+  .chat-profile-quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chat-profile-quick-actions button {
+    min-width: 0;
+    padding: 9px 8px;
+    font-size: 11px;
+  }
+}
