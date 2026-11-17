@@ -24,7 +24,7 @@ const API_URL = API_BASE_URL;
 // COMPOSANT
 // ============================================================
 
-function Profile({ onOpenSettings }) {
+function Profile({ onOpenSettings, initialView = "profile", onBack }) {
 
   const {
     user,
@@ -74,7 +74,7 @@ function Profile({ onOpenSettings }) {
     avatar: ""
   });
   const [saveMessage, setSaveMessage] = useState("");
-  const [showFinance, setShowFinance] = useState(false);
+  const [showFinance, setShowFinance] = useState(initialView === "finance");
   const [inviteCopied, setInviteCopied] = useState(false);
   const [pizAccountId, setPizAccountId] = useState(user?.pizAccountId || "");
   const [pizPassword, setPizPassword] = useState("");
@@ -422,7 +422,7 @@ function Profile({ onOpenSettings }) {
         setPizLinkLoading(false);
       }
     };
-    return <section className="piz-page"><div className="piz-page-topline"><button className="piz-back" onClick={() => setShowFinance(false)}>← Retour au profil</button></div><header className="piz-hero"><span className="piz-eyebrow">COMPTE FINANCES · PORTEFEUILLE CENTRAL</span><h1>Mon compte PIZ</h1><p>Synchronise ici les actifs Veloce avec ton compte PIZ.</p><div className="piz-balance-card"><span>Solde PIZ estimé</span><strong>{Number(stats.pizBalance || 0).toFixed(4)} <small>PIZ</small></strong><p>Le compte PIZ centralise les actifs de tes produits. Les transferts et frais restent enregistrés dans le registre PIZ.</p><div className="piz-progress"><i style={{ width: `${Math.round(((stats.pizBalance || 0) % 10) * 10)}%` }} /></div><small>{(10 - ((stats.pizBalance || 0) % 10)).toFixed(4)} PIZ jusqu’au prochain palier indicatif</small></div>
+    return <section className="piz-page"><div className="piz-page-topline"><button className="piz-back" onClick={() => onBack ? onBack() : setShowFinance(false)}>← {onBack ? "Retour à l’accueil" : "Retour au profil"}</button></div><header className="piz-hero"><span className="piz-eyebrow">COMPTE FINANCES · PORTEFEUILLE CENTRAL</span><h1>Mon compte PIZ</h1><p>Synchronise ici les actifs Veloce avec ton compte PIZ.</p><div className="piz-balance-card"><span>Solde PIZ estimé</span><strong>{Number(stats.pizBalance || 0).toFixed(4)} <small>PIZ</small></strong><p>Le compte PIZ centralise les actifs de tes produits. Les transferts et frais restent enregistrés dans le registre PIZ.</p><div className="piz-progress"><i style={{ width: `${Math.round(((stats.pizBalance || 0) % 10) * 10)}%` }} /></div><small>{(10 - ((stats.pizBalance || 0) % 10)).toFixed(4)} PIZ jusqu’au prochain palier indicatif</small></div>
         <form className="piz-link-code-panel" onSubmit={connectPizAccount}><div className="piz-link-code-heading"><span className="piz-code-lock">◈</span><div><strong>Connecter le portefeuille PIZ</strong><small>Saisis l’ID personnel et le mot de passe de ton compte PIZ.</small></div></div><div className="piz-link-code-value"><input aria-label="ID personnel PIZ" value={pizAccountId} onChange={(event) => setPizAccountId(event.target.value)} placeholder="ID PIZ à 24 caractères" maxLength={24} autoComplete="off" required/><input aria-label="Mot de passe PIZ" type="password" value={pizPassword} onChange={(event) => setPizPassword(event.target.value)} placeholder="Mot de passe PIZ" autoComplete="current-password" required/><button type="submit" disabled={pizLinkLoading}>{pizLinkLoading ? "Synchronisation…" : "Connecter et synchroniser"}</button></div><p className="piz-link-code-hint">Le mot de passe confirme que tu contrôles ce portefeuille. Veloce ne l’enregistre pas; PIZ vérifie la liaison côté serveur.</p></form>
       </header>
       <div className="piz-actions"><article><span>↙</span><div><strong>Dépôt</strong><small>Fonction bientôt disponible</small></div><button disabled title="Cette fonction sera ajoutée ultérieurement">Bientôt</button></article><article><span>↗</span><div><strong>Retrait</strong><small>Fonction bientôt disponible</small></div><button disabled title="Cette fonction sera ajoutée ultérieurement">Bientôt</button></article></div>
@@ -566,10 +566,6 @@ function Profile({ onOpenSettings }) {
 
 
         <div className="profile-header-actions">
-          <button type="button" className="profile-finance-button" onClick={() => setShowFinance(true)}>◈ Compte finances · PIZ</button>
-          <button type="button" className="profile-market-button" onClick={() => window.dispatchEvent(new Event("veloce:navigate-market"))}>
-            ↗ Tendances du marché
-          </button>
           <button type="button" className="profile-edit-button" onClick={() => setEditing(true)}>
             Modifier le profil
           </button>

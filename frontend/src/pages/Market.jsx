@@ -16,7 +16,7 @@ const ACTIVITY_LABELS = {
 
 const money = (amount) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 }).format(Number(amount) || 0);
 
-function Market() {
+function Market({ onBack }) {
   const { token } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,10 +38,20 @@ function Market() {
   }, [token]);
 
   const maxAmount = Math.max(1, ...(data?.monthly || []).map((entry) => entry.amount));
+  const chartPoints = (data?.monthly || []).map((month, index, months) => ({
+    ...month,
+    x: months.length < 2 ? 320 : 44 + index * (552 / (months.length - 1)),
+    y: 168 - (Number(month.amount || 0) / maxAmount) * 124,
+    label: new Date(month.month + "-01T00:00:00").toLocaleDateString("fr-FR", { month: "short" })
+  }));
+  const chartLine = chartPoints.map((point) => `${point.x},${point.y}`).join(" ");
+  const chartArea = chartPoints.length
+    ? `M ${chartPoints[0].x} 168 L ${chartPoints.map((point) => `${point.x} ${point.y}`).join(" L ")} L ${chartPoints[chartPoints.length - 1].x} 168 Z`
+    : "";
   const price = data?.reservePricing;
 
   return <section className="market-page piz-market-page">
-    <button type="button" className="market-back" onClick={() => window.dispatchEvent(new Event("veloce:navigate-profile"))}>← Retour au profil</button>
+    <button type="button" className="market-back" onClick={() => onBack ? onBack() : window.dispatchEvent(new Event("veloce:navigate-home"))}>← Retour à l’accueil</button>
     <header className="market-heading piz-market-heading"><span>ÉCONOMIE VELOCE</span><h1>Tendances du Piz</h1><p>Suivi des soldes, des frais et des mouvements Piz enregistrés sur la plateforme.</p></header>
     {loading ? <p className="market-state">Chargement du registre Piz…</p> : error ? <div className="market-state market-error"><strong>Registre indisponible</strong><p>{error}</p></div> : data && <>
       <div className="piz-market-stats">
@@ -51,13 +61,17 @@ function Market() {
       </div>
       <section className="piz-market-panel">
         <div className="piz-market-panel-heading"><div><span>ACTIVITÉ DU REGISTRE</span><h2>Volume mensuel</h2></div><span className="piz-market-live">● Registre Veloce</span></div>
-        <div className="piz-volume-chart" role="img" aria-label="Volume Piz mensuel sur les six derniers mois">
-          {data.monthly.map((month) => <div className="piz-volume-column" key={month.month}>
-            <strong>{money(month.amount)} Piz</strong>
-            <div className="piz-volume-track"><i style={{ height: Math.max(month.amount ? 5 : 0, month.amount / maxAmount * 100) + "%" }} /></div>
-            <span>{new Date(month.month + "-01T00:00:00").toLocaleDateString("fr-FR", { month: "short" })}</span>
-            <small>{month.transactions} opération{month.transactions === 1 ? "" : "s"}</small>
-          </div>)}
+        <div className="piz-volume-chart piz-volume-line-chart" role="img" aria-label="Courbe du volume mensuel de Piz sur les six derniers mois">
+          <svg viewBox="0 0 640 220" preserveAspectRatio="none" aria-hidden="true">
+            <defs><linearGradient id="piz-volume-area" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#8377f2" stopOpacity=".3"/><stop offset="100%" stopColor="#8377f2" stopOpacity="0"/></linearGradient><linearGradient id="piz-volume-line" x1="0" x2="1" y1="0" y2="0"><stop offset="0%" stopColor="#4ac7c7"/><stop offset="55%" stopColor="#8377f2"/><stop offset="100%" stopColor="#e783c5"/></linearGradient></defs>
+            {[44, 86, 127, 168].map((y) => <line key={y} x1="36" x2="604" y1={y} y2={y} className="piz-chart-gridline" />)}
+            {chartArea && <path d={chartArea} fill="url(#piz-volume-area)" />}
+            {chartPoints.length > 1 && <polyline points={chartLine} className="piz-chart-line" />}
+            {chartPoints.map((point) => <g key={point.month}>
+              <circle cx={point.x} cy={point.y} r="5" className="piz-chart-point"><title>{point.label}: {money(point.amount)} Piz, {point.transactions} opération{point.transactions === 1 ? "" : "s"}</title></circle>
+              <text x={point.x} y="198" textAnchor="middle" className="piz-chart-month">{point.label}</text>
+            </g>)}
+          </svg>
         </div>
       </section>
       <section className="piz-market-panel">

@@ -38,6 +38,22 @@ import { playUiSound } from "../services/soundService";
 
 import { useAuth } from "../context/authContext";
 
+function FeedNavIcon({ type }) {
+  const common = { viewBox: "0 0 48 48", fill: "none", "aria-hidden": true };
+  switch (type) {
+    case "posts":
+      return <svg {...common}><path d="M14 11h22a3 3 0 0 1 3 3v22a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V14a3 3 0 0 1 3-3Z"/><path d="M17 20h16M17 26h13M17 32h9"/><path d="M8 34V11a3 3 0 0 1 3-3h22"/></svg>;
+    case "carrefour":
+      return <svg {...common}><path d="m24 5 19 19-19 19L5 24 24 5Z"/><circle cx="24" cy="24" r="5"/><path d="M24 8v11m0 10v11M8 24h11m10 0h11"/></svg>;
+    case "videos":
+      return <svg {...common}><rect x="6" y="10" width="36" height="28" rx="9"/><path d="m20 17 12 7-12 7V17Z"/><path d="M12 6v4m24-4v4M12 38v4m24-4v4"/></svg>;
+    case "finance":
+      return <svg {...common}><path d="M24 5 42 15v18L24 43 6 33V15L24 5Z"/><circle cx="24" cy="24" r="11"/><path d="M28 19.5c-.8-1-2-1.5-3.6-1.5-2 0-3.4 1-3.4 2.6 0 4 7.2 1.8 7.2 6.2 0 1.8-1.6 3.2-4 3.2-1.8 0-3.3-.6-4.2-1.8M24 15v18"/></svg>;
+    default:
+      return <svg {...common}><path d="M7 39h34M10 34l9-10 7 5 12-15"/><path d="M30 14h8v8"/><circle cx="10" cy="34" r="2"/><circle cx="19" cy="24" r="2"/><circle cx="26" cy="29" r="2"/><circle cx="38" cy="14" r="2"/></svg>;
+  }
+}
+
 
 function Home() {
 
@@ -227,6 +243,7 @@ function Home() {
 
     const openProfile = () => setCurrentPage("profile");
     const openMarket = () => setCurrentPage("market");
+    const openHome = () => setCurrentPage("home");
     const openUserProfile = (event) => {
       const id = event.detail?.userId;
       if (!id) return;
@@ -236,10 +253,12 @@ function Home() {
     };
     window.addEventListener("veloce:navigate-profile", openProfile);
     window.addEventListener("veloce:navigate-market", openMarket);
+    window.addEventListener("veloce:navigate-home", openHome);
     window.addEventListener("veloce:open-user-profile", openUserProfile);
     return () => {
       window.removeEventListener("veloce:navigate-profile", openProfile);
       window.removeEventListener("veloce:navigate-market", openMarket);
+      window.removeEventListener("veloce:navigate-home", openHome);
       window.removeEventListener("veloce:open-user-profile", openUserProfile);
     };
 
@@ -418,23 +437,7 @@ function Home() {
         const visiblePosts = posts.filter((post) => {
           const hasVideo = Array.isArray(post.attachments) && post.attachments.some((file) => file.mimetype?.startsWith("video/"));
           return feedType === "videos" ? hasVideo : !hasVideo;
-        });
-        const authorStacks = new Map();
-        if (feedType === "posts") {
-          visiblePosts.forEach((post, index) => {
-            const author = post.author && typeof post.author === "object" ? post.author : {};
-            const authorId = String(author._id || (typeof post.author === "string" ? post.author : "") || post.username || post._id || `post-${index}`);
-            if (!authorStacks.has(authorId)) {
-              authorStacks.set(authorId, {
-                id: authorId,
-                name: post.username || author.username || "Membre",
-                avatar: author.avatar || post.avatar || "",
-                posts: [],
-              });
-            }
-            authorStacks.get(authorId).posts.push(post);
-          });
-        }
+        }).sort((left, right) => new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime());
 
         if (loading) {
 
@@ -506,23 +509,23 @@ function Home() {
           <VideoFeed posts={visiblePosts} onLike={handleLike} viewerId={user?._id || user?.id || "guest"} />
         ) : (
           <section className="home-feed">
-            {[...authorStacks.values()].map((stack) => (
-              <details className="author-publication-stack" key={stack.id}>
-                <summary className="author-publication-stack-summary">
-                  <span className="publication-stack-avatar">{stack.avatar ? <img src={stack.avatar} alt="" /> : stack.name.charAt(0).toUpperCase()}</span>
-                  <span className="publication-stack-copy">
-                    <strong>{stack.name}</strong>
-                    <span>{stack.posts.length} publication{stack.posts.length === 1 ? "" : "s"} · {stack.posts[0]?.content || "Contenu photo ou vidéo"}</span>
-                  </span>
-                  <span className="publication-stack-toggle">Ouvrir <b>⌄</b></span>
-                </summary>
-                <div className="author-publication-stack-list">
-                  {stack.posts.map((post, index) => (
-                    <PostCard key={post._id || `${stack.id}-post-${index}`} post={post} onLike={handleLike} />
-                  ))}
-                </div>
+              {visiblePosts.map((post, index) => {
+                const author = post.author && typeof post.author === "object" ? post.author : {};
+                const name = post.username || author.username || "Membre";
+                const avatar = author.avatar || post.avatar || "";
+                const preview = (post.content || "Publication avec média").replace(/\s+/g, " ").trim();
+                return <details className="single-post-fold" key={post._id || `post-${index}`}>
+                  <summary className="single-post-fold-summary">
+                    <span className="single-post-fold-avatar">{avatar ? <img src={avatar} alt="" /> : name.charAt(0).toUpperCase()}</span>
+                    <span className="single-post-fold-copy">
+                      <strong>{name}<time dateTime={post.createdAt || undefined}>{post.createdAt ? new Date(post.createdAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" }) : "Date indisponible"}</time></strong>
+                      <span>{preview}</span>
+                    </span>
+                    <span className="single-post-fold-toggle"><span className="fold-open-label">Ouvrir</span><span className="fold-close-label">Réduire</span><b>⌄</b></span>
+                  </summary>
+                  <div className="single-post-fold-body"><PostCard post={post} onLike={handleLike} /></div>
               </details>
-            ))}
+              })}
 
           </section>
         );
@@ -541,7 +544,10 @@ function Home() {
 
 
       case "profile":
-        return <Profile onOpenSettings={() => setCurrentPage("settings")} />;
+        return <Profile key="profile" onOpenSettings={() => setCurrentPage("settings")} />;
+
+      case "piz-finance":
+        return <Profile key="piz-finance" initialView="finance" onBack={() => setCurrentPage("home")} />;
 
       case "settings":
         return <Settings onBack={() => setCurrentPage("profile")} onOpenProfile={() => setCurrentPage("profile")} onOpenAdministration={() => setCurrentPage("admin")} onLogout={logout} />;
@@ -556,7 +562,7 @@ function Home() {
         return <Assistant />;
 
       case "market":
-        return <Market />;
+        return <Market onBack={() => setCurrentPage("home")} />;
 
       case "carrefour":
         return <Carrefour onBack={() => setCurrentPage("home")} />;
@@ -596,11 +602,18 @@ function Home() {
       />
 
       <main className="feed" onTouchStart={startFeedTouch} onTouchEnd={finishFeedTouch}>
-        {currentPage === "home" && <div className="home-feed-switch" role="tablist" aria-label="Type de publications">
-          <button type="button" role="tab" aria-selected={feedType === "videos"} className={feedType === "videos" ? "is-active" : ""} onClick={() => setFeedType("videos")}>▶ Vidéos</button>
-          <button type="button" className="home-feed-carrefour" aria-label="Ouvrir le Carrefour Veloce" onClick={() => setCurrentPage("carrefour")}>◈<small>Carrefour</small></button>
-          <button type="button" role="tab" aria-selected={feedType === "posts"} className={feedType === "posts" ? "is-active" : ""} onClick={() => setFeedType("posts")}>▤ Posts</button>
-        </div>}
+        {currentPage === "home" && <nav className="home-feed-switch" aria-label="Raccourcis principaux">
+          {[
+            { id: "posts", label: "Posts", active: feedType === "posts", action: () => { setCurrentPage("home"); setFeedType("posts"); } },
+            { id: "carrefour", label: "Carrefour", active: currentPage === "carrefour", action: () => setCurrentPage("carrefour") },
+            { id: "videos", label: "Vidéos", active: feedType === "videos", action: () => { setCurrentPage("home"); setFeedType("videos"); } },
+            { id: "finance", label: "Compte PIZ", active: currentPage === "piz-finance", action: () => setCurrentPage("piz-finance") },
+            { id: "market", label: "Tendances", active: currentPage === "market", action: () => setCurrentPage("market") },
+          ].map((item) => <button key={item.id} type="button" className={`home-feed-icon-button home-feed-item-${item.id}${item.active ? " is-active" : ""}`} onClick={item.action} aria-label={item.label} aria-current={item.active ? "page" : undefined} title={item.label}>
+            <span className="home-feed-icon-orbit"><FeedNavIcon type={item.id} /></span>
+            <span className="home-feed-icon-label">{item.label}</span>
+          </button>)}
+        </nav>}
         {refreshingFeed && <div className="feed-refresh-status" role="status">Actualisation…</div>}
         {renderCurrentPage()}
 
@@ -608,10 +621,10 @@ function Home() {
 
       <Rightbar />
 
-      <FloatingButton
+      {currentPage !== "messages" && <FloatingButton
         onClick={openCreatePost}
         isRaised={messageComposerActive}
-      />
+      />}
 
       <MobileNavigation
         currentPage={currentPage}
