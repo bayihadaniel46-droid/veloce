@@ -7,9 +7,10 @@ const ClanKnowledgePurchase = require("../models/ClanKnowledgePurchase");
 const ClanAssistantKnowledge = require("../models/ClanAssistantKnowledge");
 const User = require("../models/User");
 const { fromUnits, toUnits, transferPizToClan, transferPizFromClan } = require("../services/pizEconomy");
+const { hasClanAccess, activeClanMemberCount } = require("../utils/clanAccess");
 
 const idOf = (value) => String(value?._id || value || "");
-const memberOf = (clan, userId) => (clan.members || []).some((item) => idOf(item) === String(userId));
+const memberOf = (clan, userId) => hasClanAccess(clan, userId);
 const assignedRole = (clan, userId) => (clan.rankAssignments || []).find((item) => idOf(item.user) === String(userId))?.role || "member";
 const chiefOf = (clan, userId) => idOf(clan.owner) === String(userId);
 const managesClan = (clan, userId) => chiefOf(clan, userId) || assignedRole(clan, userId) === "subchief" || (clan.administrators || []).some((item) => idOf(item) === String(userId));
@@ -31,7 +32,7 @@ const publicDocument = (doc, unlocked, clan) => ({
 
 const discoverClans = async (req, res) => {
   try {
-    const clans = await Clan.find({}).select("name description owner members membershipPolicy strategy createdAt updatedAt").sort({ createdAt: -1 }).limit(200).lean();
+    const clans = await Clan.find({}).select("name description owner members temporaryMembers membershipPolicy strategy createdAt updatedAt").sort({ createdAt: -1 }).limit(200).lean();
     const ids = clans.map((clan) => clan._id);
     const [ratings, documents, assistantInfo, activity] = await Promise.all([
       ClanRating.aggregate([{ $match: { clan: { $in: ids } } }, { $group: { _id: "$clan", average: { $avg: "$rating" }, count: { $sum: 1 } } }]),
@@ -51,13 +52,13 @@ const discoverClans = async (req, res) => {
       const members = clan.members || [];
       const knowledgeCount = (knowledge?.count || 0) + (assistantKnowledge?.count || 0);
       const knowledgeUseCount = (knowledge?.purchases || 0) + (assistantKnowledge?.uses || 0);
-      const score = (rating?.average || 0) * 10 + Math.min(20, members.length / 5) + Math.min(20, messages / 10) + Math.min(20, knowledgeUseCount / 2);
+      const score = (rating?.average || 0) * 10 + Math.min(20, activeClanMemberCount(clan) / 5) + Math.min(20, messages / 10) + Math.min(20, knowledgeUseCount / 2);
       return {
         _id: clan._id,
         name: clan.name,
         description: clan.description,
         membershipPolicy: clan.membershipPolicy || "approval",
-        memberCount: members.length,
+        memberCount: activeClanMemberCount(clan),
         rating: rating ? Number(rating.average.toFixed(1)) : 0,
         ratingCount: rating?.count || 0,
         knowledgeCount,
@@ -81,7 +82,7 @@ const requestToJoin = async (req, res) => {
     if (!clan) return res.status(404).json({ message: "Clan introuvable." });
     const userId = String(req.user.userId);
     if (memberOf(clan, userId)) return res.status(409).json({ message: "Tu fais déjà partie de ce clan." });
-    if (clan.members.length >= 100) return res.status(409).json({ message: "Ce clan a atteint sa limite de 100 membres." });
+    if (activeClanMemberCount(clan) >= 100) return res.status(409).json({ message: "Ce clan a atteint sa limite de 100 membres." });
     const previous = clan.membershipRequests.find((item) => idOf(item.user) === userId);
     if (previous?.status === "pending") return res.status(409).json({ message: "Ta demande est déjà en attente." });
     if (clan.membershipPolicy === "open") {
@@ -122,7 +123,7 @@ const reviewMembershipRequest = async (req, res) => {
     const approve = req.body.decision === "approve";
     if (!approve && req.body.decision !== "reject") return res.status(400).json({ message: "Décision invalide." });
     if (approve && !memberOf(clan, request.user)) {
-      if (clan.members.length >= 100) return res.status(409).json({ message: "Le clan a atteint sa limite." });
+      if (activeClanMemberCount(clan) >= 100) return res.status(409).json({ message: "Le clan a atteint sa limite." });
       clan.members.addToSet(request.user);
     }
     request.status = approve ? "approved" : "rejected";

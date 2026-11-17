@@ -256,3 +256,26 @@ export const deletePizReceipt = async ({ token, transactionId }) => {
   if (!response.ok) throw new Error(data.message || "Impossible de supprimer ce reçu.");
   return data;
 };
+
+const userSafetyRequest = async ({ token, path, method = "GET", body }) => {
+  const response = await fetch(`${API_URL}${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(body ? { "Content-Type": "application/json" } : {})
+    },
+    ...(body ? { body: JSON.stringify(body) } : {})
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Cette action n’a pas pu être enregistrée.");
+  return data;
+};
+
+export const getBlockedUsers = (token) => userSafetyRequest({ token, path: "/blocked" });
+export const blockUser = ({ token, userId }) => userSafetyRequest({ token, path: `/${encodeURIComponent(userId)}/block`, method: "POST", body: {} });
+export const unblockUser = ({ token, userId }) => userSafetyRequest({ token, path: `/${encodeURIComponent(userId)}/block`, method: "DELETE" });
+export const reportUserProfile = ({ token, userId, category, details = "" }) => userSafetyRequest({ token, path: `/${encodeURIComponent(userId)}/report`, method: "POST", body: { category, details } });
+export const warnUser = ({ token, userId }) => userSafetyRequest({ token, path: `/${encodeURIComponent(userId)}/warn`, method: "POST", body: {} });
+export const getTemporaryAccessInvitations = (token) => userSafetyRequest({ token, path: "/temporary-access" });
+export const createTemporaryAccessInvitation = ({ token, userId, type, durationHours, clanId }) => userSafetyRequest({ token, path: `/${encodeURIComponent(userId)}/temporary-access`, method: "POST", body: { type, durationHours, ...(clanId ? { clanId } : {}) } });
+export const respondToTemporaryAccessInvitation = ({ token, invitationId, decision }) => userSafetyRequest({ token, path: `/temporary-access/${encodeURIComponent(invitationId)}/respond`, method: "POST", body: { decision } });

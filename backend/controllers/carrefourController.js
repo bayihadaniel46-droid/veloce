@@ -9,6 +9,7 @@ const clanMemberFilter = (userId) => ({
   $or: [
     { owner: userId },
     { members: userId },
+    { temporaryMembers: { $elemMatch: { user: userId, expiresAt: { $gt: new Date() } } } },
     { administrators: userId },
     { moderators: userId }
   ]

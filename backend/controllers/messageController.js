@@ -6,6 +6,8 @@ const Clan = require("../models/Clan");
 const { uploadMessageFiles, PRIVATE_BUCKET_NAME } = require("../utils/messageAttachments");
 const { sendPushToUser } = require("../utils/webPush");
 const { getBlockedContactIds, isContactBlocked } = require("../utils/contactPolicy");
+const MessagingInvitation = require("../models/MessagingInvitation");
+const { hasClanAccess } = require("../utils/clanAccess");
 
 const getUnreadCount = async (req, res) => {
   try {
@@ -137,6 +139,15 @@ const getMessages = async (
       return res.status(403).json({ message: "Cette conversation est indisponible à cause d’un blocage." });
     }
 
+    const temporaryChat = await MessagingInvitation.findOne({
+      type: "conversation",
+      status: "accepted",
+      $or: [{ sender: userId, recipient: otherUserId }, { sender: otherUserId, recipient: userId }]
+    }).sort({ createdAt: -1 }).select("accessExpiresAt").lean();
+    if (temporaryChat?.accessExpiresAt && temporaryChat.accessExpiresAt <= new Date()) {
+      return res.status(403).json({ message: "L’accès temporaire à cette conversation a expiré. Demande une nouvelle invitation." });
+    }
+
     const messages =
       await Message.find({
         $or: [
@@ -253,6 +264,15 @@ const sendMessage = async (
       return res.status(403).json({ message: "Ce message ne peut pas être envoyé à cause d’un blocage." });
     }
 
+    const temporaryChat = await MessagingInvitation.findOne({
+      type: "conversation",
+      status: "accepted",
+      $or: [{ sender, recipient }, { sender: recipient, recipient: sender }]
+    }).sort({ createdAt: -1 }).select("accessExpiresAt").lean();
+    if (temporaryChat?.accessExpiresAt && temporaryChat.accessExpiresAt <= new Date()) {
+      return res.status(403).json({ message: "L’accès temporaire à cette conversation a expiré. Demande une nouvelle invitation." });
+    }
+
     const attachments = req.files?.length ? await uploadMessageFiles(req.files, sender) : [];
     const message = await Message.create({ sender, recipient, content: content || "", attachments });
 
@@ -308,11 +328,11 @@ const getMessageFile = async (req, res) => {
     ]);
     let allowed = Boolean(direct);
     if (!allowed) for (const envelope of envelopes) {
-      const clan = await Clan.findById(envelope.clan).select("members");
+      const clan = await Clan.findById(envelope.clan).select("members temporaryMembers");
       const addressed = envelope.recipients.some((id) => String(id) === userId);
       const opened = String(envelope.sender) === userId || envelope.openedBy.some((id) => String(id) === userId);
       const ownEnvelope = String(envelope.sender) === userId;
-      if (clan?.members.some((id) => String(id) === userId) && (ownEnvelope || addressed) && opened) { allowed = true; break; }
+      if (clan && hasClanAccess(clan, userId) && (ownEnvelope || addressed) && opened) { allowed = true; break; }
     }
     if (!allowed) return res.sendStatus(404);
     const db = mongoose.connection.db;

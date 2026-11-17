@@ -5,16 +5,18 @@ const User = require("../models/User");
 const { uploadMessageFiles, deleteMessageFiles } = require("../utils/messageAttachments");
 const { sendPushToUser } = require("../utils/webPush");
 const { CLAN_CREATION_COST, transferPiz } = require("../services/pizEconomy");
+const { hasClanAccess, activeClanMemberCount, activeTemporaryMembers, clanAccessFilter, idOf: clanIdOf } = require("../utils/clanAccess");
 
 const idOf = (value) => String(value?._id || value);
-const isMember = (clan, userId) => clan.members.some((member) => idOf(member) === String(userId));
+const isMember = (clan, userId) => hasClanAccess(clan, userId);
 
 const listClans = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const clans = await Clan.find({ members: userId })
+    const clans = await Clan.find(clanAccessFilter(userId))
       .populate("owner", "username avatar")
       .populate("members", "username avatar")
+      .populate("temporaryMembers.user", "username avatar")
       .populate("administrators", "username avatar")
       .populate("moderators", "username avatar")
       .populate("rankAssignments.user", "username avatar")
@@ -26,7 +28,9 @@ const listClans = async (req, res) => {
         name: clan.name,
         description: clan.description,
         owner: clan.owner,
-        members: clan.members,
+        members: [...new Map([...clan.members, ...activeTemporaryMembers(clan).map((entry) => entry.user)].filter(Boolean).map((member) => [clanIdOf(member), member])).values()],
+        temporaryMembers: activeTemporaryMembers(clan),
+        temporaryAccessUntil: activeTemporaryMembers(clan).find((entry) => clanIdOf(entry.user) === String(userId))?.expiresAt || null,
         administrators: clan.administrators,
         moderators: clan.moderators,
         rankAssignments: clan.rankAssignments,
@@ -37,7 +41,7 @@ const listClans = async (req, res) => {
         treasuryPiz: (Number(clan.treasuryUnits) || 0) / 1000000,
         updatedAt: clan.updatedAt,
         lastActivity: latest?.createdAt || clan.updatedAt,
-        memberCount: clan.members.length
+        memberCount: activeClanMemberCount(clan)
       };
     }));
     return res.json(result);
@@ -91,7 +95,7 @@ const addClanMembers = async (req, res) => {
     const memberIds = [...new Set((Array.isArray(req.body.memberIds) ? req.body.memberIds : []).map(String))]
       .filter((id) => !isMember(clan, id));
     if (memberIds.some((id) => !mongoose.isValidObjectId(id))) return res.status(400).json({ message: "La sélection des membres est invalide." });
-    if (clan.members.length + memberIds.length > 100) return res.status(400).json({ message: "Un clan ne peut pas dépasser 100 membres." });
+    if (activeClanMemberCount(clan) + memberIds.length > 100) return res.status(400).json({ message: "Un clan ne peut pas dépasser 100 membres." });
     const users = await User.find({ _id: { $in: memberIds } }).select("_id");
     if (users.length !== memberIds.length) return res.status(400).json({ message: "Un membre sélectionné est introuvable." });
     clan.members.push(...users.map((item) => item._id));

@@ -50,6 +50,7 @@ const submitContentReport = async (req, res) => {
       const member = await Clan.exists({ _id: content.clan, $or: [
         { owner: req.user.userId },
         { members: req.user.userId },
+        { temporaryMembers: { $elemMatch: { user: req.user.userId, expiresAt: { $gt: new Date() } } } },
         { administrators: req.user.userId },
         { moderators: req.user.userId }
       ] });

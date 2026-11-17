@@ -7,7 +7,17 @@ import {
 import "./MessagesClanHub.css";
 
 import { useAuth } from "../context/authContext";
-import { submitContentReport } from "../services/userService";
+import {
+  submitContentReport,
+  getBlockedUsers,
+  blockUser,
+  unblockUser,
+  reportUserProfile,
+  warnUser,
+  getTemporaryAccessInvitations,
+  createTemporaryAccessInvitation,
+  respondToTemporaryAccessInvitation
+} from "../services/userService";
 
 import {
   getConversations,
@@ -133,6 +143,9 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
     setSelectedUser
   ] = useState(null);
   const [clans, setClans] = useState([]);
+  const [temporaryInvitations, setTemporaryInvitations] = useState([]);
+  const [temporaryInviteBusyId, setTemporaryInviteBusyId] = useState("");
+  const [temporaryInviteError, setTemporaryInviteError] = useState("");
   const [selectedClan, setSelectedClan] = useState(null);
   const [showCommunity, setShowCommunity] = useState(false);
   const [serverClanBadge, setServerClanBadge] = useState(() => {
@@ -221,6 +234,23 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
   const audioFrameRef = useRef({});
   const callPollingRef = useRef(false);
   const incomingCallRef = useRef(null);
+
+  const refreshTemporaryInvitations = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = await getTemporaryAccessInvitations(token);
+      setTemporaryInvitations(Array.isArray(data?.invitations) ? data.invitations : []);
+      setTemporaryInviteError("");
+    } catch (error) {
+      setTemporaryInviteError(error.message || "Impossible de charger les invitations.");
+    }
+  }, [token]);
+
+  useEffect(() => {
+    void refreshTemporaryInvitations();
+    const timer = window.setInterval(() => void refreshTemporaryInvitations(), 30000);
+    return () => window.clearInterval(timer);
+  }, [refreshTemporaryInvitations]);
 
   useEffect(() => {
     const handleContactSettingsChange = () => {
@@ -544,6 +574,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
       await Promise.all([
         loadConversations(),
         getClans(token).then(setClans),
+        refreshTemporaryInvitations(),
       ]);
       if (selectedUser?._id) {
         const data = await getMessages({ userId: selectedUser._id, token });
@@ -684,6 +715,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
 
       } catch (error) {
         console.error(error);
+        setSendError(error.message || "Impossible d’ouvrir cette conversation.");
       }
     },
     [token]
@@ -753,8 +785,12 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
           if (unchanged && !pending.length) return current;
           return [...data, ...pending];
         });
-      } catch {
-        // La messagerie reste utilisable lorsque le réseau est momentanément indisponible.
+      } catch (error) {
+        if (error.message?.includes("accès temporaire")) {
+          setMessages([]);
+          setSendError(error.message);
+        }
+        // La messagerie conserve son dernier état lors d’une panne réseau passagère.
       } finally {
         requesting = false;
       }
@@ -912,6 +948,31 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
     setSendError("");
   };
 
+  const handleTemporaryInviteResponse = async (invitation, decision) => {
+    const invitationId = String(invitation?._id || "");
+    if (!invitationId || temporaryInviteBusyId) return;
+    try {
+      setTemporaryInviteBusyId(invitationId);
+      setTemporaryInviteError("");
+      const result = await respondToTemporaryAccessInvitation({ token, invitationId, decision });
+      setTemporaryInvitations((items) => items.filter((item) => String(item._id) !== invitationId));
+      if (decision !== "accept") return;
+      if (invitation.type === "clan") {
+        const updatedClans = await getClans(token);
+        setClans(updatedClans);
+        const clan = updatedClans.find((item) => String(item._id) === String(invitation.clan?._id || invitation.clan));
+        if (clan) openClan(clan);
+      } else if (invitation.sender) {
+        await openConversation(invitation.sender);
+      }
+    } catch (error) {
+      setTemporaryInviteError(error.message || "Impossible de traiter cette invitation.");
+      if (error.message?.includes("expiré")) setTemporaryInvitations((items) => items.filter((item) => String(item._id) !== invitationId));
+    } finally {
+      setTemporaryInviteBusyId("");
+    }
+  };
+
   useEffect(() => {
     if (!initialClanId || !clans.length) return;
     const clan = clans.find((item) => String(item._id) === String(initialClanId));
@@ -1042,6 +1103,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
         <div className="messages-sidebar">
 
           <div className="messages-title">
+            <button type="button" className="messages-return-home" onClick={() => window.dispatchEvent(new Event("veloce:navigate-home"))} aria-label="Retour à l’accueil" title="Retour à l’accueil">⌂</button>
             <div><span className="messages-eyebrow">VÉLOCE</span><h1>Messages</h1></div>
             <div className="messages-new-wrap">
               <button type="button" className="messages-emoji-library-button" aria-label="Ouvrir la bibliothèque d’emojis" title="Bibliothèque d’emojis" onClick={openEmojiLibrary}>😊</button>
@@ -1059,6 +1121,18 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
           />
 
           <div className="conversation-list">
+
+            <details className="messages-list-group temporary-invitations-group" open={temporaryInvitations.length > 0}>
+              <summary><span>Invitations temporaires</span><b>{temporaryInvitations.length}</b></summary>
+              {temporaryInviteError && <p className="temporary-invitation-error" role="alert">{temporaryInviteError}</p>}
+              {temporaryInvitations.length === 0
+                ? <p className="messages-empty">Aucune invitation en attente.</p>
+                : temporaryInvitations.map((invitation) => <article className="temporary-invitation-card" key={invitation._id}>
+                  <div className="temporary-invitation-avatar">{invitation.type === "clan" ? "✉" : (invitation.sender?.username || "M").charAt(0).toUpperCase()}</div>
+                  <div className="temporary-invitation-copy"><strong>{invitation.type === "clan" ? invitation.clan?.name || "Clan" : `@${invitation.sender?.username || "Contact"}`}</strong><span>{invitation.type === "clan" ? "Accès temporaire au clan" : "Conversation privée temporaire"}</span><small>{invitation.durationHours} h après acceptation · à accepter sous 72 h</small></div>
+                  <div className="temporary-invitation-actions"><button type="button" disabled={Boolean(temporaryInviteBusyId)} onClick={() => void handleTemporaryInviteResponse(invitation, "accept")}>{temporaryInviteBusyId === String(invitation._id) ? "…" : "Accepter"}</button><button type="button" disabled={Boolean(temporaryInviteBusyId)} onClick={() => void handleTemporaryInviteResponse(invitation, "decline")}>Refuser</button></div>
+                </article>)}
+            </details>
 
             <details className="messages-list-group" open>
               <summary><span>Clan serveur</span><b>OUVERT</b></summary>
@@ -1122,9 +1196,10 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
             {clans.map((clan) => {
               const accountId = String(user?.id || user?._id || "");
               const assignment = (clan.rankAssignments || []).find((item) => String(item.user?._id || item.user) === accountId)?.role;
-              const role = String(clan.owner?._id || clan.owner) === accountId ? "Chef" : assignment === "subchief" ? "Sous-chef" : assignment === "secretary" ? "Secrétaire" : assignment === "envoy" ? "Envoyé spécial" : (clan.administrators || []).some((id) => String(id?._id || id) === accountId) ? "Administrateur" : (clan.moderators || []).some((id) => String(id?._id || id) === accountId) ? "Modérateur" : "Membre";
+              const temporaryAccess = (clan.temporaryMembers || []).find((entry) => String(entry.user?._id || entry.user) === accountId);
+              const role = temporaryAccess ? "Accès temporaire" : String(clan.owner?._id || clan.owner) === accountId ? "Chef" : assignment === "subchief" ? "Sous-chef" : assignment === "secretary" ? "Secrétaire" : assignment === "envoy" ? "Envoyé spécial" : (clan.administrators || []).some((id) => String(id?._id || id) === accountId) ? "Administrateur" : (clan.moderators || []).some((id) => String(id?._id || id) === accountId) ? "Modérateur" : "Membre";
               return <button key={clan._id} type="button" className={`conversation-card clan-conversation-card ${selectedClan?._id === clan._id ? "conversation-active" : ""}`} onClick={() => openClan(clan)}>
-                <div className="clan-avatar">✉</div><div className="conversation-info"><strong>{clan.name}</strong><span>{clan.description || `${clan.memberCount} membres · Enveloppes privées`}</span><small className="clan-card-meta"><b>{role}</b><i />{clan.memberCount || clan.members?.length || 1} membres</small></div>
+                <div className="clan-avatar">✉</div><div className="conversation-info"><strong>{clan.name}</strong><span>{clan.description || `${clan.memberCount} membres · Enveloppes privées`}</span><small className="clan-card-meta"><b>{role}</b><i />{temporaryAccess ? `Jusqu’au ${new Date(temporaryAccess.expiresAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}` : `${clan.memberCount || clan.members?.length || 1} membres`}</small></div>
               </button>;
             })}
             </details>
@@ -1363,7 +1438,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
                 <div className="veloce-emoji-keyboard-foot"><button type="button" onClick={() => { setContent((current) => Array.from(current).slice(0, -1).join("")); composerRef.current?.focus(); }}>⌫ Effacer</button><button type="button" onClick={() => addComposerText(" ")}>Espace</button></div>
               </div>}
 
-              {showChatProfile && <ChatProfileDialog person={selectedUser} wallpaper={chatWallpaper} onWallpaperChange={updateWallpaper} theme={chatTheme} onThemeChange={updateChatTheme} onClose={() => setShowChatProfile(false)} token={token} />}
+              {showChatProfile && <ChatProfileDialog person={selectedUser} currentUser={user} clans={clans} wallpaper={chatWallpaper} onWallpaperChange={updateWallpaper} theme={chatTheme} onThemeChange={updateChatTheme} onClose={() => setShowChatProfile(false)} onBlocked={() => { setShowChatProfile(false); setSelectedUser(null); setMessages([]); void loadConversations(); }} token={token} />}
               {activeMessage && <MessageActionsSheet message={activeMessage} canReport={String(activeMessage.sender?._id || activeMessage.sender) !== String(user?.id || user?._id)} onSelect={performMessageAction} onClose={() => setActiveMessage(null)} />}
               {forwardTarget && <ForwardMessageDialog conversations={conversations} onSelect={forwardMessageTo} onClose={() => setForwardTarget(null)} />}
 
@@ -1494,7 +1569,7 @@ function IncomingCallStage({ call, self, error, onAccept, onDecline }) {
   </section></div>;
 }
 
-function ChatProfileDialog({ person, wallpaper, onWallpaperChange, theme, onThemeChange, onClose, token }) {
+function ChatProfileDialog({ person, currentUser, clans = [], wallpaper, onWallpaperChange, theme, onThemeChange, onClose, onBlocked, token }) {
   const [activeTab, setActiveTab] = useState("profil");
   const [profile, setProfile] = useState(person);
   const [relationship, setRelationship] = useState(() => localStorage.getItem(`veloce_contact_relation_${person._id}`) || "Ami(e)");
@@ -1507,6 +1582,26 @@ function ChatProfileDialog({ person, wallpaper, onWallpaperChange, theme, onThem
   const [followNotice, setFollowNotice] = useState("");
   const [following, setFollowing] = useState(false);
   const [followSaving, setFollowSaving] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [securityBusy, setSecurityBusy] = useState(false);
+  const [securityNotice, setSecurityNotice] = useState("");
+  const [reportCategory, setReportCategory] = useState("harassment");
+  const [reportDetails, setReportDetails] = useState("");
+  const [temporaryType, setTemporaryType] = useState("conversation");
+  const [temporaryDuration, setTemporaryDuration] = useState(24);
+  const [temporaryClanId, setTemporaryClanId] = useState("");
+  const manageableClans = clans.filter((clan) => {
+    const currentId = String(currentUser?._id || currentUser?.id || "");
+    const idOf = (value) => String(value?._id || value || "");
+    return idOf(clan.owner) === currentId
+      || (clan.administrators || []).some((item) => idOf(item) === currentId)
+      || (clan.moderators || []).some((item) => idOf(item) === currentId)
+      || (clan.rankAssignments || []).some((item) => idOf(item.user) === currentId && ["subchief", "envoy"].includes(item.role));
+  });
+
+  useEffect(() => {
+    if (!temporaryClanId && manageableClans.length) setTemporaryClanId(String(manageableClans[0]._id));
+  }, [manageableClans, temporaryClanId]);
 
   useEffect(() => {
     let active = true;
@@ -1516,6 +1611,14 @@ function ChatProfileDialog({ person, wallpaper, onWallpaperChange, theme, onThem
       .catch((error) => { if (active) setProfileError(error.message); });
     return () => { active = false; };
   }, [person, token]);
+
+  useEffect(() => {
+    let active = true;
+    getBlockedUsers(token).then((data) => {
+      if (active) setIsBlocked((data.users || []).some((item) => String(item._id || item.id) === String(person._id || person.id)));
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [person._id, person.id, token]);
 
   const changeRelationship = (value) => {
     setRelationship(value);
@@ -1548,16 +1651,74 @@ function ChatProfileDialog({ person, wallpaper, onWallpaperChange, theme, onThem
     }
   };
 
+  const toggleBlock = async () => {
+    if (!isBlocked && !window.confirm(`Bloquer @${profile.username || person.username} ? Cette personne ne pourra plus t’envoyer de messages.`)) return;
+    try {
+      setSecurityBusy(true); setProfileError(""); setSecurityNotice("");
+      if (isBlocked) {
+        await unblockUser({ token, userId: person._id || person.id });
+        setIsBlocked(false);
+        setSecurityNotice("Compte débloqué.");
+      } else {
+        await blockUser({ token, userId: person._id || person.id });
+        setIsBlocked(true);
+        setSecurityNotice("Compte bloqué. La conversation est fermée.");
+        onBlocked?.();
+      }
+    } catch (error) {
+      setProfileError(error.message || "Impossible de modifier le blocage.");
+    } finally { setSecurityBusy(false); }
+  };
+
+  const sendWarning = async () => {
+    if (!window.confirm(`Envoyer un rappel de respect à @${profile.username || person.username} ?`)) return;
+    try {
+      setSecurityBusy(true); setProfileError(""); setSecurityNotice("");
+      await warnUser({ token, userId: person._id || person.id });
+      setSecurityNotice("Avertissement envoyé. Tu peux en envoyer un par jour à cette personne.");
+    } catch (error) { setProfileError(error.message || "Impossible d’envoyer cet avertissement."); }
+    finally { setSecurityBusy(false); }
+  };
+
+  const submitProfileReport = async (event) => {
+    event.preventDefault();
+    try {
+      setSecurityBusy(true); setProfileError(""); setSecurityNotice("");
+      await reportUserProfile({ token, userId: person._id || person.id, category: reportCategory, details: reportDetails });
+      setReportDetails("");
+      setSecurityNotice("Signalement transmis à l’équipe de modération.");
+    } catch (error) { setProfileError(error.message || "Impossible de transmettre ce signalement."); }
+    finally { setSecurityBusy(false); }
+  };
+
+  const sendTemporaryInvitation = async (event) => {
+    event.preventDefault();
+    try {
+      setSecurityBusy(true); setProfileError(""); setSecurityNotice("");
+      await createTemporaryAccessInvitation({ token, userId: person._id || person.id, type: temporaryType, durationHours: Number(temporaryDuration), clanId: temporaryType === "clan" ? temporaryClanId : undefined });
+      setSecurityNotice(`Invitation envoyée. Elle reste valable 72 h ; après acceptation, l’accès durera ${temporaryDuration} h.`);
+    } catch (error) { setProfileError(error.message || "Impossible d’envoyer cette invitation."); }
+    finally { setSecurityBusy(false); }
+  };
+
   return (
     <div className="chat-profile-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section className="chat-profile-dialog chat-profile-page" role="dialog" aria-modal="true" aria-label={`Profil de ${person.username}`}>
         <header><div><span>ESPACE CONTACT</span><h2>{profile.username || person.username}</h2></div><button type="button" onClick={onClose} aria-label="Fermer">×</button></header>
-        <nav className="chat-profile-tabs" aria-label="Rubriques du contact">{[["profil", "Profil"], ["conversation", "Conversation"], ["parametres", "Paramètres"]].map(([key, label]) => <button key={key} type="button" className={activeTab === key ? "active" : ""} onClick={() => setActiveTab(key)}>{label}</button>)}</nav>
+        <nav className="chat-profile-tabs" aria-label="Rubriques du contact">{[["profil", "Profil"], ["conversation", "Conversation"], ["securite", "Sécurité"], ["parametres", "Paramètres"]].map(([key, label]) => <button key={key} type="button" className={activeTab === key ? "active" : ""} onClick={() => setActiveTab(key)}>{label}</button>)}</nav>
         {profileError && <p className="chat-profile-error" role="alert">{profileError}</p>}
         <label className="chat-favorite-toggle"><span>☆ Ajouter cette conversation aux favoris</span><input type="checkbox" checked={Boolean(chatSettings.favorite)} onChange={(event) => changeSetting("favorite", event.target.checked)} /></label>
         {activeTab === "profil" && <div className="chat-profile-content"><div className="chat-profile-hero"><span className="chat-profile-avatar">{profile.avatar ? <img src={profile.avatar} alt="" /> : emojiForPerson(profile)}</span><div><h3>{profile.username || person.username}</h3><small>@{profile.username || person.username}</small><p>{profile.bio || "Aucune biographie renseignée."}</p></div></div><div className="chat-profile-stats"><div><strong>{profile.stats?.followersCount ?? "—"}</strong><span>Abonnés</span></div><div><strong>{profile.stats?.followingCount ?? "—"}</strong><span>Abonnements</span></div><div><strong>{relationship}</strong><span>Ton lien</span></div></div><button type="button" className={`chat-follow-button ${following ? "following" : ""}`} onClick={() => void changeFollow()} disabled={followSaving}>{followSaving ? "Mise à jour…" : following ? "✓ Abonné(e) · Se désabonner" : "＋ S’abonner · 0,5 Piz"}</button>{followNotice && <p className="chat-follow-notice" role="status">{followNotice}</p>}<label className="chat-relation-field">Le lien qui vous unit<select value={relationship} onChange={(event) => changeRelationship(event.target.value)}>{["Ami(e)", "Famille", "Collègue", "Partenaire", "Connaissance", "Autre"].map((value) => <option key={value}>{value}</option>)}</select></label><button className="chat-copy-profile-link" type="button" onClick={copyProfileLink}>🔗 {copied ? "Lien copié" : "Copier le lien du profil"}</button></div>}
         {activeTab === "conversation" && <div className="chat-profile-content"><h3>Apparence de la conversation</h3><p>Le thème et le fond sont enregistrés sur cet appareil.</p><div className="chat-theme-options">{CHAT_THEMES.map((option) => <button key={option.id} type="button" className={theme === option.id ? "selected" : ""} onClick={() => onThemeChange(option.id)}><span style={{ background: option.swatch }} />{option.label}</button>)}</div><div className="chat-wallpaper-options">{CHAT_WALLPAPERS.map((option) => <button key={option.id} type="button" className={wallpaper === option.id ? "selected" : ""} onClick={() => onWallpaperChange(option.id)}><span style={{ background: option.swatch }} />Fond · {option.label}</button>)}</div><label className="chat-relation-field">Nom affiché dans ta messagerie<input value={chatSettings.nickname ?? profile.username ?? person.username ?? ""} onChange={(event) => changeSetting("nickname", event.target.value)} /></label><p className="chat-profile-hint">Le nom personnalisé et le fond restent privés sur cet appareil.</p></div>}
         {activeTab === "parametres" && <div className="chat-profile-content"><h3>Paramètres de ce contact</h3><label className="chat-setting-row"><span><strong>Mettre en sourdine</strong><small>Masquer les alertes de cette conversation</small></span><input type="checkbox" checked={Boolean(chatSettings.muted)} onChange={(event) => changeSetting("muted", event.target.checked)} /></label><label className="chat-setting-row"><span><strong>Épingler la conversation</strong><small>La garder en haut de ta liste</small></span><input type="checkbox" checked={Boolean(chatSettings.pinned)} onChange={(event) => changeSetting("pinned", event.target.checked)} /></label><label className="chat-relation-field">Relation<select value={relationship} onChange={(event) => changeRelationship(event.target.value)}>{["Ami(e)", "Famille", "Collègue", "Partenaire", "Connaissance", "Autre"].map((value) => <option key={value}>{value}</option>)}</select></label><p className="chat-profile-hint">Ces préférences sont locales à ton appareil.</p></div>}
+        {activeTab === "securite" && <div className="chat-profile-content chat-security-content">
+          <h3>Sécurité et accès temporaires</h3>
+          <p>Bloque un compte, envoie un rappel ou transmets un signalement à l’équipe Veloce.</p>
+          <div className="chat-security-actions"><button type="button" className={isBlocked ? "is-blocked" : ""} onClick={() => void toggleBlock()} disabled={securityBusy}>{isBlocked ? "Débloquer ce compte" : "Bloquer ce compte"}</button><button type="button" onClick={() => void sendWarning()} disabled={securityBusy || isBlocked}>Envoyer un avertissement</button></div>
+          <form className="chat-report-form" onSubmit={submitProfileReport}><label>Signaler ce compte<select value={reportCategory} onChange={(event) => setReportCategory(event.target.value)}>{[["harassment", "Harcèlement"], ["spam", "Spam"], ["impersonation", "Usurpation d’identité"], ["inappropriate", "Comportement inapproprié"], ["other", "Autre"]].map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><textarea value={reportDetails} onChange={(event) => setReportDetails(event.target.value)} maxLength={800} placeholder="Ajoute des détails utiles à la modération (facultatif)…" /><button type="submit" disabled={securityBusy || isBlocked}>Transmettre le signalement</button></form>
+          <form className="temporary-access-form" onSubmit={sendTemporaryInvitation}><div><span>INVITATION À DURÉE LIMITÉE</span><h4>Proposer un accès temporaire</h4><p>L’invitation expire après 72 h si elle n’est pas acceptée. La durée d’accès commence à l’acceptation.</p></div><label>Type d’accès<select value={temporaryType} onChange={(event) => setTemporaryType(event.target.value)}><option value="conversation">Conversation privée</option><option value="clan" disabled={!manageableClans.length}>Accès à un clan {!manageableClans.length ? "(aucun clan administré)" : ""}</option></select></label>{temporaryType === "clan" && <label>Clan<select value={temporaryClanId} onChange={(event) => setTemporaryClanId(event.target.value)} required>{manageableClans.map((clan) => <option key={clan._id} value={clan._id}>{clan.name}</option>)}</select></label>}<label>Durée après acceptation<select value={temporaryDuration} onChange={(event) => setTemporaryDuration(Number(event.target.value))}>{[[1, "1 heure"], [6, "6 heures"], [24, "24 heures"], [72, "3 jours"], [168, "7 jours"]].map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><button type="submit" disabled={securityBusy || isBlocked || temporaryType === "clan" && !temporaryClanId}>{securityBusy ? "Traitement…" : "Envoyer l’invitation"}</button></form>
+          {securityNotice && <p className="chat-security-notice" role="status">{securityNotice}</p>}
+        </div>}
         <footer><button type="button" onClick={onClose}>Fermer</button></footer>
       </section>
     </div>

@@ -19,6 +19,11 @@ const clanSchema = new mongoose.Schema({
   description: { type: String, trim: true, maxlength: 240, default: "" },
   owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  temporaryMembers: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    invitedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    expiresAt: { type: Date, required: true }
+  }],
   administrators: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   moderators: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   membershipPolicy: { type: String, enum: ["open", "approval"], default: "approval" },

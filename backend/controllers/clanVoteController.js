@@ -2,9 +2,10 @@ const mongoose = require("mongoose");
 const Clan = require("../models/Clan");
 const ClanVote = require("../models/ClanVote");
 const { PIZ_UNIT, toUnits, fromUnits, transferPiz, payFromReserve } = require("../services/pizEconomy");
+const { hasClanAccess } = require("../utils/clanAccess");
 
 const idOf = (value) => String(value?._id || value);
-const isMember = (clan, id) => clan.members.some((member) => idOf(member) === String(id));
+const isMember = (clan, id) => hasClanAccess(clan, id);
 
 const publicVote = (vote, userId) => ({
   _id: vote._id,

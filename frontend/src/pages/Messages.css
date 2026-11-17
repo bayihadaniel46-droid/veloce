@@ -599,6 +599,41 @@
 .chat-setting-row small { color: #848b9d; }
 .chat-setting-row input { width: 19px; height: 19px; accent-color: #6872da; }
 .chat-profile-error { margin: 16px 0 0; color: #a54659; font-size: 12px; }
+.layout-messages .floating-btn,.layout-messages .mobile-navigation{display:none!important}
+.messages-title{display:flex;align-items:center;gap:10px}
+.messages-title>div:first-of-type{min-width:0;flex:1}
+.messages-title .messages-new-wrap{flex:0 0 auto}
+.messages-return-home{display:grid;width:40px;height:40px;flex:0 0 40px;place-items:center;border:1px solid #dfe2f2;border-radius:14px;background:linear-gradient(145deg,#fff,#eff1ff);color:#5e68cf;font-size:22px;cursor:pointer;box-shadow:0 5px 16px #454e9b14}
+.messages-return-home:hover{background:#eceeff;transform:translateY(-1px)}
+.temporary-invitations-group{border-color:#d8d4f3!important;background:linear-gradient(145deg,#fbfaff,#f3f4ff)!important}
+.temporary-invitation-card{display:grid;grid-template-columns:38px minmax(0,1fr);gap:10px;margin:8px 5px;padding:11px;border:1px solid #e4e4f4;border-radius:15px;background:#fff;box-shadow:0 5px 15px #30375c0a}
+.temporary-invitation-avatar{display:grid;width:38px;height:38px;place-items:center;border-radius:13px;background:linear-gradient(135deg,#7f71df,#39b8b2);color:white;font-weight:850}
+.temporary-invitation-copy{display:grid;min-width:0;gap:3px;color:#303750}
+.temporary-invitation-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.temporary-invitation-copy span{color:#68718a;font-size:10px}
+.temporary-invitation-copy small{color:#8b91a3;font-size:9px}
+.temporary-invitation-actions{grid-column:1/-1;display:flex;gap:7px}
+.temporary-invitation-actions button{flex:1;min-height:34px;border:1px solid #dedff0;border-radius:10px;background:#f8f8ff;color:#565fc4;font-size:10px;font-weight:800;cursor:pointer}
+.temporary-invitation-actions button:first-child{border-color:#7168d9;background:linear-gradient(120deg,#6967d9,#886bda);color:white}
+.temporary-invitation-actions button:disabled{opacity:.55;cursor:wait}
+.temporary-invitation-error{margin:8px;padding:9px;border-radius:10px;background:#fff0f2;color:#9a3b50;font-size:10px}
+.chat-profile-tabs{flex-wrap:wrap}
+.chat-security-content{display:grid;gap:15px}
+.chat-security-content h3,.chat-security-content > p{margin:0}
+.chat-security-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.chat-security-actions button,.chat-report-form button,.temporary-access-form > button{min-height:43px;padding:9px 13px;border:1px solid #dfe2f1;border-radius:13px;background:linear-gradient(140deg,#fff,#f2f3ff);color:#555fc4;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.chat-security-actions button.is-blocked{border-color:#74bda7;background:#e9f8f2;color:#297d62}
+.chat-report-form,.temporary-access-form{display:grid;gap:11px;padding:17px;border:1px solid #e3e5f1;border-radius:18px;background:#ffffffb8;box-shadow:0 8px 22px #333b6609}
+.chat-report-form label,.temporary-access-form label{display:grid;gap:7px;color:#4a536d;font-size:11px;font-weight:800}
+.chat-report-form select,.chat-report-form textarea,.temporary-access-form select{width:100%;min-height:43px;padding:10px 12px;border:1px solid #dfe2ef;border-radius:12px;outline:0;background:#fff;color:#333b52;font:inherit;font-weight:500}
+.chat-report-form textarea{min-height:88px;resize:vertical}
+.chat-report-form button{background:linear-gradient(130deg,#fff1f1,#fff8f4);border-color:#f1d7d9;color:#a24757}
+.temporary-access-form>div>span{color:#7770d1;font-size:9px;font-weight:850;letter-spacing:.13em}
+.temporary-access-form h4{margin:4px 0;color:#303750;font-size:16px}
+.temporary-access-form p{margin:0;color:#7b8297;font-size:10px;line-height:1.5}
+.temporary-access-form > button{background:linear-gradient(120deg,#6967d9,#3aaea8);color:white;border:0}
+.chat-security-actions button:disabled,.chat-report-form button:disabled,.temporary-access-form button:disabled{opacity:.55;cursor:wait}
+.chat-security-notice{margin:0;padding:11px 13px;border:1px solid #b9e3d0;border-radius:12px;background:#effaf4;color:#277b5d;font-size:11px;font-weight:700}
 .server-community-card { border:1px solid #dedff8; background:linear-gradient(120deg,#f3f2ff,#f3fbf9); }
 .server-community-card .conversation-info strong { color:#444c9a; }
 .server-community-icon { display:grid; place-items:center; width:42px; height:42px; flex:0 0 42px; border:1px solid #e1e3fb; border-radius:14px; background:linear-gradient(145deg,#e8e8ff,#def4ed); font-size:21px; }

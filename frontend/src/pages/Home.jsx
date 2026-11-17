@@ -593,7 +593,7 @@ function Home() {
 
 
   return (
-    <div className="layout">
+    <div className={`layout${currentPage === "messages" ? " layout-messages" : ""}`}>
 
       <Sidebar
         setCurrentPage={handleNavigation}
@@ -626,13 +626,13 @@ function Home() {
         isRaised={messageComposerActive}
       />}
 
-      <MobileNavigation
+      {currentPage !== "messages" && <MobileNavigation
         currentPage={currentPage}
         setCurrentPage={handleNavigation}
         unreadMessages={unreadMessages}
         unreadNotifications={unreadNotifications}
         onCreatePost={openCreatePost}
-      />
+      />}
 
       <CreatePostModal
         isOpen={showModal}

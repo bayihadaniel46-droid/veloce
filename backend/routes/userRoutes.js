@@ -14,7 +14,8 @@ const {
 const authMiddleware =
   require("../middleware/authMiddleware");
 const { getMyPizTransactions, hideMyPizReceipt } = require("../controllers/pizController");
-const { listBlockedUsers, setUserBlocked, removeUserBlock, reportUser } = require("../controllers/safetyController");
+const { listBlockedUsers } = require("../controllers/safetyController");
+const messagingSafety = require("../controllers/messagingSafetyController");
 const { deleteMyAccount } = require("../controllers/accountController");
 const { submitContentReport, listContentReports, reviewContentReport } = require("../controllers/contentModerationController");
 const { getCommunityRulesStatus, acceptCommunityRules } = require("../controllers/communityRulesController");
@@ -54,9 +55,13 @@ router.get(
 router.get("/piz-transactions", authMiddleware, getMyPizTransactions);
 router.delete("/piz-transactions/:transactionId", authMiddleware, hideMyPizReceipt);
 router.get("/blocked", authMiddleware, listBlockedUsers);
-router.post("/:userId/block", authMiddleware, setUserBlocked);
-router.delete("/:userId/block", authMiddleware, removeUserBlock);
-router.post("/:userId/report", authMiddleware, reportUser);
+router.get("/temporary-access", authMiddleware, messagingSafety.getTemporaryInvitations);
+router.post("/:userId/temporary-access", authMiddleware, messagingSafety.createTemporaryInvitation);
+router.post("/temporary-access/:invitationId/respond", authMiddleware, messagingSafety.respondTemporaryInvitation);
+router.post("/:userId/block", authMiddleware, messagingSafety.blockUser);
+router.delete("/:userId/block", authMiddleware, messagingSafety.unblockUser);
+router.post("/:userId/report", authMiddleware, messagingSafety.reportUser);
+router.post("/:userId/warn", authMiddleware, messagingSafety.warnUser);
 
 router.post("/heartbeat", authMiddleware, recordActivityHeartbeat);
 
