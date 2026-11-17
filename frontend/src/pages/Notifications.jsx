@@ -258,7 +258,7 @@ function Notifications({ onUnreadCountChange }) {
               >
 
                 <div className="notification-avatar">
-                  {notification.sender?.avatar ? (
+                  {notification.type === "announcement" ? "📣" : notification.sender?.avatar ? (
                     <img
                       src={
                         notification.sender.avatar
@@ -266,9 +266,7 @@ function Notifications({ onUnreadCountChange }) {
                       alt=""
                     />
                   ) : (
-                    notification.sender?.username
-                      ?.charAt(0)
-                      .toUpperCase()
+                    notification.sender?.username?.charAt(0).toUpperCase() || "V"
                   )}
                 </div>
 
@@ -276,7 +274,7 @@ function Notifications({ onUnreadCountChange }) {
                 <div className="notification-content">
 
                   <strong>
-                    {notification.sender?.username}
+                    {notification.title || notification.sender?.username || "Veloce"}
                   </strong>
 
                   <p>
@@ -295,7 +293,7 @@ function Notifications({ onUnreadCountChange }) {
                   <button type="button" onClick={() => toggleReadState(notification)}>{notification.read ? "Marquer comme non lue" : "Marquer comme lue"}</button>
                   <button type="button" onClick={async () => {
                     try {
-                      await navigator.clipboard?.writeText(`${notification.sender?.username || "Veloce"} : ${notification.message || "Notification"}`);
+                      await navigator.clipboard?.writeText(`${notification.title || notification.sender?.username || "Veloce"} : ${notification.message || "Notification"}`);
                       setActionsFor("");
                     } catch {
                       setDeleteError("Le presse-papiers n’est pas disponible dans ce navigateur.");

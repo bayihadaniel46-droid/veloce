@@ -11,7 +11,7 @@ const notificationSchema = new mongoose.Schema(
     sender: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      default: null
     },
 
     type: {
@@ -19,7 +19,8 @@ const notificationSchema = new mongoose.Schema(
       enum: [
         "like",
         "follow",
-        "warning"
+        "warning",
+        "announcement"
       ],
       required: true
     },
@@ -33,6 +34,12 @@ const notificationSchema = new mongoose.Schema(
     message: {
       type: String,
       required: true
+    },
+
+    title: {
+      type: String,
+      default: "",
+      maxlength: 100
     },
 
     read: {

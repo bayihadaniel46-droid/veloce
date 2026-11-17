@@ -602,11 +602,11 @@ function Home() {
       />
 
       <main className="feed" onTouchStart={startFeedTouch} onTouchEnd={finishFeedTouch}>
-        {currentPage === "home" && <nav className="home-feed-switch" aria-label="Raccourcis principaux">
+        {["home", "carrefour", "piz-finance", "market"].includes(currentPage) && <nav className="home-feed-switch" aria-label="Raccourcis principaux">
           {[
-            { id: "posts", label: "Posts", active: feedType === "posts", action: () => { setCurrentPage("home"); setFeedType("posts"); } },
+            { id: "posts", label: "Posts", active: currentPage === "home" && feedType === "posts", action: () => { setCurrentPage("home"); setFeedType("posts"); } },
             { id: "carrefour", label: "Carrefour", active: currentPage === "carrefour", action: () => setCurrentPage("carrefour") },
-            { id: "videos", label: "Vidéos", active: feedType === "videos", action: () => { setCurrentPage("home"); setFeedType("videos"); } },
+            { id: "videos", label: "Vidéos", active: currentPage === "home" && feedType === "videos", action: () => { setCurrentPage("home"); setFeedType("videos"); } },
             { id: "finance", label: "Compte PIZ", active: currentPage === "piz-finance", action: () => setCurrentPage("piz-finance") },
             { id: "market", label: "Tendances", active: currentPage === "market", action: () => setCurrentPage("market") },
           ].map((item) => <button key={item.id} type="button" className={`home-feed-icon-button home-feed-item-${item.id}${item.active ? " is-active" : ""}`} onClick={item.action} aria-label={item.label} aria-current={item.active ? "page" : undefined} title={item.label}>
