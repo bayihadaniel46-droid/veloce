@@ -1,5 +1,6 @@
 import React from "react";
 import "./App.css";
+import "./veloce-brand.css";
 
 import Home from "./pages/Home";
 import Register from "./pages/Register";

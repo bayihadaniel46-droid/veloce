@@ -39,18 +39,18 @@ import { playUiSound } from "../services/soundService";
 import { useAuth } from "../context/authContext";
 
 function FeedNavIcon({ type }) {
-  const common = { viewBox: "0 0 48 48", fill: "none", "aria-hidden": true };
+  const common = { viewBox: "0 0 24 24", fill: "none", "aria-hidden": true };
   switch (type) {
     case "posts":
-      return <svg {...common}><path d="M14 11h22a3 3 0 0 1 3 3v22a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V14a3 3 0 0 1 3-3Z"/><path d="M17 20h16M17 26h13M17 32h9"/><path d="M8 34V11a3 3 0 0 1 3-3h22"/></svg>;
+      return <svg {...common}><path d="M7 3.75h7l4 4v12.5H7a1.5 1.5 0 0 1-1.5-1.5V5.25A1.5 1.5 0 0 1 7 3.75Z"/><path d="M14 4v4h4M8.5 12h7M8.5 15.5h7"/></svg>;
     case "carrefour":
-      return <svg {...common}><path d="m24 5 19 19-19 19L5 24 24 5Z"/><circle cx="24" cy="24" r="5"/><path d="M24 8v11m0 10v11M8 24h11m10 0h11"/></svg>;
+      return <svg {...common}><circle cx="12" cy="12" r="2.5"/><path d="M12 9.5V4m0 10.5V20M9.5 12H4m10.5 0H20"/><circle cx="12" cy="3.5" r="1.5"/><circle cx="12" cy="20.5" r="1.5"/><circle cx="3.5" cy="12" r="1.5"/><circle cx="20.5" cy="12" r="1.5"/></svg>;
     case "videos":
-      return <svg {...common}><rect x="6" y="10" width="36" height="28" rx="9"/><path d="m20 17 12 7-12 7V17Z"/><path d="M12 6v4m24-4v4M12 38v4m24-4v4"/></svg>;
+      return <svg {...common}><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="m10 9 5 3-5 3V9Z"/></svg>;
     case "finance":
-      return <svg {...common}><path d="M24 5 42 15v18L24 43 6 33V15L24 5Z"/><circle cx="24" cy="24" r="11"/><path d="M28 19.5c-.8-1-2-1.5-3.6-1.5-2 0-3.4 1-3.4 2.6 0 4 7.2 1.8 7.2 6.2 0 1.8-1.6 3.2-4 3.2-1.8 0-3.3-.6-4.2-1.8M24 15v18"/></svg>;
+      return <svg {...common}><path d="M4 7.5h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2h13"/><path d="M3 9h14.5a2 2 0 0 1 2 2v1H16a2.5 2.5 0 0 0 0 5h3.5"/><circle cx="16" cy="14.5" r=".6"/></svg>;
     default:
-      return <svg {...common}><path d="M7 39h34M10 34l9-10 7 5 12-15"/><path d="M30 14h8v8"/><circle cx="10" cy="34" r="2"/><circle cx="19" cy="24" r="2"/><circle cx="26" cy="29" r="2"/><circle cx="38" cy="14" r="2"/></svg>;
+      return <svg {...common}><path d="M4 20V4m0 16h16"/><path d="M7.5 16.5v-4m4 4V8m4 8.5v-6m4 6v-9"/></svg>;
   }
 }
 

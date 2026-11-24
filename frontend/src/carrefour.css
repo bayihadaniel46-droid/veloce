@@ -56,3 +56,171 @@
 .carrefour-notice{background:#37b87818;color:#a7e8c5}
 .carrefour-error{background:#ff64641a;color:#ffb1b1}
 @media(max-width:600px){.carrefour-page{padding:0 0 26px}.carrefour-hero{padding:21px 18px;border-radius:21px}.carrefour-hero p{font-size:12px}.carrefour-status-section,.carrefour-anonymous-section{padding:15px 12px;border-radius:18px}.carrefour-section-heading{align-items:flex-start;flex-direction:column;gap:8px}.carrefour-section-heading h2{font-size:18px}.carrefour-status-composer{padding:8px;gap:7px}.carrefour-user-avatar{width:34px;height:34px;flex-basis:34px}.carrefour-status-composer button{padding:9px 11px;font-size:11px}.carrefour-anonymous-composer{padding:12px}.carrefour-anonymous-composer>div{align-items:flex-start;flex-direction:column}.carrefour-anonymous-composer button{width:100%}.carrefour-anonymous-card{padding:13px}.carrefour-anonymous-meta time{font-size:9px}}
+
+/* Carrefour shares Veloce's light indigo and teal palette. */
+.carrefour-page {
+  color: var(--veloce-ink, #22283b);
+}
+
+.carrefour-hero {
+  border-color: #dfe2f5;
+  background: radial-gradient(circle at 88% 5%, #43a99d1a, transparent 31%), linear-gradient(135deg, #f0f1ff, #fff 72%);
+  box-shadow: 0 12px 34px #2935530d;
+}
+
+.carrefour-hero:after {
+  border-color: #5e66d71c;
+  box-shadow: 0 0 0 22px #5e66d708, 0 0 0 45px #5e66d705;
+}
+
+.carrefour-back {
+  border-color: #dfe2ef;
+  background: #fff;
+  color: var(--veloce-primary-strong, #4f57c5);
+}
+
+.carrefour-kicker,
+.carrefour-section-heading>div>span {
+  color: var(--veloce-primary, #5e66d7);
+}
+
+.carrefour-hero h1 { color: var(--veloce-ink, #22283b); }
+.carrefour-hero p { color: var(--veloce-muted, #768096); }
+
+.carrefour-status-section,
+.carrefour-anonymous-section {
+  border-color: var(--veloce-line, #e3e6ef);
+  background: #fff;
+  box-shadow: 0 8px 26px #29355309;
+}
+
+.carrefour-section-heading h2 { color: var(--veloce-ink, #22283b); }
+
+.carrefour-section-heading>small {
+  border-color: #dfe2f2;
+  background: var(--veloce-primary-soft, #f0f1ff);
+  color: var(--veloce-primary-strong, #4f57c5);
+}
+
+.carrefour-status-composer {
+  border-color: var(--veloce-line, #e3e6ef);
+  background: var(--veloce-canvas, #f5f6fb);
+}
+
+.carrefour-user-avatar {
+  border-color: #c9cdf2;
+  background: linear-gradient(145deg, #737be0, #5e66d7);
+}
+
+.carrefour-status-composer input { color: var(--veloce-ink, #22283b); }
+.carrefour-status-composer input::placeholder { color: #9299aa; }
+
+.carrefour-status-composer button,
+.carrefour-anonymous-composer button {
+  background: var(--veloce-primary, #5e66d7);
+  color: #fff;
+}
+
+.carrefour-status-composer button:hover,
+.carrefour-anonymous-composer button:hover:not(:disabled) {
+  background: var(--veloce-primary-strong, #4f57c5);
+}
+
+.carrefour-status-card {
+  border-color: var(--veloce-line, #e3e6ef);
+  background: linear-gradient(145deg, #fff, #f8f9fd);
+}
+
+.carrefour-status-card strong { color: var(--veloce-ink, #22283b); }
+.carrefour-status-card p { color: #4b556c; }
+.carrefour-status-card small { color: var(--veloce-muted, #768096); }
+
+.carrefour-empty-inline {
+  border-color: #dfe2ef;
+  color: var(--veloce-muted, #768096);
+}
+
+.carrefour-anonymous-composer {
+  border-color: #dfe2ef;
+  background: linear-gradient(145deg, #f7f7ff, #f4fbfa);
+}
+
+.carrefour-anonymous-composer label { color: #414a61; }
+
+.carrefour-anonymous-composer textarea {
+  border-color: #dfe3ed;
+  background: #fff;
+  color: var(--veloce-ink, #22283b);
+}
+
+.carrefour-anonymous-composer textarea:focus { border-color: var(--veloce-primary, #5e66d7); }
+.carrefour-anonymous-composer textarea::placeholder { color: #9299aa; }
+.carrefour-anonymous-composer>div>small { color: var(--veloce-muted, #768096); }
+
+.carrefour-identity-consent {
+  border-color: #dfe2f2;
+  background: var(--veloce-primary-soft, #f0f1ff);
+}
+
+.carrefour-identity-consent input { accent-color: var(--veloce-primary, #5e66d7); }
+.carrefour-identity-consent strong { color: #3d4560; }
+.carrefour-identity-consent small { color: #707990; }
+
+.carrefour-clan-privacy {
+  border-color: #cce7e2;
+  background: var(--veloce-accent-soft, #edf8f6);
+  color: #367b73;
+}
+
+.carrefour-anonymous-card {
+  border-color: var(--veloce-line, #e3e6ef);
+  background: linear-gradient(145deg, #fff, #fafaff);
+  box-shadow: 0 7px 22px #2935530a;
+}
+
+.carrefour-anonymous-mark {
+  border-color: #d7d9f2;
+  background: var(--veloce-primary-soft, #f0f1ff);
+  color: var(--veloce-primary-strong, #4f57c5);
+}
+
+.carrefour-anonymous-meta strong { color: #424a60; }
+.carrefour-anonymous-meta time { color: var(--veloce-muted, #768096); }
+.carrefour-anonymous-card>p { color: #343d53; }
+
+.carrefour-reveal-button {
+  border-color: #cdd1ef;
+  background: var(--veloce-primary-soft, #f0f1ff);
+  color: var(--veloce-primary-strong, #4f57c5);
+}
+
+.carrefour-revealed-author {
+  background: var(--veloce-accent-soft, #edf8f6);
+  color: #34796f;
+}
+
+.carrefour-report-button {
+  border-color: var(--veloce-line, #e3e6ef);
+  background: #fff;
+  color: #5e687c;
+}
+
+.carrefour-empty {
+  border-color: #dfe2ef;
+  color: var(--veloce-muted, #768096);
+}
+
+.carrefour-empty>span { color: var(--veloce-primary, #5e66d7); }
+.carrefour-empty strong { color: var(--veloce-ink, #22283b); }
+
+.carrefour-notice {
+  border: 1px solid #cce7e2;
+  background: var(--veloce-accent-soft, #edf8f6);
+  color: #34796f;
+}
+
+.carrefour-error {
+  border: 1px solid #f0cbd0;
+  background: #fff3f4;
+  color: #a33f52;
+}

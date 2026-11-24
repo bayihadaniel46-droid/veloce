@@ -1,0 +1,126 @@
+:root {
+  --veloce-primary: #5e66d7;
+  --veloce-primary-strong: #4f57c5;
+  --veloce-primary-soft: #f0f1ff;
+  --veloce-accent: #43a99d;
+  --veloce-accent-soft: #edf8f6;
+  --veloce-ink: #22283b;
+  --veloce-muted: #768096;
+  --veloce-line: #e3e6ef;
+  --veloce-surface: #fff;
+  --veloce-canvas: #f5f6fb;
+}
+
+.home-feed-switch {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 8px 14px;
+  padding: 8px;
+  border: 1px solid var(--veloce-line);
+  border-radius: 18px;
+  background: var(--veloce-surface);
+  box-shadow: 0 7px 24px #2935530a;
+}
+
+.home-feed-switch .home-feed-icon-button {
+  display: flex;
+  min-width: 0;
+  min-height: 66px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 3px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--veloce-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.home-feed-switch .home-feed-icon-button:hover {
+  border-color: var(--veloce-line);
+  background: #fafaff;
+}
+
+.home-feed-icon-orbit {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid var(--veloce-line);
+  border-radius: 13px;
+  background: #fff;
+  color: #171923;
+}
+
+.home-feed-icon-orbit svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.home-feed-icon-label {
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--veloce-ink);
+  font-size: 10px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-feed-switch .home-feed-icon-button.is-active {
+  border-color: #c7caf0;
+  background: var(--veloce-primary-soft);
+  box-shadow: inset 0 0 0 1px #ffffff;
+}
+
+.home-feed-switch .home-feed-icon-button.is-active .home-feed-icon-orbit {
+  border-color: #b9bdf0;
+  background: #fff;
+  color: #171923;
+  box-shadow: 0 0 0 3px #5e66d71a;
+}
+
+.home-feed-switch .home-feed-icon-button:focus-visible {
+  outline: 3px solid #5e66d755;
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .home-feed-switch {
+    gap: 4px;
+    margin: 8px 6px 12px;
+    padding: 6px;
+    border-radius: 15px;
+  }
+
+  .home-feed-switch .home-feed-icon-button {
+    min-height: 59px;
+    gap: 3px;
+    padding: 3px 1px;
+    border-radius: 11px;
+  }
+
+  .home-feed-icon-orbit {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+  }
+
+  .home-feed-icon-orbit svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .home-feed-icon-label { font-size: 9px; }
+}
