@@ -1458,16 +1458,16 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
 }
 
 const CHAT_WALLPAPERS = [
-  { id: "night", label: "Nuit", swatch: "#17191f" },
-  { id: "violet", label: "Violet", swatch: "#211832" },
-  { id: "ocean", label: "Océan", swatch: "#122936" },
-  { id: "rose", label: "Prune", swatch: "#351d31" },
+  { id: "night", label: "Brume", swatch: "#eef1f2" },
+  { id: "violet", label: "Sauge", swatch: "#edf4ef" },
+  { id: "ocean", label: "Ardoise", swatch: "#edf1f4" },
+  { id: "rose", label: "Lin", swatch: "#f4f1e9" },
 ];
 const CHAT_THEMES = [
-  { id: "violet", label: "Aurore violette", swatch: "linear-gradient(135deg,#8071e7,#c274c3)" },
-  { id: "ocean", label: "Lagune", swatch: "linear-gradient(135deg,#37a8c7,#487be2)" },
-  { id: "rose", label: "Rose tendre", swatch: "linear-gradient(135deg,#e56d9b,#f2ad8d)" },
-  { id: "jade", label: "Jade", swatch: "linear-gradient(135deg,#37a980,#8acb88)" },
+  { id: "violet", label: "Sauge", swatch: "linear-gradient(135deg,#18222d,#6e9380)" },
+  { id: "ocean", label: "Ardoise", swatch: "linear-gradient(135deg,#24313d,#8292a0)" },
+  { id: "rose", label: "Lin", swatch: "linear-gradient(135deg,#766b58,#c6b895)" },
+  { id: "jade", label: "Forêt", swatch: "linear-gradient(135deg,#27483b,#8bb49c)" },
 ];
 
 const CALL_EMOJIS = ["😀", "😎", "🥰", "😂", "😌", "🤗", "🦊", "🐼", "🐯", "🐨", "🦁", "🐸", "🐙", "🦋", "🐧", "🦄"];

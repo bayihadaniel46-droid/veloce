@@ -53,6 +53,7 @@ const userSchema = new mongoose.Schema(
     pizRewardCheckpoint: { type: Number, default: null, min: 0 },
     gameRewardDay: { type: String, default: "", index: true },
     gameRewardUnits: { type: Number, default: 0, min: 0 },
+    lastLoginAt: { type: Date, default: null },
     lastActivityPing: { type: Date },
     pizAccountId: { type: mongoose.Schema.Types.ObjectId, default: null, index: true }
   },

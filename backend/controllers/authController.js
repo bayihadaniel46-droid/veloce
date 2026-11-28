@@ -125,6 +125,7 @@ const register = async (req, res) => {
     const referralCode = `PIZ-${crypto.randomBytes(6).toString("hex").toUpperCase()}`;
     const requestedReferral = String(req.body.referralCode || "").trim().toUpperCase();
     const referrer = requestedReferral ? await User.findOne({ referralCode: requestedReferral }).select("_id") : null;
+    const registeredAt = new Date();
 
     const user = await User.create({
       username: cleanUsername,
@@ -134,7 +135,9 @@ const register = async (req, res) => {
       termsAcceptedAt: new Date(),
       privacyAcknowledgedAt: new Date(),
       referralCode,
-      referredBy: referrer?._id || null
+      referredBy: referrer?._id || null,
+      lastLoginAt: registeredAt,
+      lastActivityPing: registeredAt
     });
     await ensurePizWallet(user._id);
 
@@ -218,6 +221,9 @@ const login = async (req, res) => {
     }
 
     await ensurePizWallet(user._id);
+    user.lastLoginAt = new Date();
+    user.lastActivityPing = user.lastLoginAt;
+    await user.save();
 
     const token =
       createToken(

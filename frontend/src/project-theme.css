@@ -1,0 +1,316 @@
+:root {
+  --piston-ink: #18222d;
+  --piston-text: #263442;
+  --piston-muted: #718090;
+  --piston-line: #dfe5eb;
+  --piston-panel: #ffffff;
+  --piston-canvas: #f4f7f7;
+  --piston-sage: #34725d;
+  --piston-sage-soft: #edf5f0;
+}
+
+/* Même palette claire, ardoise et sauge que l’atelier Projets. */
+.profile-page {
+  overflow: hidden;
+  border: 1px solid var(--piston-line);
+  border-radius: 20px;
+  background: var(--piston-panel);
+  color: var(--piston-text);
+  box-shadow: 0 14px 42px #1b2d4110;
+}
+
+.profile-cover {
+  height: 170px;
+  background: radial-gradient(circle at 78% 18%, #79a48c88, transparent 28%), linear-gradient(125deg, #18222d, #314b42 68%, #789685);
+}
+
+.profile-main {
+  border-bottom-color: var(--piston-line);
+  background: #fff;
+  color: var(--piston-text);
+}
+
+.profile-avatar {
+  border-color: #fff !important;
+  background: linear-gradient(145deg, #18222d, #5e806e) !important;
+  color: #fff;
+  box-shadow: 0 8px 23px #203b3028;
+}
+
+.profile-information h1,
+.profile-stats strong,
+.profile-post-header strong,
+.profile-empty h2 {
+  color: var(--piston-ink) !important;
+}
+
+.profile-handle,
+.profile-email,
+.profile-bio,
+.profile-stats span,
+.profile-post-header span,
+.profile-post-body > p {
+  color: #6f7d89 !important;
+}
+
+.profile-edit-button,
+.profile-settings-button {
+  border: 1px solid var(--piston-ink) !important;
+  border-radius: 11px !important;
+  background: var(--piston-ink) !important;
+  color: #fff !important;
+}
+
+.profile-edit-button:hover,
+.profile-settings-button:hover {
+  background: #2a3947 !important;
+}
+
+.profile-logout-button {
+  border-color: #ead6d7 !important;
+  border-radius: 11px !important;
+  background: #fff7f6 !important;
+  color: #9a5054 !important;
+}
+
+.profile-stats {
+  border-color: var(--piston-line) !important;
+  background: #fff;
+}
+
+.profile-stats > div {
+  border-right: 1px solid #e9edf0;
+  background: #fff;
+}
+
+.profile-tabs {
+  border-color: var(--piston-line) !important;
+  background: #fff;
+}
+
+.profile-tabs button {
+  color: #75828e !important;
+}
+
+.profile-tabs button:hover {
+  background: #f5f8f6 !important;
+  color: var(--piston-ink) !important;
+}
+
+.profile-tabs button.active {
+  color: var(--piston-sage) !important;
+}
+
+.profile-tabs button.active::after {
+  background: var(--piston-sage) !important;
+}
+
+.profile-content { background: #f7f9f9; }
+.profile-post {
+  border-bottom-color: #e7ecee !important;
+  background: #fff;
+}
+.profile-post-avatar { background: linear-gradient(145deg, #18222d, #70927e) !important; }
+.profile-post-actions button { color: #7a8791 !important; }
+.profile-post-actions button:hover { color: var(--piston-sage) !important; }
+.profile-empty { color: var(--piston-muted) !important; }
+.profile-empty .empty-page-icon { background: var(--piston-sage-soft) !important; color: var(--piston-sage); }
+
+/* Profil du contact et réglages de messagerie. */
+.chat-profile-dialog.chat-profile-page {
+  border: 0;
+  background: radial-gradient(ellipse at 88% 0%, #e6f0e9 0, transparent 32%), linear-gradient(145deg, #fff, #f4f7f7 76%);
+  color: var(--piston-text);
+}
+
+.chat-profile-page > header > div span,
+.chat-profile-page .temporary-access-form > div > span {
+  color: #587663 !important;
+}
+
+.chat-profile-page > header h2,
+.chat-profile-page .chat-profile-content h3,
+.chat-profile-page .chat-profile-hero h3,
+.chat-profile-page .temporary-access-form h4 {
+  color: var(--piston-ink) !important;
+}
+
+.chat-profile-page > header > button {
+  background: #eaf0ec !important;
+  color: var(--piston-ink) !important;
+}
+
+.chat-profile-page .chat-profile-tabs { border-color: #dfe6e2; }
+.chat-profile-page .chat-profile-tabs button.active { border-color: #3c7962 !important; color: #34725d !important; }
+.chat-profile-page .chat-profile-tabs button { color: #74818b; }
+.chat-profile-page .chat-profile-hero,
+.chat-profile-page .chat-profile-stats > div {
+  border-color: #dfe7e2;
+  background: #fff;
+  box-shadow: 0 10px 28px #1c33250b;
+}
+
+.chat-profile-page .chat-profile-avatar {
+  border-color: #fff;
+  background: linear-gradient(145deg, #e8efea, #d7e5db);
+  box-shadow: 0 6px 18px #284c3820;
+}
+
+.chat-profile-page .chat-profile-stats strong { color: #34725d; }
+.chat-profile-page .chat-profile-stats span,
+.chat-profile-page .chat-profile-hero small,
+.chat-profile-page .chat-profile-hero p,
+.chat-profile-page .chat-profile-content > p { color: #718090; }
+
+.chat-profile-page .chat-relation-field,
+.chat-profile-page .chat-report-form label,
+.chat-profile-page .temporary-access-form label { color: #52616d; }
+
+.chat-profile-page .chat-relation-field select,
+.chat-profile-page .chat-relation-field input,
+.chat-profile-page .chat-report-form select,
+.chat-profile-page .chat-report-form textarea,
+.chat-profile-page .temporary-access-form select {
+  border-color: #dce4df;
+  background: #fff;
+  color: #263442;
+}
+
+.chat-profile-page .chat-copy-profile-link,
+.chat-profile-page .chat-security-actions button,
+.chat-profile-page .chat-report-form button,
+.chat-profile-page .temporary-access-form > button {
+  border: 1px solid #d7e1db;
+  background: #fff;
+  color: #365a49;
+}
+
+.chat-profile-page .chat-follow-button,
+.chat-profile-page .temporary-access-form > button {
+  border: 0;
+  background: linear-gradient(125deg, #18222d, #355747);
+  color: #fff;
+}
+
+.chat-profile-page .chat-follow-button.following,
+.chat-profile-page .chat-security-actions button.is-blocked {
+  border: 1px solid #c9ddd0;
+  background: #edf5f0;
+  color: #34725d;
+}
+
+.chat-profile-page .chat-setting-row { border-bottom-color: #e4eae6; color: #34434f; }
+.chat-profile-page .chat-setting-row small,
+.chat-profile-page .chat-profile-hint,
+.chat-profile-page .temporary-access-form p { color: #788590; }
+.chat-profile-page .chat-setting-row input { accent-color: #4c8269; }
+.chat-profile-page .chat-favorite-toggle { border-color: #dce7df; background: #f0f6f1; color: #496657; }
+.chat-profile-page .chat-favorite-toggle input { accent-color: #4c8269; }
+.chat-profile-page .chat-theme-options button,
+.chat-profile-page .chat-wallpaper-options button {
+  border-color: #dce4df;
+  background: #fff;
+  color: #4f5f6b;
+}
+.chat-profile-page .chat-theme-options button.selected,
+.chat-profile-page .chat-wallpaper-options button.selected { border-color: #5f8b73; box-shadow: 0 0 0 2px #5f8b7322; }
+.chat-profile-page > footer button { background: var(--piston-ink); color: #fff; }
+.chat-profile-page .chat-profile-quick-actions button { border-color: #dce4df; background: #fff; color: #3f5d4d; }
+.chat-profile-page .chat-report-form,
+.chat-profile-page .temporary-access-form { border-color: #dfe7e2; background: #ffffffd9; box-shadow: 0 8px 22px #24382e08; }
+.chat-profile-page .chat-report-form button { border-color: #e7d6d5; background: #fff8f6; color: #995656; }
+
+/* Les thèmes enregistrés par conversation restent reconnaissables, dans une palette douce. */
+.messages-conversation.chat-theme-violet { --conversation-accent: #4c765f; --conversation-tint: #eef5f0; background: #f7faf8; }
+.messages-conversation.chat-theme-ocean { --conversation-accent: #455d70; --conversation-tint: #eef2f5; background: #f8fafb; }
+.messages-conversation.chat-theme-rose { --conversation-accent: #806f52; --conversation-tint: #f4f1e9; background: #fbfaf7; }
+.messages-conversation.chat-theme-jade { --conversation-accent: #34725d; --conversation-tint: #eaf3ed; background: #f6faf7; }
+.messages-conversation[class*="chat-theme-"] .conversation-header { border-bottom-color: #dfe6e2; background: linear-gradient(110deg, var(--conversation-tint), #fff); }
+.messages-conversation[class*="chat-theme-"] .conversation-header .call-action-button,
+.messages-conversation[class*="chat-theme-"] .conversation-header .conversation-header-action { border-color: #dfe6e2; }
+.messages-conversation[class*="chat-theme-"] .message-mine .message-bubble { background: linear-gradient(135deg, var(--conversation-accent), #263a31) !important; }
+.messages-conversation[class*="chat-theme-"] .message-input-area > button[type="submit"] { background: var(--piston-ink); }
+.messages-conversation[data-chat-wallpaper="night"] .message-list { background: #f1f4f5 !important; }
+.messages-conversation[data-chat-wallpaper="violet"] .message-list { background: #edf4ef !important; }
+.messages-conversation[data-chat-wallpaper="ocean"] .message-list { background: #edf2f5 !important; }
+.messages-conversation[data-chat-wallpaper="rose"] .message-list { background: #f4f1e9 !important; }
+
+.message-actions-sheet {
+  border: 1px solid #dfe5e2;
+  background: linear-gradient(145deg, #fff, #f3f6f4);
+  color: var(--piston-text);
+  box-shadow: 0 24px 70px #1b2b2330;
+}
+.message-actions-sheet > p { color: #718090; }
+.message-actions-sheet > button { color: #34434f; }
+.message-actions-sheet > button:hover { background: #edf4ef; }
+.message-actions-sheet .message-action-delete { color: #995656; }
+
+/* Assistant : surfaces blanches, textes ardoise et actions foncées comme Projets. */
+.assistant-page {
+  max-width: 1080px;
+  border: 1px solid var(--piston-line);
+  border-radius: 22px;
+  background: radial-gradient(ellipse at 92% 0%, #e4eee7 0, transparent 28%), #f6f8f8;
+  color: var(--piston-text);
+  box-shadow: 0 14px 42px #1b2d410c;
+}
+.assistant-eyebrow,
+.assistant-draft-label { color: #50745f !important; }
+.assistant-page h1,
+.assistant-page h2,
+.assistant-page h3 { color: var(--piston-ink); }
+.assistant-generate,
+.assistant-save,
+.assistant-draft-actions button:not(.assistant-dismiss) { background: var(--piston-ink) !important; color: #fff !important; }
+.assistant-generate:hover,
+.assistant-save:hover,
+.assistant-draft-actions button:not(.assistant-dismiss):hover { background: #2b3a47 !important; }
+.assistant-preferences,
+.assistant-draft,
+.assistant-empty,
+.assistant-subscription-card { border-color: #dfe6e2 !important; background: #fff !important; box-shadow: 0 8px 24px #1b2d4109 !important; }
+.assistant-preferences label { color: #52616d; }
+.assistant-preferences textarea,
+.assistant-preferences select { border-color: #dce4df; background: #fff; color: var(--piston-text); }
+.assistant-preferences textarea:focus,
+.assistant-preferences select:focus { border-color: #77a08a; outline-color: #77a08a; box-shadow: 0 0 0 3px #77a08a20; }
+.assistant-sources a { color: #34725d !important; }
+.assistant-draft-actions .assistant-dismiss { background: #edf1ef !important; color: #465650 !important; }
+.assistant-notice { border: 1px solid #cfe0d4; background: #eff7f1; color: #426b52; }
+
+/* Les boutons flottants gardent leurs intitulés accessibles, sans étiquette visible. */
+.mobile-navigation-label { display: none !important; }
+
+.profile-market-button {
+  border-color: #d5e0d9 !important;
+  background: var(--piston-ink) !important;
+  color: #fff !important;
+}
+
+.profile-market-button:hover { background: #2a3947 !important; }
+.profile-edit-page { color: var(--piston-text) !important; }
+.profile-edit-heading > span { color: #50745f !important; }
+.profile-edit-heading h1 { color: var(--piston-ink) !important; }
+.profile-edit-heading p,
+.profile-edit-section > p,
+.profile-edit-section small { color: #718090 !important; }
+.profile-edit-section {
+  border-color: var(--piston-line) !important;
+  background: #fff !important;
+  box-shadow: 0 8px 24px #1b2d4109;
+}
+.profile-edit-section h2,
+.profile-edit-section label { color: var(--piston-text) !important; }
+.profile-edit-section input,
+.profile-edit-section textarea {
+  border-color: #dce4df !important;
+  background: #fbfcfc !important;
+  color: var(--piston-text) !important;
+}
+.profile-edit-section input:focus,
+.profile-edit-section textarea:focus { border-color: #77a08a !important; box-shadow: 0 0 0 3px #77a08a20 !important; }
+.profile-edit-photo-preview { border-color: #5f8b73 !important; background: #eaf1ec !important; color: var(--piston-ink) !important; }
+.profile-edit-upload { border-color: #d3dfd7 !important; background: #edf5f0 !important; color: #365a49 !important; }
+.profile-edit-page-actions button { border-color: #dce4df !important; background: #fff !important; color: #43515e !important; }
+.profile-edit-page-actions button[type="submit"] { border-color: var(--piston-ink) !important; background: var(--piston-ink) !important; color: #fff !important; }

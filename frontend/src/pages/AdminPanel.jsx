@@ -31,6 +31,7 @@ const resourceLoaders = {
 
 const formatDate = (value) => value ? dateFormat.format(new Date(value)) : "Date inconnue";
 const formatDateTime = (value) => value ? dateTimeFormat.format(new Date(value)) : "Date inconnue";
+const accountLoginLabel = (value) => value ? `Connexion le ${formatDateTime(value)}` : "Connexion antérieure au suivi détaillé";
 const accountActivityLabel = (value) => {
   if (!value) return "Aucune activité enregistrée";
   const elapsed = Date.now() - new Date(value).getTime();
@@ -112,6 +113,12 @@ function AdminPanel({ onBack, onOpenUserProfile }) {
       window.clearTimeout(timer);
     };
   }, [token, activeResource, resourcePage, resourceSearch, resourceStatus, refreshKey]);
+
+  useEffect(() => {
+    if (activeResource !== "members") return undefined;
+    const timer = window.setInterval(() => setRefreshKey((value) => value + 1), 60000);
+    return () => window.clearInterval(timer);
+  }, [activeResource]);
 
   useEffect(() => {
     if (activeResource) document.getElementById("admin-records")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -227,7 +234,7 @@ function AdminPanel({ onBack, onOpenUserProfile }) {
       <article className="admin-record admin-member-record" key={item._id}>
         <div className="admin-record-avatar">{item.avatar ? <img src={item.avatar} alt="" /> : (item.username || "V").charAt(0).toUpperCase()}</div>
         <div className="admin-record-main"><div className="admin-record-title"><strong>@{item.username || "membre"}</strong><span className={`admin-record-pill ${item.accountStatus === "suspended" ? "suspended" : "active"}`}>{item.isAdmin ? "Admin" : item.accountStatus === "suspended" ? "Suspendu" : "Actif"}</span></div>
-          <p>{item.bio || "Aucune biographie renseignée."}</p><small>Inscrit le {formatDate(item.createdAt)} · {formatDuration(item.activeSeconds)} · {accountActivityLabel(item.lastActivityPing)}{item.accountStatus === "suspended" ? ` · ${item.suspendedUntil ? `jusqu’au ${formatDateTime(item.suspendedUntil)}` : "sans date de fin"}` : ""}</small>
+          <p>{item.bio || "Aucune biographie renseignée."}</p><small>Inscrit le {formatDate(item.createdAt)} · {accountLoginLabel(item.lastLoginAt)} · {formatDuration(item.activeSeconds)} · {accountActivityLabel(item.lastActivityPing)}{item.accountStatus === "suspended" ? ` · ${item.suspendedUntil ? `jusqu’au ${formatDateTime(item.suspendedUntil)}` : "sans date de fin"}` : ""}</small>
           {item.accountStatus === "suspended" && item.suspensionReason && <small>Motif : {item.suspensionReason}</small>}
         </div>
         <div className="admin-record-controls">

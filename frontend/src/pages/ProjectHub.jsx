@@ -2,10 +2,45 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE_URL } from "../config";
 import { useAuth } from "../context/authContext";
 import "./ProjectHub.css";
+import "./ProjectCodeEditor.css";
 
 const activityLabels = { created: "a créé le projet", "file-added": "a ajouté", "file-updated": "a modifié", "file-removed": "a supprimé", "collaborator-added": "a invité", "collaborator-removed": "a retiré un accès" };
 const dateLabel = (value) => value ? new Date(value).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" }) : "À l’instant";
 const authHeaders = (token, extra = {}) => ({ Authorization: `Bearer ${token}`, ...extra });
+const codeLanguages = { js: "JavaScript", jsx: "React JSX", mjs: "JavaScript", cjs: "JavaScript", ts: "TypeScript", tsx: "React TSX", py: "Python", dart: "Dart", java: "Java", c: "C", h: "C/C++", cpp: "C++", hpp: "C++", cs: "C#", go: "Go", rs: "Rust", php: "PHP", rb: "Ruby", html: "HTML", htm: "HTML", css: "CSS", scss: "SCSS", json: "JSON", xml: "XML", yaml: "YAML", yml: "YAML", md: "Markdown", txt: "Texte", sql: "SQL", sh: "Shell", kt: "Kotlin", swift: "Swift", vue: "Vue", svelte: "Svelte", ipynb: "Notebook JSON" };
+const programmingKeywords = new Set("abstract as async await break case catch class const continue default do else enum export extends false final finally for from function get if implements import in interface is let new null of package private protected public return set static super switch this throw true try type typeof var void while with yield def elif except global lambda nonlocal pass raise self and or not None True False fn pub use mod struct impl trait match loop mut ref where go chan defer select fallthrough func package map range type SELECT FROM WHERE INSERT INTO UPDATE DELETE CREATE TABLE ALTER DROP JOIN ON AS GROUP BY ORDER HAVING LIMIT DISTINCT PRIMARY KEY FOREIGN REFERENCES IF EXISTS INDEX RETURNS".split(/\s+/));
+const escapeCodeHtml = (value) => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
+const languageForPath = (path = "") => codeLanguages[String(path).split(".").pop()?.toLowerCase()] || "Texte";
+
+function highlightProjectCode(source, path) {
+  const text = String(source || "");
+  if (text.length > 120000) return escapeCodeHtml(text);
+  const extension = String(path || "").split(".").pop()?.toLowerCase() || "";
+  if (["html", "htm", "xml", "svg", "vue", "svelte"].includes(extension)) {
+    return escapeCodeHtml(text).replace(/(&lt;\/?[a-zA-Z][^&]*?&gt;)/g, '<span class="syntax-tag">$1</span>');
+  }
+  const hashComments = ["py", "rb", "sh", "yaml", "yml"].includes(extension);
+  const tokens = hashComments
+    ? /\/\*[\s\S]*?\*\/|\/\/[^\r\n]*|#[^\r\n]*|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\b\d+(?:\.\d+)?\b|\b[A-Za-z_$][\w$]*\b/g
+    : /\/\*[\s\S]*?\*\/|\/\/[^\r\n]*|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\b\d+(?:\.\d+)?\b|\b[A-Za-z_$][\w$]*\b/g;
+  let output = "";
+  let cursor = 0;
+  let match;
+  while ((match = tokens.exec(text))) {
+    const token = match[0];
+    output += escapeCodeHtml(text.slice(cursor, match.index));
+    let kind = "";
+    if (token.startsWith("//") || token.startsWith("/*") || token.startsWith("#") || token.startsWith("--")) kind = "comment";
+    else if (["\"", "'", "`"].includes(token[0])) kind = "string";
+    else if (/^\d/.test(token)) kind = "number";
+    else if (programmingKeywords.has(token)) kind = "keyword";
+    else if (/^[A-Za-z_$]/.test(token) && /^\s*\(/.test(text.slice(tokens.lastIndex))) kind = "function";
+    output += kind ? `<span class="syntax-${kind}">${escapeCodeHtml(token)}</span>` : escapeCodeHtml(token);
+    cursor = tokens.lastIndex;
+  }
+  output += escapeCodeHtml(text.slice(cursor));
+  return output || "&#8203;";
+}
 
 function ProjectHub({ onBack }) {
   const { token } = useAuth();
@@ -27,7 +62,11 @@ function ProjectHub({ onBack }) {
   const [inviteName, setInviteName] = useState("");
   const [inviteRole, setInviteRole] = useState("editor");
   const fileInput = useRef(null);
+  const singleFileInput = useRef(null);
+  const editorRef = useRef(null);
+  const highlightRef = useRef(null);
   const selectedFile = useMemo(() => project?.files?.find((file) => file.path === filePath) || null, [project, filePath]);
+  const highlightedEditor = useMemo(() => highlightProjectCode(editor, filePath), [editor, filePath]);
 
   const request = useCallback(async (path, options = {}) => {
     const response = await fetch(`${API_BASE_URL}/projects${path}`, { ...options, headers: authHeaders(token, options.headers || {}) });
@@ -79,6 +118,10 @@ function ProjectHub({ onBack }) {
     if (!selectedId || !selectedFile || dirty) return;
     setEditor(selectedFile.content || "");
   }, [selectedId, selectedFile?.path, selectedFile?.revision, dirty]);
+  useEffect(() => {
+    if (editorRef.current) { editorRef.current.scrollTop = 0; editorRef.current.scrollLeft = 0; }
+    if (highlightRef.current) { highlightRef.current.scrollTop = 0; highlightRef.current.scrollLeft = 0; }
+  }, [filePath]);
 
   const createProject = async (event) => {
     event.preventDefault(); setBusy(true); setError("");
@@ -120,8 +163,10 @@ function ProjectHub({ onBack }) {
         return { path: file.webkitRelativePath || file.name, content };
       }));
       const data = await request(`/${selectedId}/files/import`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ files }) });
-      await loadProject(selectedId, true); setNotice(`${files.length} fichier(s) importé(s) dans le projet.`);
-      if (!filePath && data.files?.length) setFilePath(data.files[0].path);
+      await loadProject(selectedId, true);
+      const firstImported = data.files?.find((file) => file.path === files[0].path);
+      if (firstImported) { setFilePath(firstImported.path); setEditor(firstImported.content || ""); setDirty(false); }
+      setNotice(`${files.length} fichier(s) importé(s) dans le projet.`);
     } catch (importError) { setError(importError.message); }
     finally { setBusy(false); }
   };
@@ -188,13 +233,14 @@ function ProjectHub({ onBack }) {
     <div className="project-workspace-grid">
       <aside className="project-file-panel">
         <div className="project-panel-heading"><div><span>FICHIERS</span><small>{project.files?.length || 0}/80</small></div>{permissions?.canWrite && <button type="button" title="Créer un fichier" onClick={addEmptyFile}>＋</button>}</div>
-        {permissions?.canWrite && <div className="project-file-actions"><button type="button" onClick={() => fileInput.current?.click()} disabled={busy}>Importer un dossier</button><input ref={fileInput} type="file" multiple webkitdirectory="" directory="" onChange={importDirectory} hidden /></div>}
+        {permissions?.canWrite && <div className="project-file-actions"><button type="button" onClick={() => singleFileInput.current?.click()} disabled={busy}>Importer des fichiers</button><button type="button" onClick={() => fileInput.current?.click()} disabled={busy}>Importer un dossier</button><input ref={singleFileInput} type="file" multiple accept=".js,.jsx,.mjs,.cjs,.ts,.tsx,.py,.dart,.java,.c,.h,.cpp,.hpp,.cs,.go,.rs,.php,.rb,.html,.htm,.css,.scss,.json,.xml,.yaml,.yml,.md,.txt,.sql,.sh,.kt,.swift,.vue,.svelte,.ipynb" onChange={importDirectory} hidden /><input ref={fileInput} type="file" multiple webkitdirectory="" directory="" onChange={importDirectory} hidden /><small className="project-import-note">Code et documents texte · 220 Ko par fichier</small></div>}
         <div className="project-file-list">{project.files?.length ? project.files.map((file) => <button key={file.path} type="button" className={file.path === filePath ? "is-selected" : ""} onClick={() => { if (dirty && !window.confirm("Abandonner les modifications non enregistrées ?")) return; setFilePath(file.path); setEditor(file.content || ""); setDirty(false); setError(""); }}><span aria-hidden="true">{file.path.split("/").length > 1 ? "▱" : "◇"}</span>{file.path}<small>{file.revision || 1}</small></button>) : <p>Aucun fichier pour l’instant.</p>}</div>
         <button type="button" className="project-export project-export-mobile" onClick={exportProject}>Exporter le projet</button>
       </aside>
       <section className="project-editor-panel">
-        <div className="project-editor-topbar"><span><i /> {filePath || "Sans fichier"}</span><small>{selectedFile ? `révision ${selectedFile.revision || 1}` : "Nouveau fichier"}</small></div>
-        <textarea className="project-code-editor" aria-label="Éditeur de code du projet" spellCheck="false" value={editor} placeholder={permissions?.canWrite ? "Commence à écrire ou importe un dossier…" : "Ce projet ne contient pas encore de fichier."} readOnly={!permissions?.canWrite} onChange={(event) => { setEditor(event.target.value); setDirty(true); }} onKeyDown={onEditorKeyDown} />
+        <div className="project-editor-topbar"><span><i /> {filePath || "Sans fichier"}</span><small>{languageForPath(filePath)}{selectedFile ? ` · révision ${selectedFile.revision || 1}` : " · nouveau fichier"}</small></div>
+        <div className="project-code-editor-shell"><pre ref={highlightRef} className="project-code-highlight" aria-hidden="true"><code dangerouslySetInnerHTML={{ __html: highlightedEditor }} /></pre><textarea ref={editorRef} className="project-code-editor" aria-label="Éditeur de code du projet" spellCheck="false" value={editor} placeholder={permissions?.canWrite ? "Commence à écrire ou importe un fichier…" : "Ce projet ne contient pas encore de fichier."} readOnly={!permissions?.canWrite} onChange={(event) => { setEditor(event.target.value); setDirty(true); }} onScroll={(event) => { if (highlightRef.current) { highlightRef.current.scrollTop = event.currentTarget.scrollTop; highlightRef.current.scrollLeft = event.currentTarget.scrollLeft; } }} onKeyDown={onEditorKeyDown} />
+        </div>
         <div className="project-editor-footer"><span>{dirty ? "Modifications non enregistrées" : "Enregistré et synchronisé"} · aucun code n’est exécuté dans Veloce</span><div>{permissions?.canWrite && selectedFile && <button type="button" className="project-delete-file" disabled={busy} onClick={deleteFile}>Supprimer</button>}{permissions?.canWrite && <button type="button" className="project-save-file" disabled={busy || !dirty} onClick={() => saveFile()}>{busy ? "Enregistrement…" : "Enregistrer · Ctrl S"}</button>}</div></div>
       </section>
       <aside className="project-team-panel">

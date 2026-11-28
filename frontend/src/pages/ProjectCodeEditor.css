@@ -1,0 +1,90 @@
+.project-code-editor-shell {
+  position: relative;
+  min-width: 0;
+  min-height: 400px;
+  flex: 1;
+  overflow: hidden;
+  background: #111820;
+}
+
+.project-file-actions {
+  display: grid;
+  gap: 6px;
+  margin: 8px 9px 10px;
+}
+
+.project-file-actions button {
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 1px solid #dce4eb;
+  border-radius: 9px;
+  background: #fff;
+  color: #43515e;
+  font: inherit;
+  font-size: 9px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.project-file-actions button:disabled { opacity: .55; cursor: wait; }
+.project-import-note { padding: 0 2px; color: #87929c; font-size: 8px; line-height: 1.35; }
+
+.project-code-highlight {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  margin: 0;
+  overflow: hidden;
+  padding: 15px;
+  color: #dce6ee;
+  font: 12px/1.65 ui-monospace, SFMono-Regular, Consolas, monospace;
+  tab-size: 2;
+  white-space: pre;
+}
+
+.project-code-highlight code { font: inherit; }
+.project-code-highlight .syntax-keyword { color: #c792ea; }
+.project-code-highlight .syntax-string { color: #b9d99b; }
+.project-code-highlight .syntax-comment { color: #788a98; font-style: italic; }
+.project-code-highlight .syntax-number { color: #e4a477; }
+.project-code-highlight .syntax-function { color: #74c7bd; }
+.project-code-highlight .syntax-tag { color: #82b8ad; }
+
+.project-editor-panel .project-code-editor-shell .project-code-editor {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  resize: none;
+  overflow: auto;
+  background: transparent;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: #6ad4ae;
+  font: 12px/1.65 ui-monospace, SFMono-Regular, Consolas, monospace;
+  tab-size: 2;
+  white-space: pre;
+}
+
+.project-editor-panel .project-code-editor-shell .project-code-editor::selection {
+  background: #5dc6a54d;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.project-editor-panel .project-code-editor-shell .project-code-editor::placeholder {
+  color: #82909d;
+  -webkit-text-fill-color: #82909d;
+}
+
+@media (max-width: 600px) {
+  .project-code-editor-shell { min-height: 330px; }
+  .project-editor-panel .project-code-editor-shell .project-code-editor,
+  .project-code-highlight { font-size: 11px; }
+}
