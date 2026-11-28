@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0d12">
+  <meta name="description" content="Le marché Piston des créations numériques, du code et des ressources gaming indépendantes.">
+  <title>ForgeMarket — créations numériques, sans compromis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./market-controls.css?v=20261102-1">
+  <link rel="stylesheet" href="./mobile.css?v=20261102-1">
+  <link rel="stylesheet" href="./market-pages.css?v=20261023-1">
+  <style>.seller-preview-stage{position:relative;min-height:175px;width:100%;display:grid;place-items:center;overflow:hidden;border:1px dashed #a5f2c55c;border-radius:10px;background:radial-gradient(ellipse,#253b30,#0b1115 70%);color:#d9eadc;cursor:pointer}.seller-preview-stage img{display:none;max-width:100%;max-height:360px;object-fit:contain}.seller-preview-stage.has-image img{display:block}.seller-preview-stage.has-image .preview-prompt{position:absolute;left:9px;top:9px;z-index:1;padding:6px 8px;background:#07100dd9;border-radius:5px}.preview-prompt{display:grid;gap:8px;text-align:center;padding:15px}.preview-prompt b{font:9px 'DM Mono',monospace;color:#a5f2c5;letter-spacing:.1em}.preview-prompt small{font-size:10px;line-height:1.7;color:#a1aea5}.seller-preview-stage:focus-visible{outline:2px solid #a5f2c5}.download-button:disabled{opacity:.4;cursor:wait}.detail-checkout{flex-wrap:wrap;gap:8px}.cash-buy{font-size:9px;padding:10px}.cash-equivalent{display:block;color:#8f9b94!important;margin-top:4px}.drop-seal{padding:9px 11px;border:1px solid #f3d08f52;border-radius:6px;color:#f3d08f;background:#f3d08f0a;font:8px 'DM Mono',monospace;letter-spacing:.04em;margin:12px 0}.cash-summary{padding:15px;border:1px solid #a5f2c52d;background:#a5f2c507;border-radius:8px;margin:15px 0}.cash-summary small,.cash-summary strong,.cash-summary span{display:block}.cash-summary small{font:8px 'DM Mono',monospace;color:#93a39a}.cash-summary strong{font-size:24px;margin:5px 0}.cash-summary span{font-size:11px;color:#d7e8da}.cash-summary p{font-size:9px;color:#a4b0a8;margin:9px 0 0}</style>
+  <script defer src="./app.js?v=20261023-1"></script>
+</head>
+<body>
+  <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
+  <header class="topbar">
+    <a class="brand" href="/forge-market/" aria-label="ForgeMarket accueil"><span class="brand-glyph"><i></i><i></i><i></i></span><span>FORGE<span class="brand-light">MARKET</span></span></a>
+    <nav class="main-nav" aria-label="Navigation principale"><a class="active" href="/forge-market/" data-route="home">Accueil</a><a href="/forge-market/vitrine" data-route="vitrine">Vitrine</a><button id="libraryNav" class="nav-button" type="button">Mon coffre <span class="nav-count" id="libraryCount">0</span></button><button id="settingsTop" class="nav-button settings-button" type="button"><span aria-hidden="true">⚙</span> Paramètres</button></nav>
+    <div class="header-actions"><button id="sellTop" class="button button-quiet" type="button">Vendre une création <span>↗</span></button><button id="accountTop" class="avatar-button" type="button" aria-label="Compte"><span id="avatarInitial">P</span></button><button id="loginTop" class="button button-outline" type="button">Se connecter</button></div>
+    <button class="mobile-menu" id="mobileMenu" aria-label="Ouvrir le menu">☰</button>
+  </header>
+
+  <main>
+    <section class="hero" id="explorer" data-view="home">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="pulse"></span> LE MARCHÉ DES CRÉATEURS INDÉPENDANTS</div>
+        <h1>De bonnes idées.<br><span>Prêtes à prendre vie.</span></h1>
+        <p class="hero-lead">Assets de jeu, outils de création et projets numériques choisis par celles et ceux qui les fabriquent.</p>
+        <div class="hero-actions"><a href="/forge-market/vitrine" class="button button-primary" data-route="vitrine">Explorer la vitrine <span>↗</span></a><button id="heroSell" class="button button-text" type="button">Publier mon projet <span>↗</span></button></div>
+        <div class="hero-proof"><div class="proof-avatars"><span>3D</span><span>JS</span><span>✳</span></div><p><strong>Créé par des créateurs.</strong><br>Payé en PIZ. Livré dans ton coffre.</p></div>
+      </div>
+      <div class="hero-art" aria-label="Composition 3D abstraite">
+        <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+        <div class="floating-chip chip-top"><span class="chip-dot"></span> ASSET PACK <b>01</b></div>
+        <div class="hero-cube"><div class="cube-face cube-front"><span class="cube-sigil">✳</span></div><div class="cube-face cube-side"></div><div class="cube-face cube-top"></div><div class="cube-wire"></div></div>
+        <div class="floating-chip chip-bottom"><span class="chip-grid">▦</span> VITRINE PROTÉGÉE <b>LIVE</b></div>
+        <div class="art-cross cross-one">✳</div><div class="art-cross cross-two">＋</div><div class="art-coordinate">06° 24′ N<br>11° 31′ E</div>
+      </div>
+      <div class="hero-index"><span>01</span><i></i><span>04</span></div>
+    </section>
+
+    <section class="ticker" data-view="home" aria-label="Catégories"><div class="ticker-track"><span>3D & ENVIRONNEMENTS</span><i>✳</i><span>SCRIPTS & OUTILS</span><i>✳</i><span>ASSETS DE JEU</span><i>✳</i><span>PROJETS SOURCE</span><i>✳</i><span>LICENCES CRÉATIVES</span><i>✳</i><span>3D & ENVIRONNEMENTS</span><i>✳</i><span>SCRIPTS & OUTILS</span><i>✳</i><span>ASSETS DE JEU</span><i>✳</i></div></section>
+
+    <section class="market-intro hidden" data-view="vitrine">
+      <div><div class="eyebrow"><span class="eyebrow-mark">FORGEMARKET · 02</span> LA VITRINE</div><h1>Explore. Partage.<br><em>Fais-toi remarquer.</em></h1><p>Découvre des créations prêtes à l’emploi ou partage un extrait de code avec la communauté.</p></div>
+      <div class="market-intro-actions"><button id="shareCode" class="button button-outline" type="button">＋ Publier un extrait</button><button id="sellMarket" class="button button-primary" type="button">Vendre une création <span>↗</span></button></div>
+    </section>
+
+    <section class="catalog-section hidden" id="catalogue" data-view="vitrine">
+      <div class="section-heading"><div><div class="eyebrow"><span class="eyebrow-mark">02</span> LE CATALOGUE</div><h2>Des créations qui<br><em>font gagner du temps.</em></h2></div><p>Découvre l’aperçu de chaque projet avant l’achat.<br>Le contenu source reste privé jusqu’au paiement PIZ.</p></div>
+      <div class="catalog-toolbar">
+        <label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="Chercher un asset, un script, un outil…" maxlength="80"><kbd>↵</kbd></label>
+        <div class="catalog-sort"><span id="resultCount">CATALOGUE</span><button id="sortButton" type="button">Récents <span>⌄</span></button></div>
+      </div>
+      <div class="category-row" role="group" aria-label="Filtrer par catégorie">
+        <button class="category-pill selected" data-category="" type="button"><span>✳</span> Tout voir</button>
+        <button class="category-pill" data-category="3d" type="button"><span>◩</span> Templates 3D</button>
+        <button class="category-pill" data-category="code" type="button"><span>⌘</span> Scripts & code</button>
+        <button class="category-pill" data-category="assets" type="button"><span>▧</span> Game assets</button>
+        <button class="category-pill" data-category="projects" type="button"><span>◫</span> Projets</button>
+        <button class="category-pill" data-category="licenses" type="button"><span>◇</span> Licences</button>
+        <button class="category-pill" data-category="audio" type="button"><span>≋</span> Audio</button>
+      </div>
+      <div id="catalogGrid" class="product-grid" aria-live="polite"></div>
+      <div id="emptyCatalog" class="empty-catalog hidden"><div class="empty-gem">✳</div><p class="eyebrow">LE STUDIO EST OUVERT</p><h3>La prochaine grande création<br>peut être la tienne.</h3><p>Publie la première ressource de cette catégorie et présente-la ici.</p><button id="emptySell" class="button button-primary" type="button">Ouvrir ma vitrine <span>↗</span></button></div>
+    </section>
+
+    <section class="snippet-section hidden" data-view="vitrine" aria-labelledby="snippetHeading">
+      <div class="snippet-heading"><div><div class="eyebrow"><span class="eyebrow-mark">03</span> CODES DE LA COMMUNAUTÉ</div><h2 id="snippetHeading">Un petit bout de code.<br><em>Une grande idée.</em></h2></div><button id="shareCodeBottom" class="button button-outline" type="button">Partager mon code <span>＋</span></button></div>
+      <p class="snippet-intro">Publie un extrait court, montre comment il fonctionne et laisse la communauté s’en inspirer. Les extraits sont publics et gratuits.</p>
+      <div id="snippetGrid" class="snippet-grid" aria-live="polite"><div class="catalog-loading"><span class="loader"></span> Chargement des extraits…</div></div>
+      <div id="emptySnippets" class="snippet-empty hidden"><span>⌘</span><p>La vitrine code est prête à accueillir ton premier extrait.</p><button class="button button-primary" id="emptyShareCode" type="button">Publier le premier code <span>→</span></button></div>
+    </section>
+
+    <section class="preview-promise" id="comment" data-view="home">
+      <div class="promise-art"><div class="window-frame"><div class="window-chrome"><span></span><span></span><span></span><i>APERÇU CRÉATEUR</i><b>● PRIVÉ</b></div><div class="window-scene"><div class="scene-mountain"></div><div class="scene-ring"></div><div class="scene-stat"><span>VISUALISATION</span><strong>ACTIVE</strong><i></i></div><div class="scene-caption">PROJECT<br><b>SHOWCASE_03</b></div></div></div><div class="promise-stamp">SOURCE<br><b>SCELLÉE</b></div></div>
+      <div class="promise-copy"><div class="eyebrow"><span class="eyebrow-mark">03</span> VOIR SANS DÉVOILER</div><h2>La vitrine montre<br><em>le résultat. Pas le code.</em></h2><p>Chaque annonce possède un espace d’aperçu dédié : captures, rendus, description et compatibilité. Les archives source sont conservées hors de l’espace public et ne deviennent téléchargeables qu’après un achat réglé en PIZ.</p><div class="promise-points"><div><span>01</span><p><strong>Aperçu avant paiement</strong><small>Le projet se présente, ses fichiers restent scellés.</small></p></div><div><span>02</span><p><strong>Paiement PIZ traçable</strong><small>Le vendeur reçoit le net, la commission est visible.</small></p></div><div><span>03</span><p><strong>Livraison dans ton coffre</strong><small>Ton archive achetée reste accessible depuis ton compte.</small></p></div></div></div>
+    </section>
+
+    <section class="creator-cta" data-view="home"><div class="cta-mark">✳</div><div><div class="eyebrow">FAIT PAR TOI, VU PAR TOUS</div><h2>Ta prochaine création<br>mérite une <em>vraie vitrine.</em></h2></div><div class="cta-action"><p>Publie un aperçu, fixe ton prix en PIZ<br>et garde ton projet source privé.</p><button id="ctaSell" class="button button-primary" type="button">Créer ma vitrine <span>↗</span></button></div><div class="cta-orbit"></div></section>
+  </main>
+
+  <footer class="footer"><a class="brand" href="/forge-market/" data-route="home"><span class="brand-glyph"><i></i><i></i><i></i></span><span>FORGE<span class="brand-light">MARKET</span></span></a><p>Un marché construit pour celles et ceux qui créent.</p><span>© 2026 PISTON NETWORK</span></footer>
+
+  <dialog id="authDialog" class="modal auth-modal"><form method="dialog" class="modal-close"><button aria-label="Fermer">×</button></form><div class="modal-kicker"><span class="brand-glyph mini"><i></i><i></i><i></i></span> ESPACE PISTON</div><h2 id="authTitle">Entre dans<br><em>le marché.</em></h2><p id="authIntro" class="modal-intro">Crée ton espace pour acheter, vendre et garder tes projets numériques.</p><div class="auth-tabs"><button class="active" data-mode="register" type="button">Créer un compte</button><button data-mode="login" type="button">Connexion</button></div><form id="authForm" class="form-stack"><label id="nameField">NOM DE VITRINE<input name="displayName" autocomplete="name" minlength="2" maxlength="48" placeholder="Comment t’appelle-t-on ?"></label><label>COURRIEL<input name="email" type="email" autocomplete="email" required maxlength="254" placeholder="toi@studio.com"></label><label>MOT DE PASSE<input name="password" type="password" autocomplete="new-password" required minlength="12" maxlength="200" placeholder="12 caractères minimum"></label><p id="authError" class="form-error" role="alert"></p><button id="authSubmit" class="button button-primary full-button" type="submit">Créer mon compte <span>→</span></button></form><p class="modal-footnote">En continuant, ton compte PIZ reste indépendant et les paiements du marché passent uniquement par son portefeuille.</p></dialog>
+
+  <dialog id="productDialog" class="modal product-modal"><form method="dialog" class="modal-close"><button aria-label="Fermer">×</button></form><div id="productDetail" class="product-detail"></div></dialog>
+
+  <dialog id="sellerDialog" class="modal seller-modal"><form method="dialog" class="modal-close"><button aria-label="Fermer">×</button></form><div class="modal-kicker"><span class="eyebrow-mark">STUDIO</span> NOUVELLE VITRINE</div><h2>Présente ton<br><em>prochain projet.</em></h2><p class="modal-intro">Ton image et ta description sont publiques. L’archive ZIP reste privée; seul un acheteur ayant payé en PIZ peut la télécharger.</p><form id="listingForm" class="form-stack" enctype="multipart/form-data"><label>TITRE<input name="title" required minlength="4" maxlength="100" placeholder="Ex. Kit médiéval — remparts modulaires"></label><label>RÉSUMÉ<input name="summary" required minlength="10" maxlength="240" placeholder="La promesse de ta ressource en une phrase"></label><label>DESCRIPTION<textarea name="description" required minlength="30" maxlength="6000" rows="4" placeholder="Contenu, usages, détails techniques et conditions de licence…"></textarea></label><div class="form-split"><label>CATÉGORIE<select name="category" required><option value="3d">Templates 3D</option><option value="code">Scripts & code</option><option value="assets">Game assets</option><option value="projects">Projet source</option><option value="licenses">Licences logicielles</option><option value="audio">Audio</option><option value="other">Autre ressource</option></select></label><label>PRIX EN PIZ<input name="pricePiz" type="number" min="0.001" max="1000000" step="0.001" required placeholder="12.5"></label></div><div class="form-split"><label>OUTIL / LOGICIEL<input name="software" maxlength="100" placeholder="Blender, Unity, Godot…"></label><label>VERSION<input name="version" maxlength="40" placeholder="Compatible 4.2 LTS"></label></div><label>ÉTIQUETTES<input name="tags" maxlength="200" placeholder="médiéval, low-poly, stylisé"></label><label class="upload-field">APERÇU VISUEL <small>JPG, PNG ou WebP · 8 Mo max</small><input name="preview" type="file" accept="image/jpeg,image/png,image/webp" required><span class="file-name">Choisir une capture ou un rendu</span></label><label class="upload-field private-upload">ARCHIVE À VENDRE <small>ZIP · conservée privée jusqu’à l’achat</small><input name="source" type="file" accept=".zip,application/zip" required><span class="file-name">Choisir l’archive source .zip</span></label><p id="sellerError" class="form-error" role="alert"></p><button id="listingSubmit" class="button button-primary full-button" type="submit">Publier ma vitrine <span>→</span></button><p class="modal-footnote">Commission du marché : <span id="commissionLabel">5 %</span>, prélevée sur la vente. Le vendeur doit relier un compte PIZ.</p></form></dialog>
+
+  <dialog id="snippetDialog" class="modal snippet-modal"><form method="dialog" class="modal-close"><button aria-label="Fermer">×</button></form><div class="modal-kicker"><span class="eyebrow-mark">PARTAGE LIBRE</span> EXTRAIT DE CODE</div><h2>Montre ce que<br><em>tu as construit.</em></h2><p class="modal-intro">Un extrait public, gratuit et consultable par tout le monde. Ne colle pas de mot de passe, clé API ou donnée privée.</p><form id="snippetForm" class="form-stack"><label>TITRE<input name="title" required minlength="4" maxlength="80" placeholder="Ex. Filtrer une liste en JavaScript"></label><label>LANGAGE<select name="language" required><option value="javascript">JavaScript</option><option value="typescript">TypeScript</option><option value="python">Python</option><option value="html">HTML</option><option value="css">CSS</option><option value="json">JSON</option><option value="sql">SQL</option><option value="other">Autre</option></select></label><label>TON EXTRAIT<textarea name="code" required maxlength="8000" rows="12" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="function hello() {\n  return 'Bonjour ForgeMarket';\n}"></textarea></label><div class="snippet-form-foot"><small id="snippetCharCount">0 / 8 000</small><p id="snippetError" class="form-error" role="alert"></p></div><button id="snippetSubmit" class="button button-primary full-button" type="submit">Publier l’extrait <span>→</span></button></form></dialog>
+
+  <dialog id="accountDialog" class="modal account-modal"><form method="dialog" class="modal-close"><button aria-label="Fermer">×</button></form><div class="modal-kicker"><span class="eyebrow-mark">MON ESPACE</span> COMPTE CRÉATEUR</div><h2 id="accountHeading">Ton coffre<br><em>et ta vitrine.</em></h2><div class="account-identity"><span class="identity-orb" id="accountAvatar">P</span><div><strong id="accountName">Compte Piston</strong><small id="accountEmail"></small></div><span id="pizStatus" class="wallet-status">PIZ non relié</span></div><div class="wallet-card"><div><small>SOLDE DISPONIBLE</small><strong id="walletBalance">— <i>PIZ</i></strong></div><button id="linkPizButton" class="button button-outline" type="button">Relier PIZ <span>↗</span></button></div><div class="account-tabs"><button class="active" data-account-tab="library" type="button">Mon coffre</button><button data-account-tab="seller" type="button">Mes annonces</button></div><div id="accountContent" class="account-content"></div><button id="logoutButton" class="logout-button" type="button">Se déconnecter</button></dialog>
+
+  <dialog id="settingsDialog" class="modal settings-modal"><form method="dialog" class="modal-close"><button aria-label="Fermer">×</button></form><div class="modal-kicker"><span class="eyebrow-mark">ESPACE PERSONNEL</span> PARAMÈTRES</div><h2>Ton espace,<br><em>à ta façon.</em></h2><p class="modal-intro">Ces préférences sont enregistrées sur cet appareil.</p><section class="settings-group" aria-labelledby="themeLabel"><div><span id="themeLabel" class="settings-label">AMBIANCE</span><small>Choisis la couleur principale de l’interface.</small></div><div class="theme-options"><button type="button" data-theme-choice="emerald"><span class="theme-dot emerald-dot"></span>Émeraude</button><button type="button" data-theme-choice="amethyst"><span class="theme-dot amethyst-dot"></span>Améthyste</button></div></section><label class="settings-toggle"><span><strong>Affichage compact</strong><small>Réduire l’espacement des cartes de la vitrine.</small></span><input id="compactSetting" type="checkbox"><i></i></label><label class="settings-toggle"><span><strong>Réduire les animations</strong><small>Limiter les mouvements et transitions décoratifs.</small></span><input id="motionSetting" type="checkbox"><i></i></label><div class="settings-account"><div><strong>Compte ForgeMarket</strong><small id="settingsAccountState">Connecte-toi pour gérer tes achats et annonces.</small></div><button id="settingsAccountButton" class="button button-outline" type="button">Ouvrir mon compte <span>→</span></button></div><p class="settings-saved" id="settingsSaved" role="status">Préférences enregistrées automatiquement</p></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

@@ -105,17 +105,13 @@ function contactDisplayName(person) {
 const MESSAGE_EMOJIS = ["😀", "😂", "🥰", "😍", "😘", "😊", "😎", "😭", "😢", "😡", "🤔", "🙏", "👏", "👍", "👎", "❤️", "💖", "💔", "🔥", "✨", "🎉", "👋", "💪", "🤝", "✅", "❌", "⚠️", "💰", "🏠", "🎵", "🍽️", "☀️"];
 const MESSAGE_LETTERS = "abcdefghijklmnopqrstuvwxyzàâçéèêëîïôùûüÿœæ'!?.,".split("");
 
-function keepLettersSeparated(value, allowFullText = false) {
-  if (allowFullText) return value;
-  let result = "";
-  let previousWasLetter = false;
-  for (const character of Array.from(value)) {
-    const isLetter = /^\p{L}$/u.test(character);
-    if (isLetter && previousWasLetter) continue;
-    result += character;
-    previousWasLetter = isLetter;
-  }
-  return result;
+const MESSAGE_CELEBRATION_EMOJIS = ["🎉", "🥳", "🎊", "✨", "👏", "💫", "🌟", "🎈"];
+
+function messageHasEmoji(value) {
+  return Array.from(value || "").some((character) => {
+    const point = character.codePointAt(0);
+    return (point >= 0x1f000 && point <= 0x1faff) || (point >= 0x2600 && point <= 0x27ff);
+  });
 }
 
 function CallGlyph({ video = false }) {
@@ -165,9 +161,6 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
   });
   const [showEmojiKeyboard, setShowEmojiKeyboard] = useState(false);
   const [emojiKeyboardMode, setEmojiKeyboardMode] = useState("emoji");
-  const [fullKeyboardUntil, setFullKeyboardUntil] = useState(null);
-  const [fullKeyboardError, setFullKeyboardError] = useState("");
-  const hasFullKeyboard = Boolean(fullKeyboardUntil && new Date(fullKeyboardUntil).getTime() > Date.now());
   const activeConversationId = useRef("");
   const messageListRef = useRef(null);
   const composerRef = useRef(null);
@@ -179,6 +172,9 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
     messages,
     setMessages
   ] = useState([]);
+  const previousMessageIds = useRef(null);
+  const celebrationTimer = useRef(null);
+  const [celebrationMessageId, setCelebrationMessageId] = useState("");
 
   const [
     content,
@@ -260,34 +256,31 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
     return () => window.removeEventListener("veloce:contact-settings", handleContactSettingsChange);
   }, []);
 
-  useEffect(() => {
-    let active = true;
-    fetch(`${API_BASE_URL}/users/stats`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((response) => response.ok ? response.json() : null)
-      .then((data) => { if (active) setFullKeyboardUntil(data?.fullKeyboardUntil || null); })
-      .catch(() => {});
-    const timer = window.setInterval(() => setFullKeyboardUntil((value) => value ? new Date(value).toISOString() : value), 60000);
-    return () => { active = false; window.clearInterval(timer); };
-  }, [token]);
-
-  const unlockFullKeyboard = async () => {
-    try {
-      setFullKeyboardError("");
-      const response = await fetch(`${API_BASE_URL}/users/full-keyboard`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Impossible d’activer le clavier complet.");
-      setFullKeyboardUntil(data.fullKeyboardUntil);
-      setEmojiKeyboardMode("letters");
-    } catch (error) {
-      setFullKeyboardError(error.message);
-    }
-  };
-
   const addComposerText = (text) => {
-    setContent((current) => keepLettersSeparated(`${current}${text}`, hasFullKeyboard));
+    setContent((current) => `${current}${text}`);
     onComposerStateChange(true);
     window.setTimeout(() => composerRef.current?.focus(), 0);
   };
+
+  useEffect(() => {
+    if (!messages.length) return;
+    const ids = new Set(messages.map((message) => String(message._id)));
+    if (!previousMessageIds.current) {
+      previousMessageIds.current = ids;
+      return;
+    }
+    const arriving = messages.find((message) => {
+      const id = String(message._id);
+      return !previousMessageIds.current.has(id) && !message.pending && message.content && messageHasEmoji(message.content);
+    });
+    previousMessageIds.current = ids;
+    if (!arriving) return;
+    setCelebrationMessageId(String(arriving._id));
+    window.clearTimeout(celebrationTimer.current);
+    celebrationTimer.current = window.setTimeout(() => setCelebrationMessageId(""), 1500);
+  }, [messages]);
+
+  useEffect(() => () => window.clearTimeout(celebrationTimer.current), []);
 
   const matchingEmojis = EMOJI_LIBRARY.filter((entry) => {
     const query = emojiSearch.trim().toLocaleLowerCase("fr");
@@ -699,6 +692,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
       setReplyTarget(null);
       setActiveMessage(null);
       onComposerStateChange(false);
+      previousMessageIds.current = null;
       setMessages([]);
       setSendError("");
       setLoading(false);
@@ -1373,10 +1367,11 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
                         onPointerLeave={() => window.clearTimeout(longPressTimer.current)}
                       >
 
-                        <div className="message-bubble">
+                        <div className={`message-bubble${celebrationMessageId === String(message._id) ? " has-celebration" : ""}`}>
                           {message.content && <p>{message.content}</p>}
                           {message.attachments?.map((file) => <PrivateAttachment key={file.fileId} attachment={file} token={token} />)}
                           {message.pending && <small className="message-pending">Envoi…</small>}
+                          {celebrationMessageId === String(message._id) && <div className="message-emoji-celebration" aria-hidden="true">{MESSAGE_CELEBRATION_EMOJIS.map((emoji, index) => <span key={`${emoji}-${index}`} style={{ "--burst-index": index, animationDelay: `${index * 18}ms` }}>{emoji}</span>)}</div>}
                         </div>
 
                       </div>
@@ -1402,7 +1397,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
                   onFocus={() => onComposerStateChange(true)}
                   onBlur={() => { if (!content.trim()) onComposerStateChange(false); }}
                   onChange={(event) => {
-                    const nextValue = keepLettersSeparated(event.target.value, hasFullKeyboard);
+                    const nextValue = event.target.value;
                     setContent(nextValue);
                     onComposerStateChange(Boolean(nextValue.trim()) || Boolean(replyTarget));
                   }}
@@ -1416,7 +1411,7 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
                       handleSend();
                     }
                   }}
-                  placeholder="Emoji, ou une lettre suivie d’un emoji…"
+                  placeholder="Écris ton message…"
                 />
 
                 </div>
@@ -1431,10 +1426,9 @@ function Messages({ initialUser = null, onInitialUserHandled, initialClanId = nu
 
               </form>
 
-              {fullKeyboardError && <p className="message-send-error" role="alert">{fullKeyboardError}</p>}
               {showEmojiKeyboard && <div className="veloce-emoji-keyboard" aria-label="Clavier Veloce">
-                <div className="veloce-emoji-keyboard-head"><strong>{emojiKeyboardMode === "emoji" ? "Clavier emoji" : hasFullKeyboard ? "Clavier alphabétique · actif" : "Accès alphabétique expiré"}</strong><button type="button" onClick={() => { if (emojiKeyboardMode === "emoji" && !hasFullKeyboard) void unlockFullKeyboard(); else setEmojiKeyboardMode((mode) => mode === "emoji" ? "letters" : "emoji"); }}>{emojiKeyboardMode === "emoji" ? (hasFullKeyboard ? "ABC" : "ABC · 1 Piz") : "😊"}</button><button type="button" onClick={() => setShowEmojiKeyboard(false)} aria-label="Fermer le clavier">×</button></div>
-                <div className="veloce-emoji-keyboard-grid">{(emojiKeyboardMode === "emoji" ? MESSAGE_EMOJIS : MESSAGE_LETTERS).map((key) => <button type="button" key={key} disabled={emojiKeyboardMode === "letters" && !hasFullKeyboard || emojiKeyboardMode === "letters" && /^(\p{L})$/u.test(key) && /\p{L}$/u.test(Array.from(content).at(-1) || "")} onClick={() => addComposerText(key)}>{key}</button>)}</div>
+                <div className="veloce-emoji-keyboard-head"><strong>{emojiKeyboardMode === "emoji" ? "Clavier emoji" : "Clavier alphabétique"}</strong><button type="button" onClick={() => setEmojiKeyboardMode((mode) => mode === "emoji" ? "letters" : "emoji")}>{emojiKeyboardMode === "emoji" ? "ABC" : "😊"}</button><button type="button" onClick={() => setShowEmojiKeyboard(false)} aria-label="Fermer le clavier">×</button></div>
+                <div className="veloce-emoji-keyboard-grid">{(emojiKeyboardMode === "emoji" ? MESSAGE_EMOJIS : MESSAGE_LETTERS).map((key) => <button type="button" key={key} onClick={() => addComposerText(key)}>{key}</button>)}</div>
                 <div className="veloce-emoji-keyboard-foot"><button type="button" onClick={() => { setContent((current) => Array.from(current).slice(0, -1).join("")); composerRef.current?.focus(); }}>⌫ Effacer</button><button type="button" onClick={() => addComposerText(" ")}>Espace</button></div>
               </div>}
 

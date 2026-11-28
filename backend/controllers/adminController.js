@@ -76,7 +76,7 @@ const listMembers = async (req, res) => {
     if (req.query.status === "active") clauses.push({ $or: [{ accountStatus: "active" }, { accountStatus: { $exists: false } }] });
     const filter = clauses.length ? { $and: clauses } : {};
     const [members, total] = await Promise.all([
-      User.find(filter).select("username avatar bio createdAt activeSeconds accountStatus suspensionReason suspendedAt suspendedUntil").sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+      User.find(filter).select("username avatar bio createdAt activeSeconds lastActivityPing accountStatus suspensionReason suspendedAt suspendedUntil").sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
       User.countDocuments(filter)
     ]);
     const now = new Date();

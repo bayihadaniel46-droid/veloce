@@ -24,6 +24,8 @@ services:
         value: https://piz-ledger.onrender.com
       - key: PIZ_SERVICE_KEY
         sync: false
+      - key: MARKETPLACE_API_URL
+        value: https://forgemarket.onrender.com
       - key: COMMUNITY_ADMIN_IDS
         sync: false
       - key: VAPID_PRIVATE_KEY

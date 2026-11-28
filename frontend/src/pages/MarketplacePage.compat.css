@@ -1,0 +1,13 @@
+@supports not (height: 100dvh) {
+  @media (max-width: 650px) {
+    .marketplace-frame {
+      height: calc(100vh - 210px);
+    }
+  }
+}
+
+@media (max-width: 650px) {
+  .marketplace-frame {
+    min-height: 430px;
+  }
+}

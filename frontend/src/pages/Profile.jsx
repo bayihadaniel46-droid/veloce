@@ -1012,7 +1012,7 @@ function PizTransactionHistory({ token }) {
     "message": "Action de messagerie",
     "community-guide": "Guide du clan serveur",
     "carrefour-reveal": "Révélation Carrefour",
-  }[type] || String(type || "Mouvement").replaceAll("-", " "));
+  }[type] || String(type || "Mouvement").replace(/-/g, " "));
 
   return <section className="piz-section piz-transaction-history">
     <div className="piz-section-title"><div><span>TRANSPARENCE DU PORTEFEUILLE</span><h2>Historique des mouvements</h2></div><span className="piz-history-count">{entries.length} affiché{entries.length === 1 ? "" : "s"}</span></div>

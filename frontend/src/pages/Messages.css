@@ -757,7 +757,44 @@
 }
 
 .message-bubble {
+  position: relative;
   -webkit-touch-callout: none;
+}
+
+.message-emoji-celebration {
+  position: absolute;
+  z-index: 4;
+  top: 4px;
+  left: 50%;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.message-emoji-celebration span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 22px;
+  line-height: 1;
+  animation: message-emoji-burst 1.35s cubic-bezier(.16,.72,.3,1) both;
+  filter: drop-shadow(0 3px 5px #26334440);
+}
+
+.message-emoji-celebration span:nth-child(1) { --burst-x: -62px; --burst-y: -54px; }
+.message-emoji-celebration span:nth-child(2) { --burst-x: -42px; --burst-y: -88px; }
+.message-emoji-celebration span:nth-child(3) { --burst-x: -14px; --burst-y: -70px; }
+.message-emoji-celebration span:nth-child(4) { --burst-x: 18px; --burst-y: -92px; }
+.message-emoji-celebration span:nth-child(5) { --burst-x: 48px; --burst-y: -62px; }
+.message-emoji-celebration span:nth-child(6) { --burst-x: 66px; --burst-y: -30px; }
+.message-emoji-celebration span:nth-child(7) { --burst-x: 8px; --burst-y: -45px; }
+.message-emoji-celebration span:nth-child(8) { --burst-x: -50px; --burst-y: -28px; }
+
+@keyframes message-emoji-burst {
+  0% { opacity: 0; transform: translate(-50%, 18px) scale(.45) rotate(-20deg); }
+  15% { opacity: 1; }
+  78% { opacity: 1; transform: translate(var(--burst-x), var(--burst-y)) scale(1.1) rotate(12deg); }
+  100% { opacity: 0; transform: translate(var(--burst-x), calc(var(--burst-y) - 24px)) scale(.8) rotate(24deg); }
 }
 
 .message-delete-button {

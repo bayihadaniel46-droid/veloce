@@ -7,8 +7,7 @@ const {
   getUserStats,
   recordActivityHeartbeat,
   getPublicUserProfile,
-  linkPizAccount,
-  unlockFullKeyboard
+  linkPizAccount
 } = require("../controllers/userController");
 
 const authMiddleware =
@@ -66,9 +65,6 @@ router.post("/:userId/warn", authMiddleware, messagingSafety.warnUser);
 router.post("/heartbeat", authMiddleware, recordActivityHeartbeat);
 
 router.post("/piz-link", authMiddleware, linkPizAccount);
-router.post("/full-keyboard", authMiddleware, unlockFullKeyboard);
-
-
 router.get(
   "/:userId",
   authMiddleware,
