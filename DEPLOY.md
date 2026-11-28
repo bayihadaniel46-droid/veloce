@@ -34,6 +34,12 @@ Le clan serveur est un espace public réservé aux comptes connectés : les mess
 
 Le service Push utilise la variable secrète `VAPID_PRIVATE_KEY`, générée automatiquement par le blueprint Render. Chaque utilisateur doit ensuite ouvrir **Paramètres → Notifications → Activer** et autoriser les notifications dans son navigateur. Elles fonctionnent sur l’adresse HTTPS du site et sur les navigateurs qui prennent en charge les notifications Push.
 
+## 7. Relier ForgeMarket et l’atelier de projets
+
+Le logo **Marketplace** intègre ForgeMarket dans Veloce. Pour l’afficher sur le site publié, ajouter `VITE_MARKETPLACE_URL` dans l’environnement du service Veloce avec l’URL publique du service ForgeMarket, puis redéployer Veloce. En local, l’interface utilise `http://localhost:4300`; ForgeMarket doit alors être lancé séparément.
+
+Le logo **Projets** utilise l’API et la base Veloce. Les dépôts peuvent rester privés ou devenir publics, et leur propriétaire peut inviter des comptes Veloce comme éditeurs ou lecteurs. L’éditeur stocke uniquement du texte, jusqu’à 80 fichiers et 2 Mo par dépôt; il n’exécute pas le code. Les données sont dans MongoDB, et suivent donc la persistance et les sauvegardes déjà configurées pour Veloce.
+
 ## À savoir pour les essais gratuits
 
 Le service web gratuit Render s’endort après 15 minutes sans trafic et peut mettre environ une minute à répondre au premier accès suivant. Son disque est éphémère : les images et fichiers Veloce sont donc stockés dans MongoDB GridFS. Le cluster Atlas gratuit est limité en capacité ; cette configuration convient à une démo, pas à une production ou à des données importantes sans sauvegarde.

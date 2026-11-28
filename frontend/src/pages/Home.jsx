@@ -15,7 +15,9 @@ import Profile from "./Profile";
 import Settings from "./Settings";
 import PublicProfile from "./PublicProfile";
 import Assistant from "./Assistant";
-import Market from "./Market";
+import PizHub from "./PizHub";
+import MarketplacePage from "./MarketplacePage";
+import ProjectHub from "./ProjectHub";
 import Carrefour from "./Carrefour";
 import Games from "./Games";
 import AdminPanel from "./AdminPanel";
@@ -49,6 +51,10 @@ function FeedNavIcon({ type }) {
       return <svg {...common}><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="m10 9 5 3-5 3V9Z"/></svg>;
     case "finance":
       return <svg {...common}><path d="M4 7.5h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2h13"/><path d="M3 9h14.5a2 2 0 0 1 2 2v1H16a2.5 2.5 0 0 0 0 5h3.5"/><circle cx="16" cy="14.5" r=".6"/></svg>;
+    case "market":
+      return <svg {...common}><path d="M4 9.5h16l-1.2 10H5.2L4 9.5Z"/><path d="M8 9.5a4 4 0 0 1 8 0M8.5 14v.5m7-.5v.5M9 19.5l1-3h4l1 3"/></svg>;
+    case "projects":
+      return <svg {...common}><path d="M8.5 6.5h-2a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2m7-11h2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-2m-5-10 3 10"/><circle cx="12" cy="4" r="1.5"/><circle cx="12" cy="20" r="1.5"/></svg>;
     default:
       return <svg {...common}><path d="M4 20V4m0 16h16"/><path d="M7.5 16.5v-4m4 4V8m4 8.5v-6m4 6v-9"/></svg>;
   }
@@ -79,6 +85,7 @@ function Home() {
       }
     });
 
+  const [pizInitialView, setPizInitialView] = useState("wallet");
   const [viewedUserId, setViewedUserId] = useState(() => new URLSearchParams(window.location.search).get("profile") || "");
   const [profileReturnPage, setProfileReturnPage] = useState("explorer");
   const [messageRecipient, setMessageRecipient] = useState(() => {
@@ -242,7 +249,7 @@ function Home() {
   useEffect(() => {
 
     const openProfile = () => setCurrentPage("profile");
-    const openMarket = () => setCurrentPage("market");
+    const openMarket = () => { setPizInitialView("trends"); setCurrentPage("piz-finance"); };
     const openHome = () => setCurrentPage("home");
     const openUserProfile = (event) => {
       const id = event.detail?.userId;
@@ -547,7 +554,7 @@ function Home() {
         return <Profile key="profile" onOpenSettings={() => setCurrentPage("settings")} />;
 
       case "piz-finance":
-        return <Profile key="piz-finance" initialView="finance" onBack={() => setCurrentPage("home")} />;
+        return <PizHub key="piz-finance" initialView={pizInitialView} onBack={() => setCurrentPage("home")} />;
 
       case "settings":
         return <Settings onBack={() => setCurrentPage("profile")} onOpenProfile={() => setCurrentPage("profile")} onOpenAdministration={() => setCurrentPage("admin")} onLogout={logout} />;
@@ -562,7 +569,10 @@ function Home() {
         return <Assistant />;
 
       case "market":
-        return <Market onBack={() => setCurrentPage("home")} />;
+        return <MarketplacePage onBack={() => setCurrentPage("home")} />;
+
+      case "projects":
+        return <ProjectHub onBack={() => setCurrentPage("home")} />;
 
       case "carrefour":
         return <Carrefour onBack={() => setCurrentPage("home")} />;
@@ -602,13 +612,14 @@ function Home() {
       />
 
       <main className="feed" onTouchStart={startFeedTouch} onTouchEnd={finishFeedTouch}>
-        {["home", "carrefour", "piz-finance", "market"].includes(currentPage) && <nav className="home-feed-switch" aria-label="Raccourcis principaux">
+        {["home", "carrefour", "piz-finance", "market", "projects"].includes(currentPage) && <nav className="home-feed-switch" aria-label="Raccourcis principaux">
           {[
             { id: "posts", label: "Posts", active: currentPage === "home" && feedType === "posts", action: () => { setCurrentPage("home"); setFeedType("posts"); } },
             { id: "carrefour", label: "Carrefour", active: currentPage === "carrefour", action: () => setCurrentPage("carrefour") },
             { id: "videos", label: "Vidéos", active: currentPage === "home" && feedType === "videos", action: () => { setCurrentPage("home"); setFeedType("videos"); } },
-            { id: "finance", label: "Compte PIZ", active: currentPage === "piz-finance", action: () => setCurrentPage("piz-finance") },
-            { id: "market", label: "Tendances", active: currentPage === "market", action: () => setCurrentPage("market") },
+            { id: "finance", label: "Compte PIZ", active: currentPage === "piz-finance", action: () => { setPizInitialView("wallet"); setCurrentPage("piz-finance"); } },
+            { id: "market", label: "Marketplace", active: currentPage === "market", action: () => setCurrentPage("market") },
+            { id: "projects", label: "Projets", active: currentPage === "projects", action: () => setCurrentPage("projects") },
           ].map((item) => <button key={item.id} type="button" className={`home-feed-icon-button home-feed-item-${item.id}${item.active ? " is-active" : ""}`} onClick={item.action} aria-label={item.label} aria-current={item.active ? "page" : undefined} title={item.label}>
             <span className="home-feed-icon-orbit"><FeedNavIcon type={item.id} /></span>
             <span className="home-feed-icon-label">{item.label}</span>
