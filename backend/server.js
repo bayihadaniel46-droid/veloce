@@ -94,8 +94,9 @@ const forgeMarketProxy = (upstreamPrefix, routePrefix) => async (req, res) => {
             try {
               const redirect = new URL(next.redirectUrl);
               if (redirect.searchParams.has("marketplace_return")) {
-                const callback = new URL("/forge-market/", publicOrigin);
+                const callback = new URL("/", publicOrigin);
                 callback.searchParams.set("piz_callback", "1");
+                callback.searchParams.set("marketplace", "1");
                 redirect.searchParams.set("marketplace_return", callback.toString());
                 next.redirectUrl = redirect.toString();
               }

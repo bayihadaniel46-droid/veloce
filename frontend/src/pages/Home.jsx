@@ -73,6 +73,7 @@ function Home() {
   const [currentPage, setCurrentPage] =
     useState(() => {
       const params = new URLSearchParams(window.location.search);
+      if (params.has("marketplace") || params.get("piz_callback") === "1") return "market";
       if (params.has("profile")) return "user-profile";
       if (params.has("contact") || params.get("page") === "messages") return "messages";
       if (params.has("post")) return "home";

@@ -1,0 +1,215 @@
+:host {
+  display: block;
+  --bg: #f5f8f7;
+  --panel: #fff;
+  --panel2: #eef3ef;
+  --line: #dfe5eb;
+  --ink: #18222d;
+  --muted: #718090;
+  --mint: #4d8065;
+  --lime: #86a68c;
+  --gold: #a17c3f;
+  --red: #a14f55;
+  --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --sans: Manrope, Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.forge-market-root {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dfe5eb;
+  border-radius: 20px;
+  background: #f5f8f7;
+  color: #263442;
+  color-scheme: light;
+  font-family: var(--sans);
+  box-shadow: 0 12px 36px #1b2d4109;
+}
+
+.forge-market-root *, .forge-market-root *::before, .forge-market-root *::after { box-sizing: border-box; }
+.forge-market-root .ambient { display: none; }
+.forge-market-root .topbar { position: sticky; top: 0; z-index: 20; width: 100%; height: auto; min-height: 66px; padding: 10px clamp(14px, 3.5vw, 38px); border-bottom: 1px solid #dfe5eb; background: #ffffffed; color: #18222d; backdrop-filter: blur(16px); }
+.forge-market-root .brand { color: #18222d; font-size: 11px; }
+.forge-market-root .brand-light { color: #718090; }
+.forge-market-root .brand-glyph i { background: #4d8065; }
+.forge-market-root .main-nav a, .forge-market-root .nav-button { color: #64727d; }
+.forge-market-root .main-nav a:hover, .forge-market-root .main-nav a.active { color: #34725d; }
+.forge-market-root .nav-count { background: #edf4ef; color: #34725d; }
+.forge-market-root .button { min-height: 38px; border-radius: 10px; font-family: var(--sans); }
+.forge-market-root .button-primary { border-color: #18222d; background: #18222d; color: #fff; box-shadow: 0 7px 17px #18222d1c; }
+.forge-market-root .button-primary:hover { background: #2a3947; }
+.forge-market-root .button-outline, .forge-market-root .button-quiet { border-color: #d7e0da; background: #fff; color: #354d40; }
+.forge-market-root .button-text { color: #34725d; }
+.forge-market-root .avatar-button { border-color: #d6e1d9; background: #edf4ef; color: #365a49; }
+.forge-market-root .mobile-menu { color: #34434f; }
+
+.forge-market-root .hero { width: min(100%, 1080px); min-height: 360px; margin: 0 auto; padding: clamp(28px, 5vw, 62px) clamp(18px, 4vw, 46px); border-bottom: 1px solid #e1e8e3; background: radial-gradient(circle at 82% 30%, #dcebe0 0, transparent 31%), linear-gradient(130deg, #fff, #f5f8f7 72%, #eef4ef); color: #18222d; }
+.forge-market-root .hero .eyebrow, .forge-market-root .eyebrow { color: #587663; }
+.forge-market-root .pulse { background: #4d8065; box-shadow: 0 0 0 4px #4d80651c; }
+.forge-market-root .hero h1, .forge-market-root .section-heading h2, .forge-market-root .promise-copy h2, .forge-market-root .market-intro h1, .forge-market-root .creator-cta h2 { color: #18222d; }
+.forge-market-root .hero h1 span, .forge-market-root .hero h1 em, .forge-market-root em { color: #50745f; }
+.forge-market-root .hero-lead, .forge-market-root .hero-proof p, .forge-market-root .section-heading > p, .forge-market-root .promise-copy > p { color: #718090; }
+.forge-market-root .proof-avatars span { border-color: #fff; background: #edf4ef; color: #486653; }
+.forge-market-root .hero-art { border-color: #dce6df; border-radius: 19px; background: radial-gradient(circle at 50% 45%, #e4eee7, #f0f4f2 62%, #f8faf9); }
+.forge-market-root .orbit { border-color: #9bad9f65; }
+.forge-market-root .hero-cube .cube-face { border-color: #527b64; background: linear-gradient(135deg, #63876d, #afc5ad); box-shadow: 0 14px 35px #4262492e; }
+.forge-market-root .floating-chip { border-color: #dce6df; background: #fff; color: #55665b; box-shadow: 0 8px 22px #203a2b12; }
+.forge-market-root .art-coordinate, .forge-market-root .hero-index { color: #718090; }
+.forge-market-root .hero-index span:first-child, .forge-market-root .hero-index i { color: #50745f; background: #50745f; }
+.forge-market-root .ticker { border-color: #dfe5eb; background: #fff; }
+.forge-market-root .ticker-track { color: #687780; }
+.forge-market-root .ticker i { color: #4d8065; }
+
+.forge-market-root .market-intro { width: min(100%, 1080px); margin: 0 auto; padding: 32px clamp(16px, 3.5vw, 36px) 22px; border-bottom: 1px solid #e4eae6; background: linear-gradient(120deg, #fff, #f7f9f8); }
+.forge-market-root .market-intro p { color: #718090; }
+.forge-market-root .catalog-section { width: min(100%, 1080px); margin: 0 auto; padding: 34px clamp(14px, 3.5vw, 36px) 40px; }
+.forge-market-root .catalog-toolbar { gap: 10px; }
+.forge-market-root .search-box { min-width: 0; border-color: #dce4df; border-radius: 12px; background: #fff; color: #6a7a72; }
+.forge-market-root .search-box input { color: #263442; }
+.forge-market-root .search-box input::placeholder { color: #89959b; }
+.forge-market-root .search-box kbd { border-color: #dfe5eb; color: #718090; }
+.forge-market-root .catalog-sort { color: #718090; }
+.forge-market-root .catalog-sort button { color: #34434f; }
+.forge-market-root .category-row { scrollbar-color: #b6c9bc transparent; }
+.forge-market-root .category-pill { border-color: #dfe5eb; background: #fff; color: #5e6b75; }
+.forge-market-root .category-pill span { color: #4d8065; }
+.forge-market-root .category-pill.selected { border-color: #aec8b5; background: #edf4ef; color: #355c46; }
+.forge-market-root .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
+.forge-market-root .product-card { border-color: #dfe5eb; border-radius: 15px; background: #fff; box-shadow: 0 6px 20px #1b2d410a; }
+.forge-market-root .product-card:hover { border-color: #9eb7a5; box-shadow: 0 12px 26px #1b2d4113; }
+.forge-market-root .product-visual { min-height: 155px; background: radial-gradient(ellipse at 50% 70%, #8da999, #627a6b 54%, #384a41); }
+.forge-market-root .product-content h3, .forge-market-root .product-price { color: #18222d; }
+.forge-market-root .product-summary, .forge-market-root .sales-label { color: #718090; }
+.forge-market-root .category-label, .forge-market-root .eyebrow-mark { color: #50745f; }
+.forge-market-root .seller-name { color: #5e6b75; }
+.forge-market-root .preview-badge { border-color: #fff; background: #ffffffde; color: #3e5b49; }
+.forge-market-root .view-mark { background: #18222d; color: #fff; }
+.forge-market-root .product-price i { color: #50745f; }
+
+.forge-market-root .preview-promise { width: min(100%, 1080px); margin: 0 auto; padding: 46px clamp(14px, 3.5vw, 36px); border-top: 1px solid #e1e8e3; background: #f8faf9; }
+.forge-market-root .window-frame, .forge-market-root .window-scene { border-color: #dce4df; background: #fff; }
+.forge-market-root .window-chrome { background: #eef2ef; color: #53625a; }
+.forge-market-root .promise-copy > p, .forge-market-root .promise-points small { color: #718090; }
+.forge-market-root .promise-points > div { border-color: #e0e7e2; }
+.forge-market-root .promise-points > div > span { color: #50745f; }
+.forge-market-root .creator-cta { width: calc(100% - 2 * clamp(14px, 3.5vw, 36px)); max-width: 1008px; margin: 18px auto 34px; border: 1px solid #dfe5eb; border-radius: 19px; background: radial-gradient(circle at 95% 5%, #d9ebde 0, transparent 26%), linear-gradient(120deg, #fff, #f0f5f1); color: #263442; }
+.forge-market-root .creator-cta h2 { color: #18222d; }
+.forge-market-root .creator-cta p { color: #718090; }
+.forge-market-root .cta-mark { border-color: #d6e2d9; background: #edf4ef; color: #4d8065; }
+.forge-market-root .footer { width: min(100%, 1080px); margin: 0 auto; border-top: 1px solid #dfe5eb; color: #718090; }
+.forge-market-root .footer .brand { color: #18222d; }
+
+.forge-market-root .modal { max-width: min(620px, calc(100% - 24px)); max-height: min(90vh, 820px); overflow-y: auto; border: 1px solid #dfe5eb; border-radius: 22px; background: #fff; color: #263442; box-shadow: 0 24px 70px #1b2d4130; }
+.forge-market-root .modal::backdrop { background: #15201bcc; backdrop-filter: blur(5px); }
+.forge-market-root .modal h2 { color: #18222d; }
+.forge-market-root .modal-intro, .forge-market-root .modal-footnote { color: #718090; }
+.forge-market-root .modal-kicker, .forge-market-root .settings-label { color: #587663; }
+.forge-market-root .modal-close button { border-color: #dfe5eb; background: #f3f6f4; color: #34434f; }
+.forge-market-root .auth-tabs, .forge-market-root .account-tabs { border-color: #dfe5eb; }
+.forge-market-root .auth-tabs button, .forge-market-root .account-tabs button { color: #718090; }
+.forge-market-root .auth-tabs button.active, .forge-market-root .account-tabs button.active { border-color: #4d8065; color: #34725d; }
+.forge-market-root .form-stack label { color: #53616c; }
+.forge-market-root .form-stack input, .forge-market-root .form-stack textarea, .forge-market-root .form-stack select { border-color: #dce4df; background: #fbfcfc; color: #263442; }
+.forge-market-root .form-stack input::placeholder, .forge-market-root .form-stack textarea::placeholder { color: #89959b; }
+.forge-market-root .wallet-card { border-color: #dce5df; background: linear-gradient(110deg, #eef5f0, #f9fbf9); color: #263442; }
+.forge-market-root .wallet-card small, .forge-market-root .wallet-card strong { color: #344b3b; }
+.forge-market-root .identity-orb { border-color: #d2dfd5; background: #edf4ef; color: #365a49; }
+.forge-market-root .wallet-status { border-color: #dce4df; color: #8c7040; }
+.forge-market-root .wallet-status.linked { color: #34725d; }
+.forge-market-root .account-identity small, .forge-market-root .library-item small, .forge-market-root .seller-row small { color: #718090; }
+.forge-market-root .library-item, .forge-market-root .seller-row { border-color: #e5ebe7; }
+.forge-market-root .download-button { border-color: #d6e2d9; color: #34725d; }
+.forge-market-root .settings-group, .forge-market-root .settings-toggle, .forge-market-root .settings-account { border-color: #e0e7e2; }
+.forge-market-root .settings-group small, .forge-market-root .settings-toggle small, .forge-market-root .settings-saved { color: #718090; }
+.forge-market-root .settings-toggle input { accent-color: #4d8065; }
+.forge-market-root .toast { border-color: #d2e0d6; background: #edf5ef; color: #344d3c; box-shadow: 0 12px 30px #1b2d4115; }
+.forge-market-root .snippet-card, .forge-market-root .empty-state, .forge-market-root .product-modal { color: #263442; }
+.forge-market-root .snippet-code { border-color: #dfe5eb; border-radius: 10px; background: #18222d; color: #e7eee9; }
+.forge-market-root .detail-specs > div { border-color: #dfe5eb; background: #f5f8f6; }
+.forge-market-root .detail-specs small, .forge-market-root .detail-checkout small { color: #718090; }
+.forge-market-root .detail-description, .forge-market-root .detail-byline { color: #667680; }
+.forge-market-root .source-seal { border-color: #dce7df; background: #f3f8f4; }
+.forge-market-root .source-seal small { color: #718090; }
+.forge-market-root .drop-seal { border-color: #e6d8b8; background: #fbf8f0; color: #8b6b35; }
+.forge-market-root .cash-summary { border-color: #dce5df; background: #f7faf8; }
+.forge-market-root .cash-summary small, .forge-market-root .cash-summary p { color: #718090; }
+.forge-market-root .cash-summary span { color: #536b5c; }
+.forge-market-root .upload-field { border-color: #d7e1da; }
+.forge-market-root .upload-field small { color: #718090; }
+.forge-market-root .file-name { color: #50745f; }
+.forge-market-root .logout-button { border-color: #ead6d7; background: #fff7f6; color: #995656; }
+.forge-market-root .cash-equivalent { color: #718090 !important; }
+.forge-market-root.reduce-motion *, .forge-market-root.reduce-motion *::before, .forge-market-root.reduce-motion *::after { animation-duration: .01ms !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+.forge-market-root.compact-mode .product-content { padding: 12px; }
+
+@media (max-width: 900px) {
+  .forge-market-root .topbar { gap: 12px; padding-inline: 14px; }
+  .forge-market-root .main-nav, .forge-market-root .header-actions { gap: 12px; }
+  .forge-market-root .hero { min-height: 0; }
+  .forge-market-root .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 650px) {
+  .forge-market-root { border-radius: 15px; }
+  .forge-market-root .topbar { min-height: 58px; padding: 8px 11px; }
+  .forge-market-root .brand { font-size: 9px; letter-spacing: .12em; }
+  .forge-market-root .header-actions { margin-left: auto; }
+  .forge-market-root .header-actions > #loginTop { min-height: 33px; padding: 7px 9px; font-size: 9px; }
+  .forge-market-root .mobile-menu { width: 34px; height: 34px; border: 1px solid #dfe5eb; border-radius: 10px; background: #fff; }
+  .forge-market-root .main-nav { top: 57px; left: 0; right: 0; z-index: 25; display: none; flex-wrap: wrap; justify-content: flex-start; padding: 12px; border: 1px solid #dfe5eb; border-top: 0; border-radius: 0 0 13px 13px; background: #fff; box-shadow: 0 12px 24px #1b2d4115; }
+  .forge-market-root .main-nav.mobile-open { display: flex; }
+  .forge-market-root .hero { grid-template-columns: minmax(0, 1fr); gap: 17px; padding: 29px 17px 23px; }
+  .forge-market-root .hero h1 { font-size: clamp(34px, 10vw, 47px); }
+  .forge-market-root .hero-art { height: 205px; }
+  .forge-market-root .hero-index { display: none; }
+  .forge-market-root .hero-actions { flex-wrap: wrap; gap: 8px; }
+  .forge-market-root .hero-actions .button { padding: 10px 11px; font-size: 10px; }
+  .forge-market-root .hero-proof { gap: 8px; }
+  .forge-market-root .ticker { padding: 10px 0; }
+  .forge-market-root .ticker-track { justify-content: flex-start; gap: 16px; font-size: 8px; }
+  .forge-market-root .market-intro { padding: 21px 14px 15px; }
+  .forge-market-root .market-intro h1 { font-size: 31px; }
+  .forge-market-root .market-intro-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 13px; }
+  .forge-market-root .market-intro-actions .button { min-width: 0; padding-inline: 9px; font-size: 9px; }
+  .forge-market-root .catalog-section { padding: 24px 12px 28px; }
+  .forge-market-root .section-heading { margin-bottom: 18px; }
+  .forge-market-root .section-heading h2 { font-size: 30px; }
+  .forge-market-root .section-heading > p br { display: none; }
+  .forge-market-root .catalog-toolbar { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .forge-market-root .search-box { width: 100%; max-width: none; }
+  .forge-market-root .catalog-sort { justify-content: space-between; margin: 0; }
+  .forge-market-root .product-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .forge-market-root .product-card { display: grid; grid-template-columns: minmax(88px, 32%) minmax(0, 1fr); min-width: 0; }
+  .forge-market-root .product-visual { height: 100%; min-height: 135px; }
+  .forge-market-root .product-content { min-width: 0; padding: 11px; }
+  .forge-market-root .product-content h3 { overflow-wrap: anywhere; font-size: 12px; }
+  .forge-market-root .product-summary { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; min-height: 0; }
+  .forge-market-root .product-foot { flex-wrap: wrap; gap: 5px; }
+  .forge-market-root .preview-promise { grid-template-columns: minmax(0, 1fr); gap: 19px; padding: 27px 13px; }
+  .forge-market-root .promise-art { height: 220px; }
+  .forge-market-root .promise-copy h2 { font-size: 31px; }
+  .forge-market-root .creator-cta { width: calc(100% - 24px); grid-template-columns: 36px minmax(0, 1fr); gap: 10px; margin: 10px auto 20px; padding: 16px 13px; }
+  .forge-market-root .creator-cta h2 { font-size: 19px; }
+  .forge-market-root .cta-action { grid-column: 1 / -1; }
+  .forge-market-root .footer { padding: 14px; }
+  .forge-market-root .product-detail { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .forge-market-root .detail-visual { height: 210px; }
+  .forge-market-root .detail-checkout { align-items: flex-start; }
+  .forge-market-root .modal { width: calc(100% - 16px); max-width: none; max-height: calc(100vh - 16px); padding: 19px 15px; border-radius: 18px; }
+  .forge-market-root .modal h2 { font-size: 29px; }
+  .forge-market-root .form-split { grid-template-columns: minmax(0, 1fr); }
+  .forge-market-root .settings-toggle { gap: 10px; }
+  .forge-market-root .toast { right: 10px; bottom: 12px; left: 10px; width: auto; max-width: none; transform: translateY(10px); }
+  .forge-market-root .toast.visible { transform: translateY(0); }
+}
+
+@media (max-width: 380px) {
+  .forge-market-root .header-actions > #loginTop { padding: 6px 7px; font-size: 8px; }
+  .forge-market-root .product-card { grid-template-columns: 84px minmax(0, 1fr); }
+  .forge-market-root .product-visual { min-height: 126px; }
+  .forge-market-root .product-meta { flex-wrap: wrap; gap: 4px; }
+}
